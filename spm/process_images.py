@@ -3,8 +3,8 @@ import glob, os
 import pyexiv2
 from PIL import Image
 
-ORIGINAL_IMAGE_PATH = os.path.normpath(os.path.normpath('/mnt/adc_family_history/IMAGE_ARCHIVE/InProgress'))
-PROCESSED_IMAGE_PATH = os.path.normpath(os.path.normpath('/mnt/adc_family_history/IMAGE_ARCHIVE/Processed'))
+ORIGINAL_IMAGE_PATH = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}'))
+PROCESSED_IMAGE_PATH = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images/processed")}'))
 CONVERSION_FORMAT = 'jpg'
 
 
@@ -127,23 +127,30 @@ class ProcessImages:
         method to run the image conversion and tagging processes
         :return: True if run
         """
-        existing_converted = self.get_filenames(self.PROCESSED_IMAGE_PATH)
-        for filename in os.listdir(self.ORIGINAL_IMAGE_PATH):
-            if not os.path.isdir(os.path.join(self.ORIGINAL_IMAGE_PATH, filename)):
-                if self.reconvert or filename not in existing_converted:
-                    # save copy of the image with converted format
-                    converted = self.convert_format(filename=filename, path=self.ORIGINAL_IMAGE_PATH,
-                                                    save_path=self.PROCESSED_IMAGE_PATH,
-                                                    conversion_format=self.CONVERSION_FORMAT)
-                    print(converted)
-                if self.retag or filename not in existing_converted:
-                    # read tag data from original image
-                    tag_data = self.read_iptc_tags(filename=filename, path=self.ORIGINAL_IMAGE_PATH)
-                    # write tag data to the converted copy
-                    file, extension = os.path.splitext(filename)
-                    self.write_iptc_tags(path=self.PROCESSED_IMAGE_PATH, filename=f'{file}.{self.CONVERSION_FORMAT}',
-                                         tag_data=tag_data)
-        return True
+        try:
+            existing_converted = self.get_filenames(self.PROCESSED_IMAGE_PATH)
+            for filename in os.listdir(self.ORIGINAL_IMAGE_PATH):
+                if not os.path.isdir(os.path.join(self.ORIGINAL_IMAGE_PATH, filename)):
+                    if self.reconvert or \
+                            os.path.splitext(filename)[0] not in [os.path.splitext(f)[0] for f in existing_converted]:
+                        # save copy of the image with converted format
+                        converted = self.convert_format(filename=filename, path=self.ORIGINAL_IMAGE_PATH,
+                                                        save_path=self.PROCESSED_IMAGE_PATH,
+                                                        conversion_format=self.CONVERSION_FORMAT)
+                        print(converted)
+                    if self.retag or \
+                            os.path.splitext(filename)[0] not in [os.path.splitext(f)[0] for f in existing_converted]:
+                        # read tag data from original image
+                        tag_data = self.read_iptc_tags(filename=filename, path=self.ORIGINAL_IMAGE_PATH)
+                        # write tag data to the converted copy
+                        file, extension = os.path.splitext(filename)
+                        self.write_iptc_tags(path=self.PROCESSED_IMAGE_PATH,
+                                             filename=f'{file}.{self.CONVERSION_FORMAT}',
+                                             tag_data=tag_data)
+            return True
+        except (TypeError, Exception) as e:
+            print(f'Error: {e}')
+        return False
 
 
 ProcessImages(image_path=ORIGINAL_IMAGE_PATH,
