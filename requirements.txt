@@ -4,5 +4,24 @@
 #
 #    pip-compile 
 #
+certifi==2019.3.9         # via requests
+chardet==3.0.4            # via requests
+coreapi==2.3.3
+coreschema==0.0.4         # via coreapi
+django-cors-headers==2.5.2
+django==2.1.8             # via django-cors-headers
+djangorestframework==3.9.2
+gevent==1.4.0
+greenlet==0.4.15          # via gevent
+gunicorn==19.9.0
+idna==2.8                 # via requests
+itypes==1.1.0             # via coreapi
+jinja2==2.10              # via coreschema
+markupsafe==1.1.1         # via jinja2
 pillow==5.4.1
 py3exiv2==0.6.1
+pytz==2018.9              # via django
+pyyaml==5.1
+requests==2.21.0          # via coreapi
+uritemplate==3.0.0        # via coreapi
+urllib3==1.24.1           # via requests

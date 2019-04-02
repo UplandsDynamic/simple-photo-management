@@ -1,3 +1,9 @@
 # requirements.in
 Pillow
 py3exiv2
+django-cors-headers
+gunicorn
+gevent
+djangorestframework
+coreapi
+pyyaml

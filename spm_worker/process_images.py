@@ -5,6 +5,10 @@ from PIL import Image
 
 ORIGINAL_IMAGE_PATH = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}'))
 PROCESSED_IMAGE_PATH = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images/processed")}'))
+# ORIGINAL_IMAGE_PATH = os.path.normpath(
+#     os.path.normpath('/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/InProgress'))
+# PROCESSED_IMAGE_PATH = os.path.normpath(
+#     os.path.normpath('/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed'))
 CONVERSION_FORMAT = 'jpg'
 
 
