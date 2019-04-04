@@ -1,5 +1,8 @@
 import logging
 from django.contrib.auth.models import User, Group
+from django.http import JsonResponse
+from rest_framework.views import APIView
+import os
 from .custom_validators import RequestQueryValidator, validate_search
 from django.core.exceptions import ValidationError
 from rest_framework import (viewsets, permissions, serializers, status)
@@ -14,6 +17,7 @@ from .custom_permissions import AccessPermissions
 from .models import PhotoData, PhotoTag
 from django.db.models import Q
 from rest_framework.decorators import action
+from .process_images import ProcessImages
 
 """
 Note about data object (database record):
@@ -207,3 +211,77 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
             super().perform_destroy(instance)
         else:
             raise serializers.ValidationError(detail='You are not authorized to delete photo data!')
+
+
+class AddTags(APIView):
+    """
+    API endpoint that allows tags to be read from photos
+    and added to the database
+     """
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def __init__(self):
+        super().__init__()
+
+    @staticmethod
+    def add_tags_to_db(photo_tag_model, tags, owner):
+        """
+        method to add tags to the database model
+        :param photo_tag_model: the PhotoTag database model
+        :param tags: list of tag dicts: [{'path': path/to/file, 'filename': filename, 'iptc_key': IPTC key name,
+        'tags': ['tag1', 'tag2']}]
+        :param owner: user who is submitting the tags
+        :return: added tags | []
+        """
+        added_tags = []
+        for tag_record in tags:
+            for tag in tag_record['tags']:
+                try:
+                    tag_instance = photo_tag_model()
+                    tag_instance.tag = tag
+                    tag_instance.owner = owner
+                    tag_instance.save()
+                    added_tags.append(tag)
+                except Exception as e:
+                    logger.warning(f'An exception occurred whilst attempting to save tags to database: {e}')
+        return added_tags
+
+    def get(self, request):
+        original_image_path = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}'))
+        processed_image_path = os.path.normpath(
+            os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images/processed")}'))
+        conversion_format = 'jpeg'
+        try:
+            reconvert = RequestQueryValidator.validate('bool', self.request.query_params.get('reconvert', None))
+            retag = RequestQueryValidator.validate('bool', self.request.query_params.get('retag', None))
+            message = 'Processing ...'
+            processed = ProcessImages(image_path=original_image_path,
+                                      processed_image_path=processed_image_path,
+                                      conversion_format=conversion_format,
+                                      reconvert=reconvert,
+                                      retag=retag).main()
+            # save data
+            if processed.get('tags'):
+                added_tags = self.add_tags_to_db(photo_tag_model=PhotoTag, tags=processed.get('tags'),
+                                                 owner=self.request.user)
+                logger.info(f'Added tags: {added_tags}')
+        except (ValidationError, Exception) as e:
+            message = f'Validation error: {e.message if isinstance(e, ValidationError) else e}'
+        return JsonResponse({'Status': message}, status=202)
+
+
+class ImageProcess(APIView):
+    """
+    API endpoint that processes images, creating a tagged copy of each image in the origin
+    directory, with specified parameters.
+    """
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def __init__(self):
+        super().__init__()
+
+    def get(self, request):
+        message = 'test'
+        return JsonResponse({'status': message})

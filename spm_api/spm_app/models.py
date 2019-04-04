@@ -40,6 +40,10 @@ class PhotoData(models.Model):
     file_format = models.CharField(max_length=100, blank=True, null=False,
                                    validators=[custom_validators.validate_alphanumplus])
     tags = models.ManyToManyField('PhotoTag', related_name='photo_data')
+    original_url = models.CharField(max_length=100, blank=False, null=True, unique=True,
+                                    validators=[custom_validators.validate_url])
+    processed_url = models.CharField(max_length=100, blank=False, null=True, unique=True,
+                                     validators=[custom_validators.validate_url])
 
     class Meta:
         ordering = ('id',)
@@ -69,7 +73,8 @@ class PhotoData(models.Model):
 
 
 class PhotoTag(models.Model):
-    tag = models.CharField(max_length=100, blank=True, null=False, validators=[custom_validators.validate_alphanumplus])
+    tag = models.CharField(unique=True, max_length=100, blank=True, null=False,
+                           validators=[custom_validators.validate_alphanumplus])
     owner = models.ForeignKey(
         'auth.User', related_name='photo_tag', on_delete=models.SET_NULL, null=True)
     record_created = models.DateTimeField(auto_now_add=True)

@@ -126,7 +126,7 @@ class ProcessImages:
             print(f'An error occurred: {e}')
         return False
 
-    def run(self):
+    def main(self):
         """
         method to run the image conversion and tagging processes
         :return: dict of saved conversion data and tags: e.g.:
@@ -166,10 +166,12 @@ class ProcessImages:
             print(f'Error: {e}')
         return False
 
-# ProcessImages(image_path=ORIGINAL_IMAGE_PATH,
-#               processed_image_path=PROCESSED_IMAGE_PATH,
-#               conversion_format=CONVERSION_FORMAT,
-#               reconvert=False,
-#               retag=False).run()
+
+if __name__ == '__main__':
+    ProcessImages(image_path=ORIGINAL_IMAGE_PATH,
+                  processed_image_path=PROCESSED_IMAGE_PATH,
+                  conversion_format=CONVERSION_FORMAT,
+                  reconvert=False,
+                  retag=False).main()
 
 # os.path.normpath('/mnt/adc_family_history/IMAGE_ARCHIVE/InProgress')

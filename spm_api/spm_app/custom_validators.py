@@ -10,6 +10,13 @@ def validate_alphanumplus(value):
         )
 
 
+def validate_url(value):
+    if not re.match('^[A-Za-z0-9\-_/]*$', value):
+        raise ValidationError(
+            _(f'{value} contains invalid characters!')
+        )
+
+
 def validate_search(value):
     if not re.match('^[A-Za-z0-9_.\- ]*$', value):
         raise ValidationError(
@@ -50,8 +57,8 @@ class RequestQueryValidator:
     page = 'validation of page limit param'
     results = 'validation of results limit param'
     order_by = 'validation of order_by param'
-    valid_order_by_values = ['id', 'sku', 'desc', 'units_total', 'unit_price', 'record_updated',
-                             '-id', '-sku', '-desc', '-units_total', '-unit_price', '-record_updated']
+    valid_order_by_values = ['id', 'tag', 'file_name', 'file_type']
+    bool = 'validation incoming value is a boolean value'
 
     @staticmethod
     def validate(query_type, value):
@@ -74,3 +81,11 @@ class RequestQueryValidator:
             so no need to substitute query for fieldname before running order_by on the queryset.
             """
             return value if value in RequestQueryValidator.valid_order_by_values else 'id'
+        elif query_type == 'bool':
+            # ensure true/false string or a boolean. Return boolean if so, if not, raise validation error
+            if not isinstance(value, bool):
+                if isinstance(value, str) and value.lower() in ['true', 'false']:
+                    return value.lower() == 'true'
+                else:
+                    raise ValidationError(_(f'This value needs to be True or False!'))
+            return value
