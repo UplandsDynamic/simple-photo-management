@@ -7,3 +7,7 @@ gevent
 djangorestframework
 coreapi
 pyyaml
+django_q
+django-picklefield
+arrow
+blessed

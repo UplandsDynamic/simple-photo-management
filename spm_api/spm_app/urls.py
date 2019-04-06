@@ -44,7 +44,6 @@ functional_view_urlpatterns = [
         {'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy', 'put': 'update'}),
         name='photo_data-detail'),
     url('^v2/run_tagger', views.AddTags.as_view()),
-    url('^v2/process_images', views.ImageProcess.as_view())
     # url('^v2/stock/latest/$', views.StockDataViewSet.as_view(
     #     {'get': 'latest'})),
 ]

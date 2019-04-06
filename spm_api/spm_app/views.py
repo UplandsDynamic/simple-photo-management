@@ -17,7 +17,9 @@ from .custom_permissions import AccessPermissions
 from .models import PhotoData, PhotoTag
 from django.db.models import Q
 from rest_framework.decorators import action
-from .process_images import ProcessImages
+from .spm_worker.process_images import ProcessImages
+from django_q.tasks import async_task, result
+from functools import partial
 
 """
 Note about data object (database record):
@@ -232,7 +234,7 @@ class AddTags(APIView):
         :param tags: list of tag dicts: [{'path': path/to/file, 'filename': filename, 'iptc_key': IPTC key name,
         'tags': ['tag1', 'tag2']}]
         :param owner: user who is submitting the tags
-        :return: added tags | []
+        :return: list of added tags | []
         """
         added_tags = []
         for tag_record in tags:
@@ -247,15 +249,34 @@ class AddTags(APIView):
                     logger.warning(f'An exception occurred whilst attempting to save tags to database: {e}')
         return added_tags
 
-    def get(self, request):
+    @staticmethod
+    def add_images_to_db():
+        """
+        method to add images to the database model
+        :return: list of added images | []
+        """
+        pass
+        # {'conversions': [{'path': '/path/to/processed/image', 'filename': '4058.jpeg'}],
+        # 'tags': [{'path': '/path/to/tagged/image','4058.tif','Iptc.Application2.Keywords',
+        # 'tags': ['DATE: 1974','PLACE: The Moon']}]}
+
+    @staticmethod
+    def process_images(reconvert=False, retag=False, user=None, add_tags_to_db=None):
+        """
+        method to process images (make resized copy (i.e. a 'processed' copy) & copy tags from original to resized)
+        :param reconvert: whether to reconvert if file name already exists
+        :param retag: whether to re-copy over tags from original to processed image, if filename already exists
+        :param user: current uses
+        :param add_tags_to_db:
+        :return: True | False
+        """
         original_image_path = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}'))
         processed_image_path = os.path.normpath(
             os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images/processed")}'))
         conversion_format = 'jpeg'
         try:
-            reconvert = RequestQueryValidator.validate('bool', self.request.query_params.get('reconvert', None))
-            retag = RequestQueryValidator.validate('bool', self.request.query_params.get('retag', None))
-            message = 'Processing ...'
+            reconvert = RequestQueryValidator.validate('bool', reconvert)
+            retag = RequestQueryValidator.validate('bool', retag)
             processed = ProcessImages(image_path=original_image_path,
                                       processed_image_path=processed_image_path,
                                       conversion_format=conversion_format,
@@ -263,25 +284,18 @@ class AddTags(APIView):
                                       retag=retag).main()
             # save data
             if processed.get('tags'):
-                added_tags = self.add_tags_to_db(photo_tag_model=PhotoTag, tags=processed.get('tags'),
-                                                 owner=self.request.user)
+                added_tags = add_tags_to_db(photo_tag_model=PhotoTag, tags=processed.get('tags'),
+                                            owner=user)
                 logger.info(f'Added tags: {added_tags}')
+            return True
         except (ValidationError, Exception) as e:
-            message = f'Validation error: {e.message if isinstance(e, ValidationError) else e}'
-        return JsonResponse({'Status': message}, status=202)
-
-
-class ImageProcess(APIView):
-    """
-    API endpoint that processes images, creating a tagged copy of each image in the origin
-    directory, with specified parameters.
-    """
-
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def __init__(self):
-        super().__init__()
+            logger.error(f'Validation error: {e.message if isinstance(e, ValidationError) else e}')
+        return False
 
     def get(self, request):
-        message = 'test'
-        return JsonResponse({'status': message})
+        """
+        hand off the image processing and tagging task to django_q multiprocessing (async)
+        """
+        async_task(AddTags.process_images, self.request.query_params.get('reconvert', None),
+                   self.request.query_params.get('retag', None), self.request.user, self.add_tags_to_db)
+        return JsonResponse({'Status': 'Processing .......'}, status=202)

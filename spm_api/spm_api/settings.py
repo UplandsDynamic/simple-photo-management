@@ -112,6 +112,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'django_q'
 ]
 
 # # # Rest framework
@@ -155,6 +156,24 @@ TEMPLATES = [
         },
     },
 ]
+
+Q_CLUSTER = {
+    'name': 'SimplePhotoManagement',
+    'daemonize_workers': True,
+    'compress': True,
+    'workers': 4,
+    'recycle': 500,
+    'timeout': None,
+    # 'django_redis': 'default',
+    'retry': 100000,
+    'queue_limit': 8,
+    'bulk': 10,
+    'orm': 'default',
+    'sync': False,
+    'guard_cycle': 5,
+    'cpu_affinity': 4,
+    'catch_up': True
+}
 
 # # # Caches
 USE_REDIS_CACHE = False
