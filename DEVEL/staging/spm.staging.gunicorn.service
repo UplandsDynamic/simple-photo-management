@@ -1,0 +1,16 @@
+[Unit]
+Description=Gunicorn daemon for SimplePhotoManagement
+Before=nginx.service
+After=network.target
+
+[Service]
+WorkingDirectory=/mnt/backupaninstancedatacenter/family-history-29032019-clone/spm
+ExecStart=/mnt/backupaninstancedatacenter/family-history-29032019-clone/spm/venv/bin/gunicorn --name=SimplePhotoManagement --pythonpath=/mnt/backupaninstancedatacenter/family-history-29032019-clone/spm/spm_api --bind unix:/tmp/spm.staging.gunicorn.socket --config /etc/gunicorn.d/gunicorn.py spm_api.wsgi:application
+Restart=always
+SyslogIdentifier=gunicorn
+User=dan
+Group=dan
+
+
+[Install]
+WantedBy=multi-user.target

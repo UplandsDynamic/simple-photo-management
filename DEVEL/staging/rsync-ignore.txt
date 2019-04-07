@@ -1,0 +1,10 @@
+.idea
+rsync-ignore.txt
+venv/
+.gitignore
+.git/
+test_images/
+migrations/
+secret_key.txt
+run_type.txt
+DEVEL/

@@ -65,22 +65,20 @@ if RUN_TYPE == 'DEVEL' or not RUN_TYPE:
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 elif RUN_TYPE == 'STAGING':
     DEBUG = False
-    WORKING_URL = 'sm.staging.aninstance.com'
-    WORKING_PORT = '443'
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_BROWSER_XSS_FILTER = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    WORKING_URL = 'simplephotomanagement.lan'
+    WORKING_PORT = '80'
+    SECURE_CONTENT_TYPE_NOSNIFF = False
+    SECURE_BROWSER_XSS_FILTER = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
     #  SECURE_SSL_REDIRECT = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     ALLOWED_HOSTS = [WORKING_URL]
     # CORS_ORIGIN_ALLOW_ALL = True
     CORS_ALLOW_CREDENTIALS = True
     CORS_ORIGIN_WHITELIST = (WORKING_URL,)
-    STATIC_ROOT = os.path.join('/var/www/django/'
-                               'spm.staging.aninstance.com/static')
-    MEDIA_ROOT = os.path.join('/var/www/django/'
-                              'spm.staging.aninstance.com/media')
+    STATIC_ROOT = os.path.join('/var/www/spm/static')
+    MEDIA_ROOT = os.path.join('/var/www/spm/media')
 elif RUN_TYPE == 'PRODUCTION':
     DEBUG = False
     WORKING_URL = 'spm.aninstance.com'
@@ -169,7 +167,7 @@ Q_CLUSTER = {
     'queue_limit': 8,
     'bulk': 10,
     'orm': 'default',
-    'sync': False,
+    'sync': True,  # True to debug in sync
     'guard_cycle': 5,
     'cpu_affinity': 4,
     'catch_up': True
@@ -246,12 +244,8 @@ if RUN_TYPE == RUN_TYPE_OPTIONS[2]:  # production
 elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # staging
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': 'simple_photo_management',
-            'USER': 'simple_photo_management',
-            'PASSWORD': 'keujDBhrj*9(084783&8k',
-            'HOST': 'localhost',
-            'PORT': '5432'
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         }
     }
 else:
@@ -286,7 +280,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # # # Email services
-if RUN_TYPE ==  RUN_TYPE_OPTIONS[2]:  # production
+if RUN_TYPE == RUN_TYPE_OPTIONS[2]:  # production
     EMAIL_BACKEND = "anymail.backends.sparkpost.EmailBackend"
     DEFAULT_FROM_EMAIL = 'spm@spm.aninstance.com'
     ANYMAIL = {
@@ -302,31 +296,6 @@ else:  # staging or devel
         'SPARKPOST_API_KEY': '6217b980eea812823ad8535b5b6f8bb3047e229d',
         'SPARKPOST_API_URL': 'https://api.eu.sparkpost.com/api/v1',
     }
-
-# # # StockManagement Application
-STOCK_MANAGEMENT_OPTIONS = {
-    RUN_TYPE_OPTIONS[0]: {  # devel
-        'email': {
-            'notifications_on': False,
-            'notifications_to_transfer_requester': True,
-            'notifications_to_administrators': True,
-        }
-    },
-    RUN_TYPE_OPTIONS[1]: {  # staging
-        'email': {
-            'notifications_on': False,
-            'notifications_to_transfer_requester': True,
-            'notifications_to_administrators': True,
-        }
-    },
-    RUN_TYPE_OPTIONS[2]: {  # production
-        'email': {
-            'notifications_on': True,
-            'notifications_to_transfer_requester': True,
-            'notifications_to_administrators': True,
-        }
-    },
-}
 
 # # # Internationalization
 LOCALE_PATHS = (

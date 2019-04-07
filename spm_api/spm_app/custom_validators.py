@@ -11,7 +11,7 @@ def validate_alphanumplus(value):
 
 
 def validate_url(value):
-    if not re.match('^[A-Za-z0-9\-_/]*$', value):
+    if not re.match('^[A-Za-z0-9_/.\\-]*$', value):
         raise ValidationError(
             _(f'{value} contains invalid characters!')
         )

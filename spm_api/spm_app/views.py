@@ -1,6 +1,7 @@
 import logging
 from django.contrib.auth.models import User, Group
 from django.http import JsonResponse
+from django.utils.datetime_safe import datetime
 from rest_framework.views import APIView
 import os
 from .custom_validators import RequestQueryValidator, validate_search
@@ -227,47 +228,70 @@ class AddTags(APIView):
         super().__init__()
 
     @staticmethod
-    def add_tags_to_db(photo_tag_model, tags, owner):
-        """
-        method to add tags to the database model
-        :param photo_tag_model: the PhotoTag database model
-        :param tags: list of tag dicts: [{'path': path/to/file, 'filename': filename, 'iptc_key': IPTC key name,
-        'tags': ['tag1', 'tag2']}]
-        :param owner: user who is submitting the tags
-        :return: list of added tags | []
-        """
-        added_tags = []
-        for tag_record in tags:
-            for tag in tag_record['tags']:
-                try:
-                    tag_instance = photo_tag_model()
-                    tag_instance.tag = tag
-                    tag_instance.owner = owner
-                    tag_instance.save()
-                    added_tags.append(tag)
-                except Exception as e:
-                    logger.warning(f'An exception occurred whilst attempting to save tags to database: {e}')
-        return added_tags
-
-    @staticmethod
-    def add_images_to_db():
+    def add_records_to_db(processed_images, owner, resync_tags=False):
         """
         method to add images to the database model
+        :param processed_images: dict of lists of processed images & written tags: e.g.
+            {'conversions': [{'orig_path':'/path/to/orig/image', 'processed_path':'/path/to/processed/image',
+            'filename': '4058.jpeg'}],'tag_data': [{'iptc_key':'Iptc.Application2.Keywords',
+            'tags': ['DATE: 1974', 'PLACE: The Moon']}]}
+        :param owner: current user
+        :param resync_tags: whether to resync embedded IPTC tags from image file to the PhotoData model
         :return: list of added images | []
         """
-        pass
-        # {'conversions': [{'path': '/path/to/processed/image', 'filename': '4058.jpeg'}],
-        # 'tags': [{'path': '/path/to/tagged/image','4058.tif','Iptc.Application2.Keywords',
-        # 'tags': ['DATE: 1974','PLACE: The Moon']}]}
+        # TODO ... ADD IMAGE DATA TO THE DB! THEN, TEST SEARCH ...
+        added_images = []
+        try:
+            updated_tags = []
+            for index, tag_data in enumerate(processed_images['tag_data']):
+                # save image data to PhotoData model (if new conversion) & get reference to the instance
+                try:
+                    filename = processed_images['conversions'][index]['filename']
+                    original_path = processed_images['conversions'][index]['orig_path']
+                    processed_path = processed_images['conversions'][index]['processed_path']
+                    logger.info(f'FILENAME: {processed_path}')
+                    image_data, new_record_created = PhotoData.objects.update_or_create(
+                        file_name=os.path.splitext(filename)[0],
+                        defaults={
+                            'owner': owner,
+                            'file_format': os.path.splitext(filename)[1],
+                            'original_url': os.path.join(original_path, filename),
+                            'processed_url': os.path.join(processed_path, filename)
+                        }
+                    )
+                except Exception as e:
+                    new_record_created = False
+                    image_data = None
+                    logger.error(f'An exception occurred whilst saving image data to the database: {e}')
+                """
+                if new image data was created - or resync_tags=True - , create PhotoTag objects 
+                (creating in the model if necessary with update_or_create), then populate saved 
+                PhotoData model's M2M tags field with that list. Then, add image data to a list for return.
+                """
+                if image_data and (new_record_created or resync_tags):
+                    for tag in tag_data['tags']:
+                        try:
+                            tag, tag_created = PhotoTag.objects.get_or_create(tag=tag, owner=owner)
+                            updated_tags.append(tag)
+                        except Exception as e:
+                            logger.warning(f'An exception occurred whilst attempting to save tags to database: {e}')
+                    # save tags to PhotoData model
+                    image_data.tags.set(updated_tags)
+                    image_data.record_updated = datetime.utcnow()
+                    # save the model
+                    image_data.save()
+                    added_images.append(image_data)  # add to images list for return
+        except Exception as e:
+            logger.warning(f'An exception occurred whilst attempting to save photos to database: {e}')
+        return added_images
 
     @staticmethod
-    def process_images(reconvert=False, retag=False, user=None, add_tags_to_db=None):
+    def process_images(retag=False, user=None, add_records_to_db=None):
         """
         method to process images (make resized copy (i.e. a 'processed' copy) & copy tags from original to resized)
-        :param reconvert: whether to reconvert if file name already exists
         :param retag: whether to re-copy over tags from original to processed image, if filename already exists
         :param user: current uses
-        :param add_tags_to_db:
+        :param add_records_to_db: function, that adds tags to the ORM (database model)
         :return: True | False
         """
         original_image_path = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}'))
@@ -275,27 +299,26 @@ class AddTags(APIView):
             os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images/processed")}'))
         conversion_format = 'jpeg'
         try:
-            reconvert = RequestQueryValidator.validate('bool', reconvert)
             retag = RequestQueryValidator.validate('bool', retag)
             processed = ProcessImages(image_path=original_image_path,
                                       processed_image_path=processed_image_path,
                                       conversion_format=conversion_format,
-                                      reconvert=reconvert,
                                       retag=retag).main()
             # save data
-            if processed.get('tags'):
-                added_tags = add_tags_to_db(photo_tag_model=PhotoTag, tags=processed.get('tags'),
-                                            owner=user)
-                logger.info(f'Added tags: {added_tags}')
+            processed_records = add_records_to_db(processed_images=processed, owner=user, resync_tags=retag)
+            logger.info(f'Added records: {processed_records}')
             return True
         except (ValidationError, Exception) as e:
-            logger.error(f'Validation error: {e.message if isinstance(e, ValidationError) else e}')
+            if isinstance(e, ValidationError):
+                logger.error(f'Validation error: {e.message}')
+            else:
+                logger.error(f'Error in processing: {e}')
         return False
 
     def get(self, request):
         """
         hand off the image processing and tagging task to django_q multiprocessing (async)
         """
-        async_task(AddTags.process_images, self.request.query_params.get('reconvert', None),
-                   self.request.query_params.get('retag', None), self.request.user, self.add_tags_to_db)
+        async_task(AddTags.process_images, self.request.query_params.get('retag', None), self.request.user,
+                   self.add_records_to_db)
         return JsonResponse({'Status': 'Processing .......'}, status=202)

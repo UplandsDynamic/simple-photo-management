@@ -27,7 +27,9 @@ def clean_on_update(sender, instance=None, created=False, **kwargs):
     if updating, run clean (not called by default if save() method invoked directly,
     such as when updating.
     """
-    instance.clean()
+    if sender == PhotoData:
+        logger.info('About to clean on update ...')
+        instance.full_clean()
 
 
 class PhotoData(models.Model):
@@ -39,7 +41,7 @@ class PhotoData(models.Model):
                                  validators=[custom_validators.validate_alphanumplus])
     file_format = models.CharField(max_length=100, blank=True, null=False,
                                    validators=[custom_validators.validate_alphanumplus])
-    tags = models.ManyToManyField('PhotoTag', related_name='photo_data')
+    tags = models.ManyToManyField('PhotoTag', related_name='photo_data', blank=True)
     original_url = models.CharField(max_length=100, blank=False, null=True, unique=True,
                                     validators=[custom_validators.validate_url])
     processed_url = models.CharField(max_length=100, blank=False, null=True, unique=True,
@@ -52,14 +54,13 @@ class PhotoData(models.Model):
         ]
 
     def __str__(self):
-        return self.file_name
+        return f'{self.file_name}{self.file_format}'
 
     def clean(self):
         logger.info('Running clean on model')
         """
         clean method
         """
-        """ Validate stock does not go negative """
 
         """ Call clean """
         super(PhotoData, self).clean()
