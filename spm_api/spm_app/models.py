@@ -42,9 +42,9 @@ class PhotoData(models.Model):
     file_format = models.CharField(max_length=100, blank=True, null=False,
                                    validators=[custom_validators.validate_alphanumplus])
     tags = models.ManyToManyField('PhotoTag', related_name='photo_data', blank=True)
-    original_url = models.CharField(max_length=100, blank=False, null=True, unique=True,
+    original_url = models.CharField(max_length=255, blank=False, null=True, unique=True,
                                     validators=[custom_validators.validate_url])
-    processed_url = models.CharField(max_length=100, blank=False, null=True, unique=True,
+    processed_url = models.CharField(max_length=255, blank=False, null=True, unique=True,
                                      validators=[custom_validators.validate_url])
 
     class Meta:

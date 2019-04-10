@@ -48,10 +48,13 @@ class ProcessImages:
             meta.read()
             iptc_keys = meta.iptc_keys
             image_data = []
-            for key in iptc_keys:
-                tag = meta[key]
-                image_data.append({'iptc_key': key, 'tags': tag.raw_value or []})
-            print(image_data)
+            if iptc_keys:
+                for key in iptc_keys:
+                    tag = meta[key]
+                    image_data.append({'iptc_key': key, 'tags': tag.raw_value or []})
+                print(image_data)
+            else:
+                image_data.append({'iptc_key': '', 'tags': []})
             return image_data
         except (IOError, Exception) as e:
             print(f'An error occurred in read_iptc_tags: {e}')
@@ -68,14 +71,16 @@ class ProcessImages:
         """
         try:
             iptc_key = tag_data['iptc_key']
-            tags = tag_data['tags']
-            url = os.path.join(path, filename)
-            meta = pyexiv2.ImageMetadata(os.path.join(url))
-            meta.read()
-            meta[iptc_key] = pyexiv2.IptcTag(iptc_key, tags)
-            meta.write()
-            print('Tags successfully written!')
-            return True
+            if iptc_key:
+                tags = tag_data['tags']
+                url = os.path.join(path, filename)
+                meta = pyexiv2.ImageMetadata(os.path.join(url))
+                meta.read()
+                meta[iptc_key] = pyexiv2.IptcTag(iptc_key, tags)
+                meta.write()
+                print('Tags successfully written!')
+                return True
+            print('No tag to write!')
         except (TypeError, Exception) as e:
             print(f'An error occurred in write_iptc_tags: {e}')
         return False
@@ -121,15 +126,14 @@ class ProcessImages:
     def main(self):
         """
         method to run the image conversion and tagging processes
-        :return: dict of saved conversion data and tags: e.g.:
-            {'conversions': [{'orig_path': '/path/to/orig/image', 'processed_path':'/path/to/processed_image',
-            'filename': '4058.jpeg'}], 'tag_data': ['iptc_key': 'Iptc.Application2.Keywords', 'tags':
-            ['DATE: 1974', 'PLACE: The Moon']}]}
+        :return: list of saved conversion data and tags: e.g.:
+            [{conversion_data: {'orig_path': '/path/to/orig/image', 'processed_path':'/path/to/processed_image',
+            'filename': '4058.jpeg'}, tag_data: {'iptc_key': 'Iptc.Application2.Keywords', 'tags':
+            ['DATE: 1974', 'PLACE: The Moon']}]
         """
         try:
             existing_converted = self.get_filenames(self.PROCESSED_IMAGE_PATH)
-            saved_tags = []
-            saved_conversions = []
+            processed_data = []
             for filename in os.listdir(self.ORIGINAL_IMAGE_PATH):
                 if not os.path.isdir(os.path.join(self.ORIGINAL_IMAGE_PATH, filename)):  # if file (not dir)
                     """
@@ -146,16 +150,16 @@ class ProcessImages:
                         converted = self.convert_format(filename=filename, path=self.ORIGINAL_IMAGE_PATH,
                                                         save_path=self.PROCESSED_IMAGE_PATH,
                                                         conversion_format=self.CONVERSION_FORMAT)
-                        saved_conversions.append(converted)
+                        processed_data.append({'conversion_data': converted})
                     else:
                         """
                         if converted image file already existed, save existing conversions in
                         a list for the return dict here, as it was not already returned by the new image 
                         conversion function (above)
                         """
-                        saved_conversions.append({'orig_path': self.ORIGINAL_IMAGE_PATH,
-                                                  'processed_path': self.PROCESSED_IMAGE_PATH,
-                                                  'filename': new_filename})
+                        processed_data.append({'conversion_data': {'orig_path': self.ORIGINAL_IMAGE_PATH,
+                                                                   'processed_path': self.PROCESSED_IMAGE_PATH,
+                                                                   'filename': new_filename}})
                     """
                     write tags to converted file
                     """
@@ -163,18 +167,21 @@ class ProcessImages:
                         # read tag data from original image
                         tag_data = self.read_iptc_tags(filename=filename, path=self.ORIGINAL_IMAGE_PATH)
                         # any additions or updates to the incoming tag data
-                        for tag in tag_data:
-                            if 'tags' in tag:
-                                tag['tags'].append('TAG COPIED FROM ORIGINAL')  # add tag to identify as copied
-                                # add to the return dicts
-                                saved_tags.append(tag)
-                                self.write_iptc_tags(path=self.PROCESSED_IMAGE_PATH,
-                                                     filename=new_filename,
-                                                     tag_data=tag)
-                            else:
-                                file = os.path.join(self.PROCESSED_IMAGE_PATH, new_filename)
-                                print(f'There was no tag to save for this file: {file}')
-            return {'conversions': saved_conversions, 'tag_data': saved_tags}
+                        if tag_data:
+                            for tag in tag_data:
+                                if tag['tags']:
+                                    tag['tags'].append(
+                                        'SPM: TAGS COPIED FROM ORIGINAL')  # add tag to identify as copied
+                                    processed_data[-1]['tag_data'] = tag  # add to the return dicts
+                                    # write the tags to the converted file
+                                    self.write_iptc_tags(path=self.PROCESSED_IMAGE_PATH,
+                                                         filename=new_filename,
+                                                         tag_data=tag)
+                                else:
+                                    processed_data[-1]['tag_data'] = tag  # add to the return dicts
+                                    file = os.path.join(self.PROCESSED_IMAGE_PATH, new_filename)
+                                    print(f'No tag was saved for this file: {file}')
+            return processed_data
         except (TypeError, Exception) as e:
             print(f'Error occurred processing images, in main(): {e}')
         return False

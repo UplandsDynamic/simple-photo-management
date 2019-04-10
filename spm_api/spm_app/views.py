@@ -232,10 +232,10 @@ class AddTags(APIView):
     def add_records_to_db(processed_images, owner, resync_tags=False):
         """
         method to add images to the database model
-        :param processed_images: dict of lists of processed images & written tags: e.g.
-            {'conversions': [{'orig_path':'/path/to/orig/image', 'processed_path':'/path/to/processed/image',
-            'filename': '4058.jpeg'}],'tag_data': [{'iptc_key':'Iptc.Application2.Keywords',
-            'tags': ['DATE: 1974', 'PLACE: The Moon']}]}
+        :param processed_images: list of saved conversion data and tags: e.g.:
+            [{conversion_data: {'orig_path': '/path/to/orig/image', 'processed_path':'/path/to/processed_image',
+            'filename': '4058.jpeg'}, tag_data: {'iptc_key': 'Iptc.Application2.Keywords', 'tags':
+            ['DATE: 1974', 'PLACE: The Moon']}]
         :param owner: current user
         :param resync_tags: whether to resync embedded IPTC tags from image file to the PhotoData model
         :return: list of added images | []
@@ -244,22 +244,19 @@ class AddTags(APIView):
         added_images = []
         try:
             updated_tags = []
-            for index, tag_data in enumerate(processed_images['tag_data']):
-                # save image data to PhotoData model (if new conversion) & get reference to the instance
+            for index, record in enumerate(processed_images):
                 try:
-                    filename = processed_images['conversions'][index]['filename']
-                    original_path = processed_images['conversions'][index]['orig_path']
-                    processed_path = processed_images['conversions'][index]['processed_path']
-                    logger.info(f'FILENAME: {processed_path}')
+                    filename = record['conversion_data']['filename']
+                    original_path = record['conversion_data']['orig_path']
+                    processed_path = record['conversion_data']['processed_path']
+                    logger.info(f'FILENAME: {filename}')
                     image_data, new_record_created = PhotoData.objects.update_or_create(
                         file_name=os.path.splitext(filename)[0],
                         defaults={
                             'owner': owner,
                             'file_format': os.path.splitext(filename)[1],
                             'original_url': os.path.join(original_path, filename),
-                            'processed_url': os.path.join(processed_path, filename)
-                        }
-                    )
+                            'processed_url': os.path.join(processed_path, filename)})
                 except Exception as e:
                     new_record_created = False
                     image_data = None
@@ -269,8 +266,8 @@ class AddTags(APIView):
                 (creating in the model if necessary with update_or_create), then populate saved 
                 PhotoData model's M2M tags field with that list. Then, add image data to a list for return.
                 """
-                if image_data and (new_record_created or resync_tags):
-                    for tag in tag_data['tags']:
+                if image_data and record['tag_data']['tags'] and (new_record_created or resync_tags):
+                    for tag in record['tag_data']['tags']:
                         try:
                             tag, tag_created = PhotoTag.objects.get_or_create(tag=tag, owner=owner)
                             updated_tags.append(tag)

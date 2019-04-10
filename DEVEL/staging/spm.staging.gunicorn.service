@@ -1,3 +1,5 @@
+# /etc/systemd/system/spm.staging.gunicorn.service
+
 [Unit]
 Description=Gunicorn daemon for SimplePhotoManagement
 Before=nginx.service
