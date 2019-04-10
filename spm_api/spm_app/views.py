@@ -21,6 +21,7 @@ from rest_framework.decorators import action
 from .spm_worker.process_images import ProcessImages
 from django_q.tasks import async_task, result
 from functools import partial
+from django.conf import settings
 
 """
 Note about data object (database record):
@@ -294,10 +295,9 @@ class AddTags(APIView):
         :param add_records_to_db: function, that adds tags to the ORM (database model)
         :return: True | False
         """
-        original_image_path = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}'))
-        processed_image_path = os.path.normpath(
-            os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images/processed")}'))
-        conversion_format = 'jpeg'
+        original_image_path = settings.SPM['ORIGINAL_IMAGE_PATH']
+        processed_image_path = settings.SPM['PROCESSED_IMAGE_PATH']
+        conversion_format = settings.SPM['CONVERSION_FORMAT']
         try:
             retag = RequestQueryValidator.validate('bool', retag)
             processed = ProcessImages(image_path=original_image_path,
@@ -305,8 +305,12 @@ class AddTags(APIView):
                                       conversion_format=conversion_format,
                                       retag=retag).main()
             # save data
-            processed_records = add_records_to_db(processed_images=processed, owner=user, resync_tags=retag)
-            logger.info(f'Added records: {processed_records}')
+            if processed:
+                processed_records = add_records_to_db(processed_images=processed, owner=user, resync_tags=retag)
+                logger.info(f'Added records: {processed_records}')
+            else:
+                logger.error(f'An error occurred during image processing. Operation cancelled.')
+                return False
             return True
         except (ValidationError, Exception) as e:
             if isinstance(e, ValidationError):
@@ -322,3 +326,8 @@ class AddTags(APIView):
         async_task(AddTags.process_images, self.request.query_params.get('retag', None), self.request.user,
                    self.add_records_to_db)
         return JsonResponse({'Status': 'Processing .......'}, status=202)
+
+
+"""
+
+"""

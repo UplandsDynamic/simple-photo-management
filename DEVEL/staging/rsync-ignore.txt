@@ -8,3 +8,4 @@ migrations/
 secret_key.txt
 run_type.txt
 DEVEL/
+db.sqlite3

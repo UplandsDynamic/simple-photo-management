@@ -5,10 +5,6 @@ from PIL import Image
 
 ORIGINAL_IMAGE_PATH = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}'))
 PROCESSED_IMAGE_PATH = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images/processed")}'))
-# ORIGINAL_IMAGE_PATH = os.path.normpath(
-#     os.path.normpath('/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/InProgress'))
-# PROCESSED_IMAGE_PATH = os.path.normpath(
-#     os.path.normpath('/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed'))
 CONVERSION_FORMAT = 'jpg'
 
 
@@ -44,20 +40,21 @@ class ProcessImages:
         method to read IPTC tags
         :param filename: filename of image
         :param path: path to image
-        :return: {'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']} | False
+        :return: [{'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']}] | False
         """
         try:
-            image_data = {}
             url = os.path.join(path, filename)
             meta = pyexiv2.ImageMetadata(os.path.join(url))
             meta.read()
             iptc_keys = meta.iptc_keys
+            image_data = []
             for key in iptc_keys:
                 tag = meta[key]
-                image_data = {'iptc_key': key, 'tags': tag.raw_value}
+                image_data.append({'iptc_key': key, 'tags': tag.raw_value or []})
+            print(image_data)
             return image_data
-        except IOError as e:
-            print(f'An error occurred: {e}')
+        except (IOError, Exception) as e:
+            print(f'An error occurred in read_iptc_tags: {e}')
             return False
 
     @staticmethod
@@ -80,7 +77,7 @@ class ProcessImages:
             print('Tags successfully written!')
             return True
         except (TypeError, Exception) as e:
-            print(e)
+            print(f'An error occurred in write_iptc_tags: {e}')
         return False
 
     @staticmethod
@@ -101,7 +98,7 @@ class ProcessImages:
             print('Conversion done!')
             return {'orig_path': path, 'processed_path': save_path, 'filename': outfile}
         except (IOError, Exception) as e:
-            print(f'An error occurred: {e}')
+            print(f'An error occurred in convert_format: {e}')
         return False
 
     @staticmethod
@@ -118,7 +115,7 @@ class ProcessImages:
                     filenames.append(filename)
             return filenames
         except (IOError, Exception) as e:
-            print(f'An error occurred: {e}')
+            print(f'An error occurred in get_filenames: {e}')
         return False
 
     def main(self):
@@ -134,13 +131,16 @@ class ProcessImages:
             saved_tags = []
             saved_conversions = []
             for filename in os.listdir(self.ORIGINAL_IMAGE_PATH):
-                """
-                save converted file
-                """
-                # check if converted file already exists
-                converted_did_exist = os.path.splitext(filename)[0] in [os.path.splitext(f)[0] for f in
-                                                                        existing_converted]
                 if not os.path.isdir(os.path.join(self.ORIGINAL_IMAGE_PATH, filename)):  # if file (not dir)
+                    """
+                    save converted file
+                    """
+                    # generate required filename with new extension
+                    new_filename = f'{os.path.splitext(filename)[0]}.{self.CONVERSION_FORMAT}'
+                    # check if converted file already exists
+                    converted_did_exist = new_filename in existing_converted
+                    print(f'New filename: {new_filename}')
+                    print(f'Already exists in processed directory? : {converted_did_exist}')
                     if not converted_did_exist:  # if filename does not already exist (not already converted)
                         # save copy of the image with converted format
                         converted = self.convert_format(filename=filename, path=self.ORIGINAL_IMAGE_PATH,
@@ -155,7 +155,7 @@ class ProcessImages:
                         """
                         saved_conversions.append({'orig_path': self.ORIGINAL_IMAGE_PATH,
                                                   'processed_path': self.PROCESSED_IMAGE_PATH,
-                                                  'filename': filename})
+                                                  'filename': new_filename})
                     """
                     write tags to converted file
                     """
@@ -163,17 +163,20 @@ class ProcessImages:
                         # read tag data from original image
                         tag_data = self.read_iptc_tags(filename=filename, path=self.ORIGINAL_IMAGE_PATH)
                         # any additions or updates to the incoming tag data
-                        tag_data['tags'].append('TAG COPIED FROM ORIGINAL')  # add tag to identify as copied
-                        # add to the return dicts
-                        saved_tags.append(tag_data)
-                        # write tag data to the converted image file
-                        file, extension = os.path.splitext(filename)
-                        self.write_iptc_tags(path=self.PROCESSED_IMAGE_PATH,
-                                             filename=f'{file}.{self.CONVERSION_FORMAT}',
-                                             tag_data=tag_data)
+                        for tag in tag_data:
+                            if 'tags' in tag:
+                                tag['tags'].append('TAG COPIED FROM ORIGINAL')  # add tag to identify as copied
+                                # add to the return dicts
+                                saved_tags.append(tag)
+                                self.write_iptc_tags(path=self.PROCESSED_IMAGE_PATH,
+                                                     filename=new_filename,
+                                                     tag_data=tag)
+                            else:
+                                file = os.path.join(self.PROCESSED_IMAGE_PATH, new_filename)
+                                print(f'There was no tag to save for this file: {file}')
             return {'conversions': saved_conversions, 'tag_data': saved_tags}
         except (TypeError, Exception) as e:
-            print(f'Error: {e}')
+            print(f'Error occurred processing images, in main(): {e}')
         return False
 
 
@@ -182,5 +185,3 @@ if __name__ == '__main__':
                   processed_image_path=PROCESSED_IMAGE_PATH,
                   conversion_format=CONVERSION_FORMAT,
                   retag=False).main()
-
-# os.path.normpath('/mnt/adc_family_history/IMAGE_ARCHIVE/InProgress')

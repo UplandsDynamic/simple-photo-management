@@ -167,11 +167,33 @@ Q_CLUSTER = {
     'queue_limit': 8,
     'bulk': 10,
     'orm': 'default',
-    'sync': True,  # True to debug in sync
+    'sync': False,  # True to debug in sync
     'guard_cycle': 5,
     'cpu_affinity': 4,
     'catch_up': True
 }
+
+if RUN_TYPE == RUN_TYPE_OPTIONS[0]:  # DEVEL
+    SPM = {
+        'ORIGINAL_IMAGE_PATH': os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}')),
+        'PROCESSED_IMAGE_PATH': os.path.normpath(os.path.normpath(
+            f'{os.path.join(os.getcwd(), "../test_images/processed")}')),
+        'CONVERSION_FORMAT': 'jpg'
+    }
+elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
+    SPM = {
+        'ORIGINAL_IMAGE_PATH': os.path.normpath(
+            os.path.normpath('/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/InProgress')),
+        'PROCESSED_IMAGE_PATH': os.path.normpath(os.path.normpath(
+            '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed')),
+        'CONVERSION_FORMAT': 'jpg'
+    }
+elif RUN_TYPE == RUN_TYPE_OPTIONS[2]:  # PRODUCTION
+    SPM = {
+        'ORIGINAL_IMAGE_PATH': None,
+        'PROCESSED_IMAGE_PATH': None,
+        'CONVERSION_FORMAT': 'jpg'
+    }
 
 # # # Caches
 USE_REDIS_CACHE = False
@@ -352,10 +374,10 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
-        # 'django_q': {
-        #     'handlers': ['file'],
-        #     'level': 'INFO',
-        #     'propagate': True,
-        # },
+        'django_q': {
+            'handlers': ['file'] if RUN_TYPE == RUN_TYPE_OPTIONS[1] or RUN_TYPE == RUN_TYPE_OPTIONS[2] else ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
     },
 }
