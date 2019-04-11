@@ -167,7 +167,7 @@ Q_CLUSTER = {
     'queue_limit': 8,
     'bulk': 10,
     'orm': 'default',
-    'sync': False,  # True to debug in sync
+    'sync': True,  # True to debug in sync
     'guard_cycle': 5,
     'cpu_affinity': 4,
     'catch_up': True
@@ -352,23 +352,18 @@ LOGGING = {
     },
     'handlers': {
         'console': {
-            'level': 'INFO',
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'simple'
         },
         'file': {
-            'level': 'INFO',
+            'level': 'DEBUG',
             'class': 'logging.FileHandler',
             'filename': LOG_FILE[RUN_TYPE],
             'formatter': 'verbose'
         },
     },
     'loggers': {
-        'main': {
-            'handlers': ['file'] if RUN_TYPE == RUN_TYPE_OPTIONS[1] or RUN_TYPE == RUN_TYPE_OPTIONS[2] else ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
         'django': {
             'handlers': ['file'] if RUN_TYPE == RUN_TYPE_OPTIONS[1] or RUN_TYPE == RUN_TYPE_OPTIONS[2] else ['console'],
             'level': 'INFO',

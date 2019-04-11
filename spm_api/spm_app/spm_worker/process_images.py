@@ -123,17 +123,18 @@ class ProcessImages:
             print(f'An error occurred in get_filenames: {e}')
         return False
 
-    def main(self):
+    def generate_processed_copies(self):
         """
-        method to run the image conversion and tagging processes
-        :return: list of saved conversion data and tags: e.g.:
-            [{conversion_data: {'orig_path': '/path/to/orig/image', 'processed_path':'/path/to/processed_image',
+        generator method to run the image conversion and tagging processes
+        :yield: generator, that processes files in an origin directory &
+        produces dicts of saved conversion data and tags: e.g.:
+            {conversion_data: {'orig_path': '/path/to/orig/image', 'processed_path':'/path/to/processed_image',
             'filename': '4058.jpeg'}, tag_data: {'iptc_key': 'Iptc.Application2.Keywords', 'tags':
-            ['DATE: 1974', 'PLACE: The Moon']}]
+            ['DATE: 1974', 'PLACE: The Moon']}
         """
         try:
             existing_converted = self.get_filenames(self.PROCESSED_IMAGE_PATH)
-            processed_data = []
+            processed_data = dict()
             for filename in os.listdir(self.ORIGINAL_IMAGE_PATH):
                 if not os.path.isdir(os.path.join(self.ORIGINAL_IMAGE_PATH, filename)):  # if file (not dir)
                     """
@@ -150,16 +151,16 @@ class ProcessImages:
                         converted = self.convert_format(filename=filename, path=self.ORIGINAL_IMAGE_PATH,
                                                         save_path=self.PROCESSED_IMAGE_PATH,
                                                         conversion_format=self.CONVERSION_FORMAT)
-                        processed_data.append({'conversion_data': converted})
+                        processed_data['conversion_data'] = converted
                     else:
                         """
                         if converted image file already existed, save existing conversions in
                         a list for the return dict here, as it was not already returned by the new image 
                         conversion function (above)
                         """
-                        processed_data.append({'conversion_data': {'orig_path': self.ORIGINAL_IMAGE_PATH,
-                                                                   'processed_path': self.PROCESSED_IMAGE_PATH,
-                                                                   'filename': new_filename}})
+                        processed_data['conversion_data'] = {'orig_path': self.ORIGINAL_IMAGE_PATH,
+                                                             'processed_path': self.PROCESSED_IMAGE_PATH,
+                                                             'filename': new_filename}
                     """
                     write tags to converted file
                     """
@@ -172,16 +173,16 @@ class ProcessImages:
                                 if tag['tags']:
                                     tag['tags'].append(
                                         'SPM: TAGS COPIED FROM ORIGINAL')  # add tag to identify as copied
-                                    processed_data[-1]['tag_data'] = tag  # add to the return dicts
+                                    processed_data['tag_data'] = tag  # add to the return dicts
                                     # write the tags to the converted file
                                     self.write_iptc_tags(path=self.PROCESSED_IMAGE_PATH,
                                                          filename=new_filename,
                                                          tag_data=tag)
                                 else:
-                                    processed_data[-1]['tag_data'] = tag  # add to the return dicts
+                                    processed_data['tag_data'] = tag  # add to the return dicts
                                     file = os.path.join(self.PROCESSED_IMAGE_PATH, new_filename)
                                     print(f'No tag was saved for this file: {file}')
-            return processed_data
+                    yield processed_data
         except (TypeError, Exception) as e:
             print(f'Error occurred processing images, in main(): {e}')
         return False
@@ -191,4 +192,4 @@ if __name__ == '__main__':
     ProcessImages(image_path=ORIGINAL_IMAGE_PATH,
                   processed_image_path=PROCESSED_IMAGE_PATH,
                   conversion_format=CONVERSION_FORMAT,
-                  retag=False).main()
+                  retag=False).generate_processed_copies()
