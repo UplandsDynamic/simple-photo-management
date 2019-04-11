@@ -22,6 +22,7 @@ from .spm_worker.process_images import ProcessImages
 from django_q.tasks import async_task, result
 from functools import partial
 from django.conf import settings
+import time
 
 """
 Note about data object (database record):
@@ -312,6 +313,7 @@ class AddTags(APIView):
                 print(next(iterator))
                 """
                 for processed_record in process_images_generator:
+                    time.sleep(.300)  # pause if using sqlite to avoid db lock during concurrent writes
                     async_task(add_record_to_db, record=processed_record, owner=user, resync_tags=retag)
             else:
                 logger.error(f'An error occurred during image processing. Operation cancelled.')
