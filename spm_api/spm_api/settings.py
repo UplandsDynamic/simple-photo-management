@@ -159,7 +159,7 @@ Q_CLUSTER = {
     'name': 'SimplePhotoManagement',
     'daemonize_workers': True,
     'compress': True,
-    'workers': 4,
+    'workers': 2,
     'recycle': 500,
     'timeout': None,
     # 'django_redis': 'default',
@@ -169,7 +169,7 @@ Q_CLUSTER = {
     'orm': 'default',
     'sync': False,  # True to debug in sync
     'guard_cycle': 5,
-    'cpu_affinity': 4,
+    'cpu_affinity': 1,
     'catch_up': True
 }
 
