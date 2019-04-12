@@ -314,8 +314,7 @@ class AddTags(APIView):
                 """
                 for processed_record in process_images_generator:
                     #time.sleep(.300)  # pause if using sqlite to avoid db lock during concurrent writes
-                    #async_task(add_record_to_db, record=processed_record, owner=user, resync_tags=retag)
-                    add_record_to_db(record=processed_record, owner=user, resync_tags=retag)
+                    async_task(add_record_to_db, record=processed_record, owner=user, resync_tags=retag)
             else:
                 logger.error(f'An error occurred during image processing. Operation cancelled.')
                 return False
