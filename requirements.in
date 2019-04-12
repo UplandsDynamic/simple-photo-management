@@ -11,4 +11,4 @@ django_q
 django-picklefield
 arrow
 blessed
-psycopg
+#psycopg2  #installed through apt

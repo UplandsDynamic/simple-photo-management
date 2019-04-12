@@ -256,9 +256,9 @@ if RUN_TYPE == RUN_TYPE_OPTIONS[2]:  # production
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': 'simple_photo_management',
-            'USER': 'simple_photo_management',
-            'PASSWORD': 'kdiejFHYurKjrie*89)8j',
+            'NAME': 'spm',
+            'USER': 'picard',
+            'PASSWORD': 'lekijghHHgry&88()98r7Y^u',
             'HOST': 'localhost',
             'PORT': '5432'
         }
@@ -266,8 +266,12 @@ if RUN_TYPE == RUN_TYPE_OPTIONS[2]:  # production
 elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # staging
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'spm',
+            'USER': 'picard',
+            'PASSWORD': 'gjruIkjelK98**9r0rkrHk',
+            'HOST': 'localhost',
+            'PORT': '5432'
         }
     }
 else:
