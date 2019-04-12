@@ -57,7 +57,7 @@ class RequestQueryValidator:
     page = 'validation of page limit param'
     results = 'validation of results limit param'
     order_by = 'validation of order_by param'
-    valid_order_by_values = ['id', 'tag', 'file_name', 'file_type', '-id', '-tag', '-file_name', '-file_type']
+    valid_order_by_values = ['id', 'tags', 'file_name', 'file_type', '-id', '-tags', '-file_name', '-file_type']
     bool = 'validation incoming value is a boolean value'
 
     @staticmethod
