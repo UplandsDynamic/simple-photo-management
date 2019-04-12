@@ -9,3 +9,4 @@ secret_key.txt
 run_type.txt
 DEVEL/
 db.sqlite3
+node_modules/

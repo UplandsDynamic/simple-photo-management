@@ -1,5 +1,0 @@
-- add to requirements.in
-- $ pip-compile
-- $ pip-sync
-
-# see https://github.com/jazzband/pip-tools/tree/b050a7f470e9a6d154be90e40b034f46fa144067

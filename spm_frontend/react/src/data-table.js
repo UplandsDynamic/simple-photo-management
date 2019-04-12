@@ -31,8 +31,8 @@ const DataTable = ({
     const _handleSearch = ({record = {}, term = null} = {}) => {
         if (record) {
             Object.assign(record.meta, {
-                pageOrderBy: 'desc', page: 1,
-                search: _validateDesc(term)
+                pageOrderBy: 'file_name', page: 1,
+                search: _validateTerm(term)
             });
             /* set new record state early, even though record again when API returns,
             to ensure search string change keeps pace with user typing speed
@@ -43,7 +43,7 @@ const DataTable = ({
         }
     };
 
-    const _validateDesc = (value) => {
+    const _validateTerm = (value) => {
         return (/^[a-zA-Z\d.\- ]*$/.test(value)) ? value : record.meta.search
     };
 

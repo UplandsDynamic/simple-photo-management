@@ -71,7 +71,7 @@ const _getPhotos = ({record = null, csrfToken = null, requestMethod = null, url 
                 // build url
                 url = `${process.env.REACT_APP_API_DATA_ROUTE}/photos/?limit=${limit}` +
                     `&offset=${(page * limit) - limit}` +
-                    `&order_by=${pageOrderDir}${pageOrderBy}&desc=${search}`; // update URL
+                    `&order_by=${pageOrderDir}${pageOrderBy}&tag=${search}`; // update URL
             }
         }
         return _makeRequest({record, csrfToken, requestMethod, url})  // returns a promise
