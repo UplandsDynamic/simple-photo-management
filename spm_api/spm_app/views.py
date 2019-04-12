@@ -123,8 +123,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         try:
             if 'tag' in self.request.query_params and self.request.query_params.get('tag', None):
                 search_query = validate_search(self.request.query_params.get('tag'))
-                records = records.filter(Q(tags__tag__icontains=search_query) | Q(tags__tag__icontains=search_query)
-                                         if search_query else None)
+                records = records.filter(Q(tags__tag__icontains=search_query) if search_query else None).distinct()
         except ValidationError as e:
             # if invalid search char, don't return error response, just return empty
             logger.info(f'Returning no results in response because: {e}')
@@ -190,8 +189,7 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
         try:
             if 'tag' in self.request.query_params and self.request.query_params.get('tag', None):
                 search_query = validate_search(self.request.query_params.get('tag'))
-                records = records.filter(Q(tags__icontains=search_query) | Q(tags__icontains=search_query)
-                                         if search_query else None)
+                records = records.filter(Q(tags__icontains=search_query) if search_query else None).distinct()
         except ValidationError as e:
             # if invalid search char, don't return error response, just return empty
             logger.info(f'Returning no results in response because: {e}')
