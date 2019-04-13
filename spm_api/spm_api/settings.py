@@ -167,7 +167,7 @@ Q_CLUSTER = {
     'queue_limit': 8,
     'bulk': 10,
     'orm': 'default',
-    'sync': True,  # True to debug in sync
+    'sync': False,  # True to debug in sync
     'guard_cycle': 5,
     'cpu_affinity': 1,
     'catch_up': True
