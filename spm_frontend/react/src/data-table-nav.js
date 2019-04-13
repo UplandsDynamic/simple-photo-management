@@ -29,12 +29,16 @@ const DataTableNav = ({
                                 <button onClick={() => {
                                     Object.assign(record.meta, {page: 1});
                                     handleGetRecords({record})
-                                }} className={'btn btn-md btn-warning mr-1 '}>
+                                }} className={'btn btn-md btn-success mr-1 '}>
                                     <FontAwesomeIcon icon={"sync-alt"}/></button>
                                 <button onClick={() => {
-                                    handleRetagPhotos()
+                                    handleRetagPhotos({retag: false})
                                 }} className={'btn btn-md btn-warning mr-1 '}>
-                                    <FontAwesomeIcon icon={"robot"}/></button>
+                                    <FontAwesomeIcon icon={"plus"}/></button>
+                                <button onClick={() => {
+                                    handleRetagPhotos({retag: true})
+                                }} className={'btn btn-md btn-warning mr-1 '}>
+                                    <FontAwesomeIcon icon={"tags"}/></button>
                             </div>
                         </div>
                         <div className={`${userIsAdmin ? 'col-8' : 'col-10'}`}>

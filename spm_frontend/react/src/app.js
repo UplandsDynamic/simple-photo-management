@@ -17,10 +17,10 @@ import './css/index.css';
 import {library} from '@fortawesome/fontawesome-svg-core'
 import {
     faSyncAlt, faEllipsisH, faPlus, faPlusSquare, faMinus, faMinusSquare,
-    faTrashAlt, faEdit, faRobot
+    faTrashAlt, faEdit, faRobot, faTags
 } from '@fortawesome/free-solid-svg-icons'
 
-library.add(faSyncAlt, faEllipsisH, faPlus, faTrashAlt, faEdit, faPlusSquare, faMinus, faMinusSquare, faRobot);
+library.add(faSyncAlt, faEllipsisH, faPlus, faTrashAlt, faEdit, faPlusSquare, faMinus, faMinusSquare, faRobot, faTags);
 
 
 axios.defaults.withCredentials = true;
@@ -36,8 +36,8 @@ class App extends React.Component {
         this.apiOptions = {
             /* used to define available API options in the api-request component */
             GET_PHOTOS: {requestType: 'get_photos', method: 'GET', desc: 'request to get photo data'},
-            RETAG_PHOTOS: {
-                requestType: 'retag_photos',
+            PROCESS_PHOTOS: {
+                requestType: 'process_photos',
                 method: 'GET',
                 desc: 'request to begin photo re-taggig operation'
             },
@@ -188,17 +188,19 @@ class App extends React.Component {
         return false
     };
 
-    handleRetagPhotos = ({notifyResponse = true} = {}) => {
+    handleRetagPhotos = ({retag = false, notifyResponse = true} = {}) => {
         if (this.state.authMeta.authenticated) {
             const apiRequest = processRequest({
-                apiMode: this.apiOptions.RETAG_PHOTOS
+                queryFlags: {retag},
+                apiMode: this.apiOptions.PROCESS_PHOTOS
             });
             if (apiRequest) {
                 apiRequest.then((response) => {
                     if (response) {
                         if (notifyResponse) {
                             this.setMessage({
-                                message: 'Retag process has started!',
+                                message: retag ? 'Processing of new photos & resync of existing photo tags is underway' :
+                                    'Processing of newly added photos is underway',
                                 messageClass: 'alert alert-success'
                             });
                         }
@@ -206,7 +208,7 @@ class App extends React.Component {
                 }).catch(error => {
                     console.log(error);
                     this.setMessage({
-                        message: 'An API error has occurred. The Retag process did not begin!',
+                        message: 'An API error has occurred. Photo processing initiation failed!',
                         messageClass: 'alert alert-danger'
                     });
                 });

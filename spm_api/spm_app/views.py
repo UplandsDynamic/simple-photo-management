@@ -216,7 +216,7 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
             raise serializers.ValidationError(detail='You are not authorized to delete photo data!')
 
 
-class AddTags(APIView):
+class ProcessPhotos(APIView):
     """
     API endpoint that allows tags to be read from photos
     and added to the database
@@ -309,7 +309,11 @@ class AddTags(APIView):
                 print(next(iterator))
                 """
                 for processed_record in process_images_generator:
-                    # time.sleep(.300)  # pause if using sqlite to avoid db lock during concurrent writes
+                    logger.info(processed_record)
+                    # pause if using sqlite to avoid db lock during concurrent writes
+                    if settings.RUN_TYPE == settings.RUN_TYPE_OPTIONS[0]:
+                        time.sleep(.300)
+                    # kick off async task to add records to database model
                     async_task(add_record_to_db, record=processed_record, owner=user, resync_tags=retag)
             else:
                 logger.error(f'An error occurred during image processing. Operation cancelled.')
@@ -328,7 +332,8 @@ class AddTags(APIView):
         """
         try:
             resync = RequestQueryValidator.validate('bool', self.request.query_params.get('retag', None))
-            async_task(AddTags.process_images, retag=resync, user=self.request.user,
+            logger.info(f'Retag: {resync}')
+            async_task(ProcessPhotos.process_images, retag=resync, user=self.request.user,
                        add_record_to_db=self.add_record_to_db)
             return JsonResponse({'Status': 'Processing .......'}, status=202)
         except ValidationError as e:

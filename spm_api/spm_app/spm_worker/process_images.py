@@ -163,7 +163,7 @@ class ProcessImages:
                                                              'processed_path': self.PROCESSED_IMAGE_PATH,
                                                              'filename': new_filename}
                     """
-                    write tags to converted file
+                    write tags to file
                     """
                     if self.retag or not converted_did_exist:  # if retag is set, or newly converted image
                         # read tag data from original image

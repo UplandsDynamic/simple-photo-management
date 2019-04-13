@@ -1,14 +1,15 @@
 import axios from 'axios/index';
 
 const processRequest = ({
-                            record = {}, requestData = null, apiMode = null, csrfToken = null, url = null
+                            record = {}, requestData = null, apiMode = null, csrfToken = null, url = null,
+                            queryFlags = {}
                         } = {}) => {
     const {requestType, method} = apiMode;
     if (apiMode && requestType) {
         if (requestType === 'get_photos') {
             return _getPhotos({record, csrfToken, requestMethod: method, url})  // returns a promise
-        } else if (apiMode.requestType === 'retag_photos') {
-            return _retagPhotos({csrfToken, requestMethod: method, url})  // returns a promise
+        } else if (apiMode.requestType === 'process_photos') {
+            return _processPhotos({csrfToken, requestMethod: method, url, retag: queryFlags['retag']})  // returns a promise
         }
         // } else if (apiMode.requestType === 'patch_stock') {
         //     return _updateStock({record, csrfToken, requestMethod: method, url})  // returns a promise
@@ -82,10 +83,9 @@ const _getPhotos = ({record = null, csrfToken = null, requestMethod = null, url 
     return false
 };
 
-const _retagPhotos = ({csrfToken = null, requestMethod = null, url = null} = {}) => {
-    let retag = false;
+const _processPhotos = ({csrfToken = null, requestMethod = null, url = null, retag = false} = {}) => {
     if (!url) { // build url unless pre-defined
-        url = `${process.env.REACT_APP_API_DATA_ROUTE}/run_tagger?retag=${retag}`;
+        url = `${process.env.REACT_APP_API_DATA_ROUTE}/process_photos?retag=${retag}`;
     }
     return _makeRequest({csrfToken, requestMethod, url})  // returns a promise
 };

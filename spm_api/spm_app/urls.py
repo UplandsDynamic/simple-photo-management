@@ -43,7 +43,7 @@ functional_view_urlpatterns = [
     url('^v2/photos/(?P<pk>\d+)/$', views.PhotoDataViewSet.as_view(
         {'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy', 'put': 'update'}),
         name='photo_data-detail'),
-    url('^v2/run_tagger', views.AddTags.as_view()),
+    url('^v2/process_photos', views.ProcessPhotos.as_view()),
     # url('^v2/stock/latest/$', views.StockDataViewSet.as_view(
     #     {'get': 'latest'})),
 ]
