@@ -3,7 +3,7 @@ import glob, os
 import pyexiv2
 from PIL import Image
 
-ORIGINAL_IMAGE_PATH = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}'))
+ORIGINAL_IMAGE_PATHS = set(os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}')))
 PROCESSED_IMAGE_PATH = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images/processed")}'))
 CONVERSION_FORMAT = 'jpg'
 
@@ -17,18 +17,18 @@ class ProcessImages:
 
     ALLOWED_CONVERSION_FORMATS = ['jpeg', 'jpg', 'tiff', 'tif', 'png']
 
-    def __init__(self, image_path=None, processed_image_path=None, conversion_format=None,
+    def __init__(self, image_paths=None, processed_image_path=None, conversion_format=None,
                  retag=False):
         """
         initiate the class
-        :param image_path: path of the image to be converted and/or tagged
+        :param image_paths: set of paths of dirs of photos to be converted and/or tagged
         :param processed_image_path: path to save the processed image to
         :param conversion_format: file format to convert image to
         :param retag: boolean value, signifying whether to perform re-tagging
             if the image name already exists in the defined location where
             converted images are saved.
         """
-        self.ORIGINAL_IMAGE_PATH = image_path
+        self.ORIGINAL_IMAGE_PATHS = image_paths
         self.PROCESSED_IMAGE_PATH = processed_image_path
         self.CONVERSION_FORMAT = conversion_format if conversion_format.lower() in self.ALLOWED_CONVERSION_FORMATS \
             else 'jpg'
@@ -136,61 +136,62 @@ class ProcessImages:
             existing_converted = self.get_filenames(self.PROCESSED_IMAGE_PATH)
             processed_data = {'conversion_data': {'orig_path': '', 'processed_path': '', 'filename': ''},
                               'tag_data': {'iptc_key': '', 'tags': []}}
-            for filename in os.listdir(self.ORIGINAL_IMAGE_PATH):
-                if not os.path.isdir(os.path.join(self.ORIGINAL_IMAGE_PATH, filename)):  # if file (not dir)
-                    """
-                    save converted file
-                    """
-                    # generate required filename with new extension
-                    new_filename = f'{os.path.splitext(filename)[0]}.{self.CONVERSION_FORMAT}'
-                    # check if converted file already exists
-                    converted_did_exist = new_filename in existing_converted
-                    print(f'New filename: {new_filename}')
-                    print(f'Already exists in processed directory? : {converted_did_exist}')
-                    if not converted_did_exist:  # if filename does not already exist (not already converted)
-                        # save copy of the image with converted format
-                        converted = self.convert_format(filename=filename, path=self.ORIGINAL_IMAGE_PATH,
-                                                        save_path=self.PROCESSED_IMAGE_PATH,
-                                                        conversion_format=self.CONVERSION_FORMAT)
-                        processed_data['conversion_data'] = converted
-                    else:
+            for image_path in self.ORIGINAL_IMAGE_PATHS:
+                for filename in os.listdir(image_path):
+                    if not os.path.isdir(os.path.join(image_path, filename)):  # if file (not dir)
                         """
-                        if converted image file already existed, save existing conversions in
-                        a list for the return dict here, as it was not already returned by the new image 
-                        conversion function (above)
+                        save converted file
                         """
-                        processed_data['conversion_data'] = {'orig_path': self.ORIGINAL_IMAGE_PATH,
-                                                             'processed_path': self.PROCESSED_IMAGE_PATH,
-                                                             'filename': new_filename}
-                    """
-                    write tags to file
-                    """
-                    if self.retag or not converted_did_exist:  # if retag is set, or newly converted image
-                        # read tag data from original image
-                        tag_data = self.read_iptc_tags(filename=filename, path=self.ORIGINAL_IMAGE_PATH)
-                        # any additions or updates to the incoming tag data
-                        if tag_data:
-                            for tag in tag_data:
-                                if tag['tags']:
-                                    tag['tags'].append(
-                                        'SPM: TAGS COPIED FROM ORIGINAL')  # add tag to identify as copied
-                                    processed_data['tag_data'] = tag  # add to the return dicts
-                                    # write the tags to the converted file
-                                    self.write_iptc_tags(path=self.PROCESSED_IMAGE_PATH,
-                                                         filename=new_filename,
-                                                         tag_data=tag)
-                                else:
-                                    processed_data['tag_data'] = tag  # add to the return dicts
-                                    file = os.path.join(self.PROCESSED_IMAGE_PATH, new_filename)
-                                    print(f'No tag was saved for this file: {file}')
-                    yield processed_data
+                        # generate required filename with new extension
+                        new_filename = f'{os.path.splitext(filename)[0]}.{self.CONVERSION_FORMAT}'
+                        # check if converted file already exists
+                        converted_did_exist = new_filename in existing_converted
+                        print(f'New filename: {new_filename}')
+                        print(f'Already exists in processed directory? : {converted_did_exist}')
+                        if not converted_did_exist:  # if filename does not already exist (not already converted)
+                            # save copy of the image with converted format
+                            converted = self.convert_format(filename=filename, path=image_path,
+                                                            save_path=self.PROCESSED_IMAGE_PATH,
+                                                            conversion_format=self.CONVERSION_FORMAT)
+                            processed_data['conversion_data'] = converted
+                        else:
+                            """
+                            if converted image file already existed, save existing conversions in
+                            a list for the return dict here, as it was not already returned by the new image 
+                            conversion function (above)
+                            """
+                            processed_data['conversion_data'] = {'orig_path': image_path,
+                                                                 'processed_path': self.PROCESSED_IMAGE_PATH,
+                                                                 'filename': new_filename}
+                        """
+                        write tags to file
+                        """
+                        if self.retag or not converted_did_exist:  # if retag is set, or newly converted image
+                            # read tag data from original image
+                            tag_data = self.read_iptc_tags(filename=filename, path=image_path)
+                            # any additions or updates to the incoming tag data
+                            if tag_data:
+                                for tag in tag_data:
+                                    if tag['tags']:
+                                        tag['tags'].append(
+                                            'SPM: TAGS COPIED FROM ORIGINAL')  # add tag to identify as copied
+                                        processed_data['tag_data'] = tag  # add to the return dicts
+                                        # write the tags to the converted file
+                                        self.write_iptc_tags(path=self.PROCESSED_IMAGE_PATH,
+                                                             filename=new_filename,
+                                                             tag_data=tag)
+                                    else:
+                                        processed_data['tag_data'] = tag  # add to the return dicts
+                                        file = os.path.join(self.PROCESSED_IMAGE_PATH, new_filename)
+                                        print(f'No tag was saved for this file: {file}')
+                        yield processed_data
         except (TypeError, Exception) as e:
             print(f'Error occurred processing images, in main(): {e}')
         return False
 
 
 if __name__ == '__main__':
-    ProcessImages(image_path=ORIGINAL_IMAGE_PATH,
+    ProcessImages(image_paths=ORIGINAL_IMAGE_PATHS,
                   processed_image_path=PROCESSED_IMAGE_PATH,
                   conversion_format=CONVERSION_FORMAT,
                   retag=False).generate_processed_copies()

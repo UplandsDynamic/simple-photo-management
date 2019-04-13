@@ -289,12 +289,12 @@ class ProcessPhotos(APIView):
         :param add_record_to_db: function, that submits records to DB model
         :return: True | False
         """
-        original_image_path = settings.SPM['ORIGINAL_IMAGE_PATH']
+        original_image_paths = settings.SPM['ORIGINAL_IMAGE_PATHS']
         processed_image_path = settings.SPM['PROCESSED_IMAGE_PATH']
         conversion_format = settings.SPM['CONVERSION_FORMAT']
         try:
             # initiate a ProcessImages object
-            image_processor = ProcessImages(image_path=original_image_path,
+            image_processor = ProcessImages(image_paths=original_image_paths,
                                             processed_image_path=processed_image_path,
                                             conversion_format=conversion_format,
                                             retag=retag)
