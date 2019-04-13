@@ -70,9 +70,10 @@ class ProcessImages:
         :param filename: filename of target image
         :param tag_data: original image data: in form: {'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']}
         :return: True | False
+        Note: Only handle KEYWORDS IPTC key (TODO: for now! Implement others later - may require some debug)
         """
         try:
-            iptc_key = tag_data['iptc_key']
+            iptc_key = tag_data['iptc_key'] if tag_data['iptc_key'] == 'Iptc.Application2.Keywords' else None
             if iptc_key:
                 tags = tag_data['tags']
                 url = os.path.join(path, filename)
