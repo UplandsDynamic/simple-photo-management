@@ -70,10 +70,9 @@ class ProcessImages:
         :param filename: filename of target image
         :param tag_data: original image data: in form: {'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']}
         :return: True | False
-        Note: Only handle KEYWORDS IPTC key (TODO: for now! Implement others later - may require some debug)
         """
         try:
-            iptc_key = tag_data['iptc_key'] if tag_data['iptc_key'] == 'Iptc.Application2.Keywords' else None
+            iptc_key = tag_data['iptc_key']
             if iptc_key:
                 tags = tag_data['tags']
                 url = os.path.join(path, filename)
@@ -135,8 +134,10 @@ class ProcessImages:
             {conversion_data: {'orig_path': '/path/to/orig/image', 'processed_path':'/path/to/processed_image',
             'filename': '4058.jpeg'}, tag_data: {'iptc_key': 'Iptc.Application2.Keywords', 'tags':
             ['DATE: 1974', 'PLACE: The Moon']}
-        Note: hash of path appended to file names to ensure duplicate name of files in other
+        Notes:
+            1. Hash of path appended to file names to ensure duplicate name of files in other
         origin directories do not overwrite pre-existing files of the same name in the processed directory.
+            2. Only handle KEYWORDS IPTC key (TODO: for now! Implement others later - may require some debug)
         """
         try:
             existing_converted = self.get_filenames(self.PROCESSED_IMAGE_PATH)
@@ -180,8 +181,8 @@ class ProcessImages:
                             tag_data = self.read_iptc_tags(filename=filename, path=image_path)
                             # any additions or updates to the incoming tag data
                             if tag_data:
-                                for tag in tag_data:
-                                    if tag['tags']:
+                                for tag in tag_data:  # only handle IPTC keywords (for now)
+                                    if tag['iptc_key'] == 'Iptc.Application2.Keywords' and tag['tags']:
                                         tag['tags'].append(
                                             'SPM: TAGS COPIED FROM ORIGINAL')  # add tag to identify as copied
                                         processed_data['tag_data'] = tag  # add to the return dicts
