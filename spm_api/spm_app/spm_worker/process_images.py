@@ -2,6 +2,8 @@
 import glob, os
 import pyexiv2
 from PIL import Image
+import hashlib
+import base64
 
 ORIGINAL_IMAGE_PATHS = set(os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}')))
 PROCESSED_IMAGE_PATH = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images/processed")}'))
@@ -86,18 +88,19 @@ class ProcessImages:
         return False
 
     @staticmethod
-    def convert_format(filename, path, save_path, conversion_format):
+    def convert_format(orig_filename, new_filename, path, save_path, conversion_format):
         """
         method to convert the format of an image file
-        :param filename: filename of image
+        :param orig_filename: original filename of image
+        :param new_filename: new filename of image (i.e. with appended directory hash)
         :param path: path of image
         :param conversion_format: file format to covert to
         :param save_path: where to save the converted image
         :return: {'orig_file_path': path, 'processed_path': save_path, 'filename': filename} | False
         """
         try:
-            url = os.path.join(path, filename)
-            file, extension = os.path.splitext(filename)
+            url = os.path.join(path, orig_filename)
+            file, extension = os.path.splitext(new_filename)
             outfile = f'{file}.{conversion_format}'
             Image.open(url).save(os.path.join(save_path, outfile), quality=100)
             print('Conversion done!')
@@ -131,26 +134,31 @@ class ProcessImages:
             {conversion_data: {'orig_path': '/path/to/orig/image', 'processed_path':'/path/to/processed_image',
             'filename': '4058.jpeg'}, tag_data: {'iptc_key': 'Iptc.Application2.Keywords', 'tags':
             ['DATE: 1974', 'PLACE: The Moon']}
+        Note: hash of path appended to file names to ensure duplicate name of files in other
+        origin directories do not overwrite pre-existing files of the same name in the processed directory.
         """
         try:
             existing_converted = self.get_filenames(self.PROCESSED_IMAGE_PATH)
             processed_data = {'conversion_data': {'orig_path': '', 'processed_path': '', 'filename': ''},
                               'tag_data': {'iptc_key': '', 'tags': []}}
             for image_path in self.ORIGINAL_IMAGE_PATHS:
+                path_hash = hashlib.sha1(image_path.encode()).hexdigest()
                 for filename in os.listdir(image_path):
                     if not os.path.isdir(os.path.join(image_path, filename)):  # if file (not dir)
                         """
                         save converted file
                         """
                         # generate required filename with new extension
-                        new_filename = f'{os.path.splitext(filename)[0]}.{self.CONVERSION_FORMAT}'
+                        new_filename = f'{path_hash}_{os.path.splitext(filename)[0]}.{self.CONVERSION_FORMAT}'
                         # check if converted file already exists
                         converted_did_exist = new_filename in existing_converted
                         print(f'New filename: {new_filename}')
                         print(f'Already exists in processed directory? : {converted_did_exist}')
                         if not converted_did_exist:  # if filename does not already exist (not already converted)
                             # save copy of the image with converted format
-                            converted = self.convert_format(filename=filename, path=image_path,
+                            converted = self.convert_format(orig_filename=filename,
+                                                            new_filename=new_filename,
+                                                            path=image_path,
                                                             save_path=self.PROCESSED_IMAGE_PATH,
                                                             conversion_format=self.CONVERSION_FORMAT)
                             processed_data['conversion_data'] = converted
