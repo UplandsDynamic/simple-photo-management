@@ -176,20 +176,23 @@ Q_CLUSTER = {
 if RUN_TYPE == RUN_TYPE_OPTIONS[0]:  # DEVEL
     SPM = {
         'ORIGINAL_IMAGE_PATHS': {
-            os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}')),
-            os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images_2")}')),
+            os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}'),
+            os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images_2")}'),
         },
-        'PROCESSED_IMAGE_PATH': os.path.normpath(os.path.normpath(
-            f'{os.path.join(os.getcwd(), "../test_images/processed")}')),
+        'PROCESSED_IMAGE_PATH': os.path.normpath(
+            f'{os.path.join(os.getcwd(), "../test_images/processed")}'),
         'CONVERSION_FORMAT': 'jpg'
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
     SPM = {
-        'ORIGINAL_IMAGE_PATHS': {os.path.normpath(
+        'ORIGINAL_IMAGE_PATHS': {
             os.path.normpath(
-                '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/InProgress'))},
-        'PROCESSED_IMAGE_PATH': os.path.normpath(os.path.normpath(
-            '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed')),
+                '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/InProgress'),
+            os.path.normpath(
+                '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Negatives/RAW/SCANNED_2017')
+        },
+        'PROCESSED_IMAGE_PATH': os.path.normpath(
+            '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed'),
         'CONVERSION_FORMAT': 'jpg'
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[2]:  # PRODUCTION

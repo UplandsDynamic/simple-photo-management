@@ -4,6 +4,7 @@ venv/
 .gitignore
 .git/
 test_images/
+test_images_2/
 migrations/
 secret_key.txt
 run_type.txt
