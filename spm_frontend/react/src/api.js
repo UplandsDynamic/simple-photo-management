@@ -7,15 +7,18 @@ const processRequest = ({
     if (apiMode && requestType) {
         if (requestType === 'get_photos') {
             return _getPhotos({record, csrfToken, requestMethod: method, url})  // returns a promise
-            // } else if (apiMode.requestType === 'patch_stock') {
-            //     return _updateStock({record, csrfToken, requestMethod: method, url})  // returns a promise
-            // } else if (apiMode.requestType === 'patch_stock') {
-            // } else if (apiMode.requestType === 'add_stock') {
-            //     return _addStock({record, csrfToken, requestMethod: method, url})  // returns a promise
-            // } else if (apiMode.requestType === 'delete_stock_line') {
-            //     return _deleteStock({record, csrfToken, requestMethod: method})
-            } else if (apiMode.requestType === 'post_auth' || requestType === 'patch_change_pw') {
-                return _auth({csrfToken, requestData, apiMode, requestMethod: method})
+        } else if (apiMode.requestType === 'retag_photos') {
+            return _retagPhotos({csrfToken, requestMethod: method, url})  // returns a promise
+        }
+        // } else if (apiMode.requestType === 'patch_stock') {
+        //     return _updateStock({record, csrfToken, requestMethod: method, url})  // returns a promise
+        // } else if (apiMode.requestType === 'patch_stock') {
+        // } else if (apiMode.requestType === 'add_stock') {
+        //     return _addStock({record, csrfToken, requestMethod: method, url})  // returns a promise
+        // } else if (apiMode.requestType === 'delete_stock_line') {
+        //     return _deleteStock({record, csrfToken, requestMethod: method})
+        else if (apiMode.requestType === 'post_auth' || requestType === 'patch_change_pw') {
+            return _auth({csrfToken, requestData, apiMode, requestMethod: method})
         }
     }
     console.log(`
@@ -37,7 +40,7 @@ const _makeRequest = ({
     const CancelToken = axios.CancelToken;
     let cancel;
     // if no requestData passed, see if update data in record data. If not, pass empty data to request.
-    requestData = requestData ? requestData : record.data.updateData ? record.data.updateData : {};
+    requestData = requestData ? requestData : (record ? (record.data.updateData ? record.data.updateData : {}) : {});
     if (url && requestMethod) {  // make request
         if (cancel !== undefined) {
             cancel();
@@ -77,6 +80,14 @@ const _getPhotos = ({record = null, csrfToken = null, requestMethod = null, url 
         return _makeRequest({record, csrfToken, requestMethod, url})  // returns a promise
     }
     return false
+};
+
+const _retagPhotos = ({csrfToken = null, requestMethod = null, url = null} = {}) => {
+    let retag = false;
+    if (!url) { // build url unless pre-defined
+        url = `${process.env.REACT_APP_API_DATA_ROUTE}/run_tagger?retag=${retag}`;
+    }
+    return _makeRequest({csrfToken, requestMethod, url})  // returns a promise
 };
 
 // const _updateStock = ({record = null, csrfToken = null, requestMethod = null, url = null} = {}) => {

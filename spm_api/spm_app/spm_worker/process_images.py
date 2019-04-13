@@ -134,7 +134,8 @@ class ProcessImages:
         """
         try:
             existing_converted = self.get_filenames(self.PROCESSED_IMAGE_PATH)
-            processed_data = dict()
+            processed_data = {'conversion_data': {'orig_path': '', 'processed_path': '', 'filename': ''},
+                              'tag_data': {'iptc_key': '', 'tags': []}}
             for filename in os.listdir(self.ORIGINAL_IMAGE_PATH):
                 if not os.path.isdir(os.path.join(self.ORIGINAL_IMAGE_PATH, filename)):  # if file (not dir)
                     """

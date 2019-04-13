@@ -236,10 +236,9 @@ class AddTags(APIView):
             'filename': '4058.jpeg'}, tag_data: {'iptc_key': 'Iptc.Application2.Keywords', 'tags':
             ['DATE: 1974', 'PLACE: The Moon']}
         :param owner: current user
-        :param resync_tags: whether to resync embedded IPTC tags from image file to the PhotoData model
+        :param resync_tags: whether embedded IPTC tags were re-copied from image file to the PhotoData model
         :return: saved record | False
         """
-        # TODO ... TEST SEARCH ...
         try:
             updated_tags = []
             try:
@@ -266,7 +265,7 @@ class AddTags(APIView):
             if photo_data_record and record['tag_data']['tags'] and (new_record_created or resync_tags):
                 for tag in record['tag_data']['tags']:
                     try:
-                        tag, tag_created = PhotoTag.objects.get_or_create(tag=tag, owner=owner)
+                        tag, tag_created = PhotoTag.objects.get_or_create(tag=tag, defaults={'owner': owner})
                         updated_tags.append(tag)
                     except Exception as e:
                         logger.warning(f'An exception occurred whilst attempting to save tags to database: {e}')
@@ -294,7 +293,6 @@ class AddTags(APIView):
         processed_image_path = settings.SPM['PROCESSED_IMAGE_PATH']
         conversion_format = settings.SPM['CONVERSION_FORMAT']
         try:
-            retag = RequestQueryValidator.validate('bool', retag)
             # initiate a ProcessImages object
             image_processor = ProcessImages(image_path=original_image_path,
                                             processed_image_path=processed_image_path,
@@ -311,7 +309,7 @@ class AddTags(APIView):
                 print(next(iterator))
                 """
                 for processed_record in process_images_generator:
-                    #time.sleep(.300)  # pause if using sqlite to avoid db lock during concurrent writes
+                    # time.sleep(.300)  # pause if using sqlite to avoid db lock during concurrent writes
                     async_task(add_record_to_db, record=processed_record, owner=user, resync_tags=retag)
             else:
                 logger.error(f'An error occurred during image processing. Operation cancelled.')
@@ -328,6 +326,10 @@ class AddTags(APIView):
         """
         hand off the image processing and tagging task to django_q multiprocessing (async)
         """
-        async_task(AddTags.process_images, self.request.query_params.get('retag', None), self.request.user,
-                   self.add_record_to_db)
-        return JsonResponse({'Status': 'Processing .......'}, status=202)
+        try:
+            resync = RequestQueryValidator.validate('bool', self.request.query_params.get('retag', None))
+            async_task(AddTags.process_images, retag=resync, user=self.request.user,
+                       add_record_to_db=self.add_record_to_db)
+            return JsonResponse({'Status': 'Processing .......'}, status=202)
+        except ValidationError as e:
+            return JsonResponse({'Status': f'Error: {e}'}, status=400)

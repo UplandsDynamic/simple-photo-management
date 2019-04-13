@@ -17,10 +17,10 @@ import './css/index.css';
 import {library} from '@fortawesome/fontawesome-svg-core'
 import {
     faSyncAlt, faEllipsisH, faPlus, faPlusSquare, faMinus, faMinusSquare,
-    faTrashAlt, faEdit, faTruck
+    faTrashAlt, faEdit, faRobot
 } from '@fortawesome/free-solid-svg-icons'
 
-library.add(faSyncAlt, faEllipsisH, faPlus, faTrashAlt, faEdit, faPlusSquare, faMinus, faMinusSquare, faTruck);
+library.add(faSyncAlt, faEllipsisH, faPlus, faTrashAlt, faEdit, faPlusSquare, faMinus, faMinusSquare, faRobot);
 
 
 axios.defaults.withCredentials = true;
@@ -36,6 +36,11 @@ class App extends React.Component {
         this.apiOptions = {
             /* used to define available API options in the api-request component */
             GET_PHOTOS: {requestType: 'get_photos', method: 'GET', desc: 'request to get photo data'},
+            RETAG_PHOTOS: {
+                requestType: 'retag_photos',
+                method: 'GET',
+                desc: 'request to begin photo re-taggig operation'
+            },
             PATCH_STOCK: {requestType: 'patch_stock', method: 'PATCH', desc: 'PATCH request to update stock data'},
             ADD_STOCK: {requestType: 'add_stock', method: 'POST', desc: 'POST request to add stock data'},
             DELETE_STOCK_LINE: {
@@ -183,6 +188,33 @@ class App extends React.Component {
         return false
     };
 
+    handleRetagPhotos = ({notifyResponse = true} = {}) => {
+        if (this.state.authMeta.authenticated) {
+            const apiRequest = processRequest({
+                apiMode: this.apiOptions.RETAG_PHOTOS
+            });
+            if (apiRequest) {
+                apiRequest.then((response) => {
+                    if (response) {
+                        if (notifyResponse) {
+                            this.setMessage({
+                                message: 'Retag process has started!',
+                                messageClass: 'alert alert-success'
+                            });
+                        }
+                    }
+                }).catch(error => {
+                    console.log(error);
+                    this.setMessage({
+                        message: 'An API error has occurred. The Retag process did not begin!',
+                        messageClass: 'alert alert-danger'
+                    });
+                });
+            }
+        }
+        return false
+    };
+
     setMessage = ({message = null, messageClass = ''} = {}) => {
         this.setState({message: message, messageClass: messageClass});
     };
@@ -210,6 +242,7 @@ class App extends React.Component {
                                        setRecordState={this.setRecordState}
                                        setMessage={this.setMessage}
                                        getRecordsHandler={this.getRecordsHandler}
+                                       handleRetagPhotos={this.handleRetagPhotos}
                                        authMeta={this.state.authMeta}
                             />
                             <Footer footer={process.env.REACT_APP_FOOTER}

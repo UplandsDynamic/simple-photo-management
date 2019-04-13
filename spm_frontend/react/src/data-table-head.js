@@ -5,7 +5,7 @@ const DataTableHead = ({handleColumnOrderChange, record} = {}) => {
     return (
         <tr className={'d-flex text-center'}>
             <th className={'col-6'} scope={'col'}
-                onClick={() => console.log('TODO: METHOD TO OPEN LARGE IN A MODAL')}>
+                onClick={() => console.log('Nothing to see here ...')}>
                 Photo
             </th>
             <th className={'col-2'} scope={'col'}

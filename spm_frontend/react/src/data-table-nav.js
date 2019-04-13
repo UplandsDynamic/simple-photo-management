@@ -4,9 +4,10 @@ import Paginate from './paginate.js';
 import React from 'react'
 
 const DataTableNav = ({
-                          record = null, handleGetRecords, handleSearch, authMeta = null
+                          record = null, handleGetRecords, handleRetagPhotos, handleSearch, authMeta = null
                       } = {}) => {
     const {userIsAdmin} = authMeta;
+
     if (record) {
         return (
             <React.Fragment>
@@ -23,16 +24,20 @@ const DataTableNav = ({
                         </div>
                     </div>
                     <div className={'row nav-row'}>
-                        <div className={`${userIsAdmin ? 'col-2' : 'col-1'}`}>
+                        <div className={`${userIsAdmin ? 'col-4' : 'col-2'}`}>
                             <div className={'btn-group'}>
                                 <button onClick={() => {
                                     Object.assign(record.meta, {page: 1});
                                     handleGetRecords({record})
                                 }} className={'btn btn-md btn-warning mr-1 '}>
                                     <FontAwesomeIcon icon={"sync-alt"}/></button>
+                                <button onClick={() => {
+                                    handleRetagPhotos()
+                                }} className={'btn btn-md btn-warning mr-1 '}>
+                                    <FontAwesomeIcon icon={"robot"}/></button>
                             </div>
                         </div>
-                        <div className={`${userIsAdmin ? 'col-10' : 'col-11'}`}>
+                        <div className={`${userIsAdmin ? 'col-8' : 'col-10'}`}>
                             <nav className={'search-navigation w-100 d-block ml-1'}>
                                 <input value={record.meta.search} placeholder={'Search'}
                                        name={'search'} className={'form-control search'}
