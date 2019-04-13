@@ -24,8 +24,7 @@ const DataTableData = ({record = {}, formatUTCDateTime, authMeta = {}} = {}) => 
         return (<tr key={item.id} data-toggle="modal" className={rowClasses.join(' ')}>
             {/*<th scope="row">{item.id}</th>*/}
             <td className={'col-6 photo'}>{processed_url}</td>
-            <td className={'col-2 file_name'}>{file_name}{file_format}</td>
-            <td className={'col-3 tags'}>
+            <td className={'col-5 tags'}>
                 <ul>
                     {tags.map((tag, key) => <li key={key}>{tag}</li>)}
                 </ul>

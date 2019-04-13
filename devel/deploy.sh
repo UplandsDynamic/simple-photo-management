@@ -129,7 +129,7 @@ ${SCRIPT_DIR}/prod/rsync-to-prod.sh
 ssh ${REMOTE_SERVER_SSH_HOST} "${REMOTE_DIR}/venv/bin/python3 ${REMOTE_API_DIR}/manage.py collectstatic --noinput"
 ssh ${REMOTE_SERVER_SSH_HOST} "chown -R django ${REMOTE_DIR}"
 ssh ${REMOTE_SERVER_SSH_HOST} systemctl restart ${REMOTE_SERVICE_NAME}
-#ssh ${REMOTE_SERVER_SSH_HOST} pkill -f "python manage.py qcluster"  # kill django_q worker processes
+#ssh ${REMOTE_SERVER_SSH_HOST}  "pkill -f \"python manage.py qcluster\"" # kill django_q worker processes
 ssh ${REMOTE_SERVER_SSH_HOST} "${REMOTE_DIR}/venv/bin/python3 ${REMOTE_API_DIR}/manage.py qcluster"  # restart django_q
 echo "DEVEL" > ${PROJECT_ROOT_DIR}/run_type.txt
 printf "\nDEPLOYED TO PRODUCTION!\n\n"

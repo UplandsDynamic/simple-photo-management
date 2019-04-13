@@ -8,11 +8,7 @@ const DataTableHead = ({handleColumnOrderChange, record} = {}) => {
                 onClick={() => console.log('Nothing to see here ...')}>
                 Photo
             </th>
-            <th className={'col-2'} scope={'col'}
-                onClick={() => handleColumnOrderChange({record, newOrder: 'file_name'})}>
-                Filename
-            </th>
-            <th className={'col-3'} scope={'col'}
+            <th className={'col-5'} scope={'col'}
                 onClick={() => console.log('Nothing to see here ...')}>
                 Tags
             </th>

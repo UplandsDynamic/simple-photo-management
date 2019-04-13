@@ -14,6 +14,8 @@ import os, string, random
 # # # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240 # higher than the count of fields
+
 # # # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True  # this setting will be OVERRIDDEN according tot the RUN_TYPE defined below.
 
