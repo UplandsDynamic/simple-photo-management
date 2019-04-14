@@ -96,7 +96,8 @@ class ProcessImages:
         :param path: path of image
         :param conversion_format: file format to covert to
         :param save_path: where to save the converted image
-        :return: {'orig_file_path': path, 'processed_path': save_path, 'filename': filename} | False
+        :return: {'orig_file_path': path, 'processed_path': save_path, 'new_filename': outfile,
+        'orig_filename': orig_filename} | False
         """
         try:
             url = os.path.join(path, orig_filename)
@@ -104,7 +105,8 @@ class ProcessImages:
             outfile = f'{file}.{conversion_format}'
             Image.open(url).save(os.path.join(save_path, outfile), quality=100)
             print('Conversion done!')
-            return {'orig_path': path, 'processed_path': save_path, 'filename': outfile}
+            return {'orig_path': path, 'processed_path': save_path, 'new_filename': outfile,
+                    'orig_filename': orig_filename}
         except (IOError, Exception) as e:
             print(f'An error occurred in convert_format: {e}')
         return False
@@ -172,7 +174,8 @@ class ProcessImages:
                             """
                             processed_data['conversion_data'] = {'orig_path': image_path,
                                                                  'processed_path': self.PROCESSED_IMAGE_PATH,
-                                                                 'filename': new_filename}
+                                                                 'new_filename': new_filename,
+                                                                 'orig_filename': filename}
                         """
                         write tags to file
                         """

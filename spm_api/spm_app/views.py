@@ -242,17 +242,18 @@ class ProcessPhotos(APIView):
         try:
             updated_tags = []
             try:
-                filename = record['conversion_data']['filename']
+                orig_filename = record['conversion_data']['orig_filename']
+                new_filename = record['conversion_data']['new_filename']
                 original_path = record['conversion_data']['orig_path']
                 processed_path = record['conversion_data']['processed_path']
-                logger.info(f'FILENAME: {filename}')
+                logger.info(f'NEW FILENAME: {new_filename}')
                 photo_data_record, new_record_created = PhotoData.objects.update_or_create(
-                    file_name=os.path.splitext(filename)[0],
+                    file_name=os.path.splitext(new_filename)[0],
                     defaults={
                         'owner': owner,
-                        'file_format': os.path.splitext(filename)[1],
-                        'original_url': os.path.join(original_path, filename),
-                        'processed_url': os.path.join(processed_path, filename)})
+                        'file_format': os.path.splitext(new_filename)[1],
+                        'original_url': os.path.join(original_path, orig_filename),
+                        'processed_url': os.path.join(processed_path, new_filename)})
             except Exception as e:
                 new_record_created = False
                 photo_data_record = None
