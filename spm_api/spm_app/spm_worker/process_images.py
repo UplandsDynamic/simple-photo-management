@@ -206,7 +206,7 @@ class ProcessImages:
                             # any additions or updates to the incoming tag data
                             if tag_data:
                                 for tag in tag_data:  # only handle IPTC keywords (for now)
-                                    if tag['iptc_key'] == 'Iptc.Application2.Keywords' and tag['tags']:
+                                    if tag['iptc_key'] == 'Iptc.Application2.Keywords':
                                         tag['tags'].append(
                                             'SPM: TAGS COPIED FROM ORIGINAL')  # add tag to identify as copied
                                         processed_data['tag_data'] = tag  # add to the return dicts
@@ -215,7 +215,6 @@ class ProcessImages:
                                                              filename=new_filename,
                                                              tag_data=tag)
                                     else:
-                                        processed_data['tag_data'] = tag  # add to the return dicts
                                         file = os.path.join(self.PROCESSED_IMAGE_PATH, new_filename)
                                         print(f'No tag was saved for this file: {file}')
                         yield processed_data
