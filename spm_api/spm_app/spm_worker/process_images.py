@@ -88,7 +88,7 @@ class ProcessImages:
         return False
 
     @staticmethod
-    def convert_format(orig_filename, new_filename, path, save_path, conversion_format):
+    def convert_format(orig_filename, path, save_path, conversion_format):
         """
         method to convert the format of an image file
         :param orig_filename: original filename of image
@@ -98,15 +98,21 @@ class ProcessImages:
         :param save_path: where to save the converted image
         :return: {'orig_file_path': path, 'processed_path': save_path, 'new_filename': outfile,
         'orig_filename': orig_filename} | False
+        Note: filename of converted file is a hexdigest sha1 hash of the original image file
+        (the actual file - not the filename). This is to ensure unique files from different
+        origin directories - but sharing the same filename - can be stored in processed
+        directory without overwriting each other.
         """
         try:
             url = os.path.join(path, orig_filename)
-            file, extension = os.path.splitext(new_filename)
-            outfile = f'{file}.{conversion_format}'
-            Image.open(url).save(os.path.join(save_path, outfile), quality=100)
-            print('Conversion done!')
-            return {'orig_path': path, 'processed_path': save_path, 'new_filename': outfile,
-                    'orig_filename': orig_filename}
+            with Image.open(url) as img:
+                img.convert('RGB')  # convert to RGBA to ensure consistency
+                new_filename = ProcessImages.generate_image_hash(image_url=url)  # generate unique hash for image
+                outfile = f'{new_filename}.{conversion_format}'  # define new filename (inc. extension for new format)
+                img.save(os.path.join(save_path, outfile), quality=100)  # save (converts to conversion_format)
+                print('Conversion done!')
+                return {'orig_path': path, 'processed_path': save_path, 'new_filename': outfile,
+                        'orig_filename': orig_filename}
         except (IOError, Exception) as e:
             print(f'An error occurred in convert_format: {e}')
         return False
@@ -128,6 +134,24 @@ class ProcessImages:
             print(f'An error occurred in get_filenames: {e}')
         return False
 
+    @staticmethod
+    def generate_image_hash(image_url=None):
+        """
+        method that generates a hexdigest sha1 hash of an image,
+        either from an already open image object, or by opening
+        an image at the image_url argument.
+        :param image_url: url to image file
+        :return: hexdigest of sha1 of hash of image file | None
+        Note: hashing entire file (inc. meta), not just image data,
+        as a) quicker and b) allows for duplicate images with different
+        meta to be treated as separate files, which I decided is a
+        required behaviour.
+        """
+        if image_url:
+            with open(image_url, 'rb') as img:
+                return hashlib.sha1(img.read()).hexdigest()
+        return None
+
     def generate_processed_copies(self):
         """
         generator method to run the image conversion and tagging processes
@@ -142,26 +166,23 @@ class ProcessImages:
             2. Only handle KEYWORDS IPTC key (TODO: for now! Implement others later - may require some debug)
         """
         try:
-            existing_converted = self.get_filenames(self.PROCESSED_IMAGE_PATH)
             processed_data = {'conversion_data': {'orig_path': '', 'processed_path': '', 'filename': ''},
                               'tag_data': {'iptc_key': '', 'tags': []}}
             for image_path in self.ORIGINAL_IMAGE_PATHS:
-                path_hash = hashlib.sha1(image_path.encode()).hexdigest()
                 for filename in os.listdir(image_path):
                     if not os.path.isdir(os.path.join(image_path, filename)):  # if file (not dir)
                         """
                         save converted file
                         """
-                        # generate required filename with new extension
-                        new_filename = f'{path_hash}_{os.path.splitext(filename)[0]}.{self.CONVERSION_FORMAT}'
-                        # check if converted file already exists
-                        converted_did_exist = new_filename in existing_converted
-                        print(f'New filename: {new_filename}')
+                        # check if converted file already exists (need to check every file added, to prevent dupes)
+                        original_img_hash = self.generate_image_hash(image_url=os.path.join(image_path, filename))
+                        new_filename = f'{original_img_hash}.{self.CONVERSION_FORMAT}'
+                        converted_did_exist = new_filename in self.get_filenames(self.PROCESSED_IMAGE_PATH)
                         print(f'Already exists in processed directory? : {converted_did_exist}')
+                        print(f'Processed (new) filename: {new_filename}')
                         if not converted_did_exist:  # if filename does not already exist (not already converted)
                             # save copy of the image with converted format
                             converted = self.convert_format(orig_filename=filename,
-                                                            new_filename=new_filename,
                                                             path=image_path,
                                                             save_path=self.PROCESSED_IMAGE_PATH,
                                                             conversion_format=self.CONVERSION_FORMAT)

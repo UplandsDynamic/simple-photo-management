@@ -14,7 +14,7 @@ import os, string, random
 # # # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240 # higher than the count of fields
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240  # higher than the count of fields
 
 # # # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True  # this setting will be OVERRIDDEN according tot the RUN_TYPE defined below.
@@ -169,7 +169,7 @@ Q_CLUSTER = {
     'queue_limit': 8,
     'bulk': 10,
     'orm': 'default',
-    'sync': False,  # True to debug in sync
+    'sync': RUN_TYPE == RUN_TYPE_OPTIONS[0],  # Set True to debug in sync mode.
     'guard_cycle': 5,
     'cpu_affinity': 1,
     'catch_up': True
