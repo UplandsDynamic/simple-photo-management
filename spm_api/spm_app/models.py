@@ -46,6 +46,8 @@ class PhotoData(models.Model):
                                     validators=[custom_validators.validate_url])
     processed_url = models.CharField(max_length=255, blank=False, null=True, unique=True,
                                      validators=[custom_validators.validate_url])
+    public_img_root = models.CharField(max_length=255, blank=False, null=False, unique=False,
+                                       validators=[custom_validators.validate_url])
 
     class Meta:
         ordering = ('id',)

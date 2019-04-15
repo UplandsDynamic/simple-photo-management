@@ -178,13 +178,14 @@ Q_CLUSTER = {
 if RUN_TYPE == RUN_TYPE_OPTIONS[0]:  # DEVEL
     SPM = {
         'ORIGINAL_IMAGE_PATHS': {
-            os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}'),
-            os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images_2")}'),
+            os.path.normpath(f'{os.path.join(os.getcwd(), "../media/test_images")}'),
+            os.path.normpath(f'{os.path.join(os.getcwd(), "../media/test_images_2")}'),
         },
         'PROCESSED_IMAGE_PATH': os.path.normpath(
-            f'{os.path.join(os.getcwd(), "../test_images/processed")}'),
+            f'{os.path.join(os.getcwd(), "../media/test_images_processed")}'),
         'PROCESSED_THUMBNAIL_PATH': os.path.normpath(
-            f'{os.path.join(os.getcwd(), "../test_images/processed/tn")}'),
+            f'{os.path.join(os.getcwd(), "../media/test_images_processed/tn")}'),
+        'PUBLIC_PATH': os.path.normpath('/media'),
         'CONVERSION_FORMAT': 'JPG'
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
@@ -199,6 +200,7 @@ elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
             '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed'),
         'PROCESSED_THUMBNAIL_PATH': os.path.normpath(
             f'/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed/tn'),
+        'PUBLIC_PATH': os.path.normpath('/img'),
         'CONVERSION_FORMAT': 'JPG'
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[2]:  # PRODUCTION
@@ -296,7 +298,7 @@ else:
     }
 
 STATICFILES_DIRS = [
-    # os.path.join(BASE_DIR, 'spm_frontend/static'),
+    os.path.join(BASE_DIR, 'spm_frontend/static'),
 ]
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'

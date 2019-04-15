@@ -253,28 +253,33 @@ class ProcessPhotos(APIView):
                         'owner': owner,
                         'file_format': os.path.splitext(new_filename)[1],
                         'original_url': os.path.join(original_path, orig_filename),
-                        'processed_url': os.path.join(processed_path, new_filename)})
+                        'processed_url': os.path.join(processed_path, new_filename),
+                        'public_img_root': os.path.normpath(settings.SPM['PUBLIC_PATH'])
+                    })
             except Exception as e:
                 new_record_created = False
                 photo_data_record = None
                 logger.error(f'An exception occurred whilst saving image data to the database: {e}')
             """
-            if new image data was created - or resync_tags=True - , create PhotoTag objects 
-            (creating in the model if necessary with update_or_create), then populate saved 
+            if new image data was created - or resync_tags=True - , create PhotoTag objects
+            (creating in the model if necessary with update_or_create), then populate saved
             PhotoData model's M2M tags field with that list. Then, add image data to a list for return.
             """
-            if photo_data_record and record['tag_data']['tags'] and (new_record_created or resync_tags):
-                for tag in record['tag_data']['tags']:
-                    try:
-                        tag, tag_created = PhotoTag.objects.get_or_create(tag=tag, defaults={'owner': owner})
-                        updated_tags.append(tag)
-                    except Exception as e:
-                        logger.warning(f'An exception occurred whilst attempting to save tags to database: {e}')
-                # save tags to PhotoData model
-                photo_data_record.tags.set(updated_tags)
-                photo_data_record.record_updated = datetime.utcnow()
-                # save the model
-                photo_data_record.save()
+            if photo_data_record and (new_record_created or resync_tags):
+                if record['tag_data']['tags']:
+                    for tag in record['tag_data']['tags']:
+                        try:
+                            tag, tag_created = PhotoTag.objects.get_or_create(tag=tag, defaults={'owner': owner})
+                            updated_tags.append(tag)
+                        except Exception as e:
+                            logger.warning(f'An exception occurred whilst attempting to save tags to database: {e}')
+                    # save tags to PhotoData model
+                    photo_data_record.tags.set(updated_tags)
+                    photo_data_record.record_updated = datetime.utcnow()
+                    # save the model
+                    photo_data_record.save()
+                else:
+                    photo_data_record.tags.clear()  # if no tags, clear any that were preexisting
                 logger.info(f'Added record: {photo_data_record}')
                 return photo_data_record
         except Exception as e:
@@ -312,7 +317,6 @@ class ProcessPhotos(APIView):
                 print(next(iterator))
                 """
                 for processed_record in process_images_generator:
-                    logger.info(processed_record)
                     # pause if using sqlite to avoid db lock during concurrent writes
                     if settings.RUN_TYPE == settings.RUN_TYPE_OPTIONS[0]:
                         time.sleep(.300)

@@ -175,11 +175,11 @@ class ProcessImages:
             2. Only handle KEYWORDS IPTC key (TODO: for now! Implement others later - may require some debug)
         """
         try:
-            processed_data = {'conversion_data': {'orig_path': '', 'processed_path': '', 'filename': ''},
-                              'tag_data': {'iptc_key': '', 'tags': []}}
             for image_path in self.ORIGINAL_IMAGE_PATHS:
                 for filename in os.listdir(image_path):
                     if not os.path.isdir(os.path.join(image_path, filename)):  # if file (not dir)
+                        processed_data = {'conversion_data': {'orig_path': '', 'processed_path': '', 'filename': ''},
+                                          'tag_data': {'iptc_key': '', 'tags': []}}
                         """
                         save converted file
                         """
@@ -190,7 +190,7 @@ class ProcessImages:
                         print(f'Already exists in processed directory? : {converted_did_exist}')
                         print(f'Processed (new) filename: {new_filename}')
                         if not converted_did_exist:  # if filename does not already exist (not already converted)
-                            # save copy of the image with converted format
+                            # save copy of the image with converted format & generate thumbs
                             converted = self.convert_image(orig_filename=filename,
                                                            path=image_path,
                                                            save_path=self.PROCESSED_IMAGE_PATH,
@@ -214,6 +214,7 @@ class ProcessImages:
                             tag_data = self.read_iptc_tags(filename=filename, path=image_path)
                             # any additions or updates to the incoming tag data
                             if tag_data:
+                                print(f'TAG DATA: Filename: {filename} || {tag_data}')
                                 for tag in tag_data:  # only handle IPTC keywords (for now)
                                     if tag['iptc_key'] == 'Iptc.Application2.Keywords':
                                         tag['tags'].append(
@@ -226,6 +227,7 @@ class ProcessImages:
                                     else:
                                         file = os.path.join(self.PROCESSED_IMAGE_PATH, new_filename)
                                         print(f'No tag was saved for this file: {file}')
+                                print(f'PROCESSED DATA: {processed_data}')
                         yield processed_data
         except (TypeError, Exception) as e:
             print(f'Error occurred processing images, in main(): {e}')

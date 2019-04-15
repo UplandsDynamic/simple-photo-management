@@ -5,6 +5,7 @@ venv/
 .git/
 test_images/
 test_images_2/
+test_images_processed/
 test_images_unused/
 migrations/
 secret_key.txt
