@@ -292,11 +292,13 @@ class ProcessPhotos(APIView):
         """
         original_image_paths = settings.SPM['ORIGINAL_IMAGE_PATHS']
         processed_image_path = settings.SPM['PROCESSED_IMAGE_PATH']
+        thumb_path = settings.SPM['PROCESSED_THUMBNAIL_PATH']
         conversion_format = settings.SPM['CONVERSION_FORMAT']
         try:
             # initiate a ProcessImages object
             image_processor = ProcessImages(image_paths=original_image_paths,
                                             processed_image_path=processed_image_path,
+                                            thumb_path=thumb_path,
                                             conversion_format=conversion_format,
                                             retag=retag)
             # get reference to the generator that processes images

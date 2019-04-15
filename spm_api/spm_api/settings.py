@@ -183,7 +183,9 @@ if RUN_TYPE == RUN_TYPE_OPTIONS[0]:  # DEVEL
         },
         'PROCESSED_IMAGE_PATH': os.path.normpath(
             f'{os.path.join(os.getcwd(), "../test_images/processed")}'),
-        'CONVERSION_FORMAT': 'jpg'
+        'PROCESSED_THUMBNAIL_PATH': os.path.normpath(
+            f'{os.path.join(os.getcwd(), "../test_images/processed/tn")}'),
+        'CONVERSION_FORMAT': 'JPG'
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
     SPM = {
@@ -195,13 +197,15 @@ elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
         },
         'PROCESSED_IMAGE_PATH': os.path.normpath(
             '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed'),
-        'CONVERSION_FORMAT': 'jpg'
+        'PROCESSED_THUMBNAIL_PATH': os.path.normpath(
+            f'/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed/tn'),
+        'CONVERSION_FORMAT': 'JPG'
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[2]:  # PRODUCTION
     SPM = {
         'ORIGINAL_IMAGE_PATH': set(),
         'PROCESSED_IMAGE_PATH': None,
-        'CONVERSION_FORMAT': 'jpg'
+        'CONVERSION_FORMAT': 'JPG'
     }
 
 # # # Caches

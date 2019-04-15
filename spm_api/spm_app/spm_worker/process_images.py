@@ -3,10 +3,10 @@ import glob, os
 import pyexiv2
 from PIL import Image
 import hashlib
-import base64
 
 ORIGINAL_IMAGE_PATHS = set(os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}')))
 PROCESSED_IMAGE_PATH = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images/processed")}'))
+THUMB_PATH = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images/processed/tn")}'))
 CONVERSION_FORMAT = 'jpg'
 
 
@@ -19,7 +19,7 @@ class ProcessImages:
 
     ALLOWED_CONVERSION_FORMATS = ['jpeg', 'jpg', 'tiff', 'tif', 'png']
 
-    def __init__(self, image_paths=None, processed_image_path=None, conversion_format=None,
+    def __init__(self, image_paths=None, processed_image_path=None, thumb_path=None, conversion_format=None,
                  retag=False):
         """
         initiate the class
@@ -29,12 +29,31 @@ class ProcessImages:
         :param retag: boolean value, signifying whether to perform re-tagging
             if the image name already exists in the defined location where
             converted images are saved.
+        Note: standardise on lowercase file extensions
         """
         self.ORIGINAL_IMAGE_PATHS = image_paths
         self.PROCESSED_IMAGE_PATH = processed_image_path
-        self.CONVERSION_FORMAT = conversion_format if conversion_format.lower() in self.ALLOWED_CONVERSION_FORMATS \
-            else 'jpg'
+        self.THUMB_PATH = thumb_path
+        self.CONVERSION_FORMAT = conversion_format.lower() \
+            if conversion_format.lower() in self.ALLOWED_CONVERSION_FORMATS else 'jpg'
         self.retag = retag if isinstance(retag, bool) else False
+
+    @staticmethod
+    def get_filenames(directory):
+        """
+        method to get filenames of all files (not sub-dirs) in a directory
+        :param directory: the directory to scan for files
+        :return: a list of files
+        """
+        filenames = []
+        try:
+            for filename in os.listdir(directory):
+                if not os.path.isdir(os.path.join(directory, filename)):
+                    filenames.append(filename)
+            return filenames
+        except (IOError, Exception) as e:
+            print(f'An error occurred in get_filenames: {e}')
+        return False
 
     @staticmethod
     def read_iptc_tags(filename, path):
@@ -88,11 +107,10 @@ class ProcessImages:
         return False
 
     @staticmethod
-    def convert_format(orig_filename, path, save_path, conversion_format):
+    def convert_image(orig_filename, path, save_path, conversion_format):
         """
-        method to convert the format of an image file
+        method to convert the format and resize an image file
         :param orig_filename: original filename of image
-        :param new_filename: new filename of image (i.e. with appended directory hash)
         :param path: path of image
         :param conversion_format: file format to covert to
         :param save_path: where to save the converted image
@@ -106,32 +124,23 @@ class ProcessImages:
         try:
             url = os.path.join(path, orig_filename)
             with Image.open(url) as img:
+                # convert to conversion_format
                 img.convert('RGB')  # convert to RGBA to ensure consistency
                 new_filename = ProcessImages.generate_image_hash(image_url=url)  # generate unique hash for image
                 outfile = f'{new_filename}.{conversion_format}'  # define new filename (inc. extension for new format)
-                img.save(os.path.join(save_path, outfile), quality=100)  # save (converts to conversion_format)
+                img.save(os.path.normpath(os.path.join(save_path, outfile)))
+                # create thumbs
+                thumb_sizes = [(1080, 1080), (720, 720), (350, 350), (150, 150), (75, 75)]
+                for tn in thumb_sizes:
+                    thumb_save_url = os.path.normpath(
+                        f'{save_path}/tn/{new_filename}-{"_".join((str(t) for t in tn))}.{conversion_format}')
+                    img.thumbnail(tn, resample=Image.BICUBIC)
+                    img.save(thumb_save_url, quality=100)
                 print('Conversion done!')
                 return {'orig_path': path, 'processed_path': save_path, 'new_filename': outfile,
                         'orig_filename': orig_filename}
         except (IOError, Exception) as e:
             print(f'An error occurred in convert_format: {e}')
-        return False
-
-    @staticmethod
-    def get_filenames(directory):
-        """
-        method to get filenames of all files (not sub-dirs) in a directory
-        :param directory: the directory to scan for files
-        :return: a list of files
-        """
-        filenames = []
-        try:
-            for filename in os.listdir(directory):
-                if not os.path.isdir(os.path.join(directory, filename)):
-                    filenames.append(filename)
-            return filenames
-        except (IOError, Exception) as e:
-            print(f'An error occurred in get_filenames: {e}')
         return False
 
     @staticmethod
@@ -182,10 +191,10 @@ class ProcessImages:
                         print(f'Processed (new) filename: {new_filename}')
                         if not converted_did_exist:  # if filename does not already exist (not already converted)
                             # save copy of the image with converted format
-                            converted = self.convert_format(orig_filename=filename,
-                                                            path=image_path,
-                                                            save_path=self.PROCESSED_IMAGE_PATH,
-                                                            conversion_format=self.CONVERSION_FORMAT)
+                            converted = self.convert_image(orig_filename=filename,
+                                                           path=image_path,
+                                                           save_path=self.PROCESSED_IMAGE_PATH,
+                                                           conversion_format=self.CONVERSION_FORMAT)
                             processed_data['conversion_data'] = converted
                         else:
                             """
@@ -226,5 +235,6 @@ class ProcessImages:
 if __name__ == '__main__':
     ProcessImages(image_paths=ORIGINAL_IMAGE_PATHS,
                   processed_image_path=PROCESSED_IMAGE_PATH,
+                  thumb_path=THUMB_PATH,
                   conversion_format=CONVERSION_FORMAT,
                   retag=False).generate_processed_copies()
