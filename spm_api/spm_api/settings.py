@@ -200,7 +200,7 @@ elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
         'PROCESSED_THUMBNAIL_PATH': os.path.normpath(
             f'/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed/tn'),
         'PUBLIC_URL': os.path.normpath('/img'),
-        'PUBLIC_URL_TN': os.path.normpath('/img/th'),
+        'PUBLIC_URL_TN': os.path.normpath('/img/tn'),
         'CONVERSION_FORMAT': 'JPG'
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[2]:  # PRODUCTION
