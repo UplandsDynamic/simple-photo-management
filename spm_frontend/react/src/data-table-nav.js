@@ -31,13 +31,13 @@ const DataTableNav = ({
                                     handleGetRecords({record})
                                 }} className={'btn btn-md btn-success mr-1 '}>
                                     <FontAwesomeIcon icon={"sync-alt"}/></button>
-                                <button onClick={() => {
-                                    handleRetagPhotos({retag: false})
-                                }} className={'btn btn-md btn-warning mr-1 '}>
+                                <button onClick={(e) => {
+                                    userIsAdmin ? handleRetagPhotos({retag: false}) : e.preventDefault()
+                                }} className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
                                     <FontAwesomeIcon icon={"plus"}/></button>
-                                <button onClick={() => {
-                                    handleRetagPhotos({retag: true})
-                                }} className={'btn btn-md btn-warning mr-1 '}>
+                                <button onClick={(e) => {
+                                    userIsAdmin ? handleRetagPhotos({retag: true}) : e.preventDefault();
+                                }} className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
                                     <FontAwesomeIcon icon={"tags"}/></button>
                             </div>
                         </div>
