@@ -28,6 +28,7 @@ and changing the semantic symbol and the version number to simply "*". Then run:
 - Or, run ncu with the -u flag to update entire  - EVERYTHING, ALL PACKAGES in package.json to VERY LATEST, e.g.
    
     - ncu -u
+    - npm install
     
 ## Python (pip)
 
@@ -57,5 +58,6 @@ see below in the #upgrading section:
     $ pip-compile -P the_package_name (upgrades the_package_name to the very latest version)
   Or, upgrade individual packages to a specific version:
     $ pip-compile -P the_package_name==2.0.1 (upgrades the_package_name to version 2.0.1)
+- THEN: pip-sync to actually do the upgrade now the verions have been set *IMPORTANT STEP!
     
 * Note, for more docs on pip-tools, see the github page at: https://github.com/jazzband/pip-tools

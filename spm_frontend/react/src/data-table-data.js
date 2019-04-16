@@ -1,9 +1,11 @@
 import './css/data-table.css';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
 import React from 'react'
+import ModalImage from 'react-modal-image'
 
 const DataTableData = ({record = {}, formatUTCDateTime, authMeta = {}} = {}) => {
     const {authenticated, userIsAdmin} = authMeta;
+
     if (!record || !authenticated || (record && record.data.results.length < 1)) {
         return (
             <tr data-toggle="modal" className={'d-flex dataTableRows'}>
@@ -20,10 +22,19 @@ const DataTableData = ({record = {}, formatUTCDateTime, authMeta = {}} = {}) => 
         } = item;
         let rowClasses = ['d-flex', 'dataTableRows'];
         let imgClasses = ['img-fluid', 'img-thumbnail', 'd-block', 'mx-auto'];
-        let img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-150_150${file_format}`;
+        let small_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-150_150${file_format}`;
+        let medium_img_url= `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-720_720${file_format}`;
+        let full_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-1080_1080${file_format}`;
         return (<tr key={item.id} data-toggle="modal" className={rowClasses.join(' ')}>
             {/*<th scope="row">{item.id}</th>*/}
-            <td className={'col-5 photo'}><img src={img_url} alt={tags[0]} className={imgClasses.join(' ')}/>
+            <td className={'col-5 photo'}>
+                <ModalImage
+                    small={small_img_url}
+                    medium={medium_img_url}
+                    large={full_img_url}
+                    alt={tags.join(', ')}
+                    className={imgClasses.join(' ')}
+                />
             </td>
             <td className={'col-5 tags'}>
                 <ul>
