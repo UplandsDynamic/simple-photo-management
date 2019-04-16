@@ -67,6 +67,8 @@ class Paginate extends React.Component {
         let newRecord = JSON.parse(JSON.stringify(this.state.record));
         Object.assign(newRecord.meta, {page: page, limit: this.state.record.meta.limit});
         this.props.handleGetRecords({record: newRecord, url: url});
+        // locally set page state, to prevent delay when quick typing, pending overwrite by new source-of-truth prop
+        this.setState({currentPage: page})
     };
 
     currentPage = () => {
@@ -75,13 +77,13 @@ class Paginate extends React.Component {
                 <div className={'linkedPage'}>
                     <label className={'d-none'}>Current page</label>
                     <input onKeyDown={(e) => e.keyCode === 8 ? this.setState({currentPage: ''}) : null}
-                           onChangeCapture={(e) => {
+                           onChange={(e) => {
                                this.switchPage({
                                    linkedPage: parseInt(e.target.value) > 0 ? parseInt(e.target.value)
                                    <= this.state.totalPages ? parseInt(e.target.value) : this.state.totalPages : 1,
                                    dir: 'selected'
                                });
-                           }} defaultValue={this.state.currentPage} type={'text'}
+                           }} value={this.state.currentPage} type={'text'}
                            className={'form-control input-sm page-input'}/>
                 </div>
             </React.Fragment>
