@@ -75,13 +75,13 @@ class Paginate extends React.Component {
                 <div className={'linkedPage'}>
                     <label className={'d-none'}>Current page</label>
                     <input onKeyDown={(e) => e.keyCode === 8 ? this.setState({currentPage: ''}) : null}
-                           onChange={(e) => {
+                           onChangeCapture={(e) => {
                                this.switchPage({
                                    linkedPage: parseInt(e.target.value) > 0 ? parseInt(e.target.value)
                                    <= this.state.totalPages ? parseInt(e.target.value) : this.state.totalPages : 1,
                                    dir: 'selected'
                                });
-                           }} value={this.state.currentPage} type={'text'}
+                           }} defaultValue={this.state.currentPage} type={'text'}
                            className={'form-control input-sm page-input'}/>
                 </div>
             </React.Fragment>
