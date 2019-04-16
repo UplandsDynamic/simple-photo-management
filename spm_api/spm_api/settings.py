@@ -178,14 +178,13 @@ Q_CLUSTER = {
 if RUN_TYPE == RUN_TYPE_OPTIONS[0]:  # DEVEL
     SPM = {
         'ORIGINAL_IMAGE_PATHS': {
-            os.path.normpath(f'{os.path.join(os.getcwd(), "../media/test_images")}'),
-            os.path.normpath(f'{os.path.join(os.getcwd(), "../media/test_images_2")}'),
+            os.path.normpath(os.path.join(MEDIA_ROOT, 'test_images')),
+            os.path.normpath(os.path.join(MEDIA_ROOT, 'test_images_2')),
         },
-        'PROCESSED_IMAGE_PATH': os.path.normpath(
-            f'{os.path.join(os.getcwd(), "../media/test_images_processed")}'),
-        'PROCESSED_THUMBNAIL_PATH': os.path.normpath(
-            f'{os.path.join(os.getcwd(), "../media/test_images_processed/tn")}'),
-        'PUBLIC_PATH': os.path.normpath('/media'),
+        'PROCESSED_IMAGE_PATH': os.path.normpath(os.path.join(MEDIA_ROOT, 'test_images_processed')),
+        'PROCESSED_THUMBNAIL_PATH': os.path.normpath(os.path.join(MEDIA_ROOT, 'test_images_processed/tn')),
+        'PUBLIC_URL': os.path.normpath('/media'),
+        'PUBLIC_URL_TN': os.path.normpath('/media/test_images_processed/tn'),
         'CONVERSION_FORMAT': 'JPG'
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
@@ -200,7 +199,8 @@ elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
             '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed'),
         'PROCESSED_THUMBNAIL_PATH': os.path.normpath(
             f'/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed/tn'),
-        'PUBLIC_PATH': os.path.normpath('/img'),
+        'PUBLIC_URL': os.path.normpath('/img'),
+        'PUBLIC_URL_TN': os.path.normpath('/img/th'),
         'CONVERSION_FORMAT': 'JPG'
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[2]:  # PRODUCTION
@@ -297,9 +297,7 @@ else:
         }
     }
 
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'spm_frontend/static'),
-]
+STATICFILES_DIRS = []  # extra static files dirs
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'

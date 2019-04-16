@@ -61,7 +61,7 @@ const DataTable = ({
                 <div className={'row'}>
                     <div className={'col-sm table-responsive table-sm'}>
                         <table className="table table-bordered table-dark table-hover">
-                            <caption>{process.env.REACT_APP_SHORT_ORG_NAME} Photo Data
+                            <caption>Archived Images
                                 {record.meta.datetime_of_request ?
                                     `[Request returned:
                                         ${_formatUTCDateTime({

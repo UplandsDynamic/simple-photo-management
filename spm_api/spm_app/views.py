@@ -254,7 +254,8 @@ class ProcessPhotos(APIView):
                         'file_format': os.path.splitext(new_filename)[1],
                         'original_url': os.path.join(original_path, orig_filename),
                         'processed_url': os.path.join(processed_path, new_filename),
-                        'public_img_root': os.path.normpath(settings.SPM['PUBLIC_PATH'])
+                        'public_img_url': os.path.normpath(settings.SPM['PUBLIC_URL']),
+                        'public_img_tn_url': os.path.normpath(settings.SPM['PUBLIC_URL_TN'])
                     })
             except Exception as e:
                 new_record_created = False
