@@ -137,7 +137,7 @@ class PhotoDataSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = PhotoData
         fields = ('id', 'owner', 'file_name', 'file_format', 'tags', 'user_is_admin',
-                  'datetime_of_request', 'public_img_url', 'public_img_tn_url')
+                  'datetime_of_request', 'public_img_url', 'public_img_tn_url', 'original_url')
 
     """
     Additional validations. 
