@@ -78,7 +78,7 @@ const _getPhotos = ({record = null, csrfToken = null, requestMethod = null, url 
                     `&order_by=${pageOrderDir}${pageOrderBy}&tag=${search}`; // update URL
             }
         }
-        return _makeRequest({record, csrfToken, requestMethod, url})  // returns a promise
+        return _makeRequest({record, csrfToken, requestMethod, url});  // returns a promise
     }
     return false
 };

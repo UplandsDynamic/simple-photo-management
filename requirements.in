@@ -12,3 +12,4 @@ django-picklefield
 arrow
 blessed
 psycopg2
+autopep8

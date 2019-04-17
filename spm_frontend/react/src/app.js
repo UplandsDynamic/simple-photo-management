@@ -112,7 +112,7 @@ class App extends React.Component {
         if (keys.length > 0) {
             keys.forEach((k) => {
                 sessionStorage.removeItem(k)
-            })
+            });
         }
         return true;
     };

@@ -26,7 +26,7 @@ const DataTableData = ({record = {}, formatUTCDateTime, authMeta = {}} = {}) => 
         let medium_img_url= `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-720_720${file_format}`;
         let full_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-1080_1080${file_format}`;
         return (<tr key={item.id} data-toggle="modal" className={rowClasses.join(' ')}>
-            {/*<th scope="row">{item.id}</th>*/}
+                    {/*<th scope="row">{item.id}</th>*/}
             <td className={'col-5 photo'}>
                 <ModalImage
                     small={small_img_url}
@@ -40,7 +40,6 @@ const DataTableData = ({record = {}, formatUTCDateTime, authMeta = {}} = {}) => 
                 <ul>
                     {tags.map((tag, key) => <li key={key}>{tag}</li>)}
                 </ul>
-
             </td>
             <td className={'action-col col-2 text-center'}>-</td>
         </tr>)

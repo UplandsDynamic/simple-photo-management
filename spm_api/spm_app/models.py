@@ -52,10 +52,10 @@ class PhotoData(models.Model):
                                          validators=[custom_validators.validate_url])
 
     class Meta:
-        ordering = ('id',)
-        indexes = [
-            models.Index(fields=['file_name']),
-        ]
+        ordering = ('id','original_url')
+        # indexes = [
+        #     models.Index(fields=['file_name']),
+        # ]
 
     def __str__(self):
         return f'{self.file_name}{self.file_format}'

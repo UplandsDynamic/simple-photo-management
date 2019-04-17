@@ -4,21 +4,21 @@ import re
 
 
 def validate_alphanumplus(value):
-    if not re.match('^[A-Za-z0-9_.\- ]*$', value):
+    if not re.match(r'^[A-Za-z0-9_.\- ]*$', value):
         raise ValidationError(
             _(f'{value} contains invalid characters!')
         )
 
 
 def validate_url(value):
-    if not re.match('^[A-Za-z0-9_/.\\-]*$', value):
+    if not re.match(r'^[A-Za-z0-9_/.\\-]*$', value):
         raise ValidationError(
             _(f'{value} contains invalid characters!')
         )
 
 
 def validate_search(value):
-    if not re.match('^[A-Za-z0-9_.:\- ]*$', value):
+    if not re.match(r'^[A-Za-z0-9_.:\- ]*$', value):
         raise ValidationError(
             _(f'{value} contains invalid characters!')
         )
@@ -27,7 +27,7 @@ def validate_search(value):
 
 def validate_unit_price(value):
     # note: not currently required as using DecimalField rather than FloatField
-    if not re.match('^[\d]*[\.]?[\d]{2}$', str(value)):
+    if not re.match(r'^[\d]*[\.]?[\d]{2}$', str(value)):
         raise ValidationError(
             _(f'{value} is not a valid price!')
         )
@@ -57,7 +57,8 @@ class RequestQueryValidator:
     page = 'validation of page limit param'
     results = 'validation of results limit param'
     order_by = 'validation of order_by param'
-    valid_order_by_values = ['id', 'tags', 'file_name', 'file_type', '-id', '-tags', '-file_name', '-file_type']
+    valid_order_by_values = ['id', 'tags', 'file_name',
+                             'file_type', '-id', '-tags', '-file_name', '-file_type']
     bool = 'validation incoming value is a boolean value'
 
     @staticmethod
@@ -87,5 +88,6 @@ class RequestQueryValidator:
                 if isinstance(value, str) and value.lower() in ['true', 'false']:
                     return value.lower() == 'true'
                 else:
-                    raise ValidationError(_(f'This value needs to be True or False!'))
+                    raise ValidationError(
+                        _(f'This value needs to be True or False!'))
             return value

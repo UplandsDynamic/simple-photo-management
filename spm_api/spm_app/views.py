@@ -23,6 +23,7 @@ from django_q.tasks import async_task, result
 from functools import partial
 from django.conf import settings
 import time
+import re
 
 """
 Note about data object (database record):
@@ -56,7 +57,8 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     queryset = User.objects.all().order_by('-date_joined')
     serializer_class = UserSerializer
-    permission_classes = (permissions.IsAdminUser,)  # overrides default perm level, set in settings.py
+    # overrides default perm level, set in settings.py
+    permission_classes = (permissions.IsAdminUser,)
 
 
 class GroupViewSet(viewsets.ModelViewSet):
@@ -113,22 +115,29 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
     """
 
     def get_queryset(self):
+        records = []
         # order queryset using request query (or 'id' by default if no order_by query)
-        records = self.queryset.order_by(RequestQueryValidator.validate(
-            RequestQueryValidator.order_by, self.request.query_params.get('order_by', None)
+        all_records = self.queryset.order_by(RequestQueryValidator.validate(
+            RequestQueryValidator.order_by, self.request.query_params.get(
+                'order_by', None)
         ))
         # set username of requester to user attr of serializer to allow return admin status in response
         self.serializer_class.user = self.request.user
         # if searching for a product by description
         try:
-            if 'tag' in self.request.query_params and self.request.query_params.get('tag', None):
-                search_query = validate_search(self.request.query_params.get('tag'))
-                records = records.filter(Q(tags__tag__icontains=search_query) if search_query else None).distinct()
+            if 'tag' in self.request.query_params:
+                search_query = validate_search(
+                    self.request.query_params.get('tag', None))
+                if search_query:
+                    records = all_records.filter(
+                        Q(tags__tag__icontains=search_query) if search_query else None).distinct()
+                else:
+                    records = all_records.filter(tags=None).distinct()
+                    logger.info(f'RECORDS: {records}')
         except ValidationError as e:
             # if invalid search char, don't return error response, just return empty
-            logger.info(f'Returning no results in response because: {e}')
-            records = []
-        return records  # return everything
+            raise serializers.ValidationError(detail=f'Validation error: {e}')
+        return records if records else all_records   # return filtered records, or everything if no incoming search query
 
     def perform_create(self, serializer_class):
         """
@@ -147,7 +156,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         if self.request.user.groups.filter(name='administrators').exists():
             super().perform_destroy(instance)
         else:
-            raise serializers.ValidationError(detail='You are not authorized to delete photo data!')
+            raise serializers.ValidationError(
+                detail='You are not authorized to delete photo data!')
 
 
 class PhotoTagViewSet(viewsets.ModelViewSet):
@@ -181,15 +191,18 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # order queryset using request query (or 'id' by default if no order_by query)
         records = self.queryset.order_by(RequestQueryValidator.validate(
-            RequestQueryValidator.order_by, self.request.query_params.get('order_by', None)
+            RequestQueryValidator.order_by, self.request.query_params.get(
+                'order_by', None)
         ))
         # set username of requester to user attr of serializer to allow return admin status in response
         self.serializer_class.user = self.request.user
         # if searching for a product by description
         try:
             if 'tag' in self.request.query_params and self.request.query_params.get('tag', None):
-                search_query = validate_search(self.request.query_params.get('tag'))
-                records = records.filter(Q(tags__icontains=search_query) if search_query else None).distinct()
+                search_query = validate_search(
+                    self.request.query_params.get('tag'))
+                records = records.filter(
+                    Q(tags__icontains=search_query) if search_query else None).distinct()
         except ValidationError as e:
             # if invalid search char, don't return error response, just return empty
             logger.info(f'Returning no results in response because: {e}')
@@ -213,7 +226,8 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
         if self.request.user.groups.filter(name='administrators').exists():
             super().perform_destroy(instance)
         else:
-            raise serializers.ValidationError(detail='You are not authorized to delete photo data!')
+            raise serializers.ValidationError(
+                detail='You are not authorized to delete photo data!')
 
 
 class ProcessPhotos(APIView):
@@ -260,7 +274,8 @@ class ProcessPhotos(APIView):
             except Exception as e:
                 new_record_created = False
                 photo_data_record = None
-                logger.error(f'An exception occurred whilst saving image data to the database: {e}')
+                logger.error(
+                    f'An exception occurred whilst saving image data to the database: {e}')
             """
             if new image data was created - or resync_tags=True - , create PhotoTag objects
             (creating in the model if necessary with update_or_create), then populate saved
@@ -270,10 +285,12 @@ class ProcessPhotos(APIView):
                 if record['tag_data']['tags']:
                     for tag in record['tag_data']['tags']:
                         try:
-                            tag, tag_created = PhotoTag.objects.get_or_create(tag=tag, defaults={'owner': owner})
+                            tag, tag_created = PhotoTag.objects.get_or_create(
+                                tag=tag, defaults={'owner': owner})
                             updated_tags.append(tag)
                         except Exception as e:
-                            logger.warning(f'An exception occurred whilst attempting to save tags to database: {e}')
+                            logger.warning(
+                                f'An exception occurred whilst attempting to save tags to database: {e}')
                     # save tags to PhotoData model
                     photo_data_record.tags.set(updated_tags)
                     photo_data_record.record_updated = datetime.utcnow()
@@ -284,7 +301,8 @@ class ProcessPhotos(APIView):
                 logger.info(f'Added record: {photo_data_record}')
                 return photo_data_record
         except Exception as e:
-            logger.warning(f'An exception occurred whilst attempting to save photos to database: {e}')
+            logger.warning(
+                f'An exception occurred whilst attempting to save photos to database: {e}')
         return False
 
     @staticmethod
@@ -322,9 +340,11 @@ class ProcessPhotos(APIView):
                     if settings.RUN_TYPE == settings.RUN_TYPE_OPTIONS[0]:
                         time.sleep(.300)
                     # kick off async task to add records to database model
-                    async_task(add_record_to_db, record=processed_record, owner=user, resync_tags=retag)
+                    async_task(add_record_to_db, record=processed_record,
+                               owner=user, resync_tags=retag)
             else:
-                logger.error(f'An error occurred during image processing. Operation cancelled.')
+                logger.error(
+                    f'An error occurred during image processing. Operation cancelled.')
                 return False
             return True
         except (ValidationError, Exception) as e:
@@ -339,7 +359,8 @@ class ProcessPhotos(APIView):
         hand off the image processing and tagging task to django_q multiprocessing (async)
         """
         try:
-            resync = RequestQueryValidator.validate('bool', self.request.query_params.get('retag', None))
+            resync = RequestQueryValidator.validate(
+                'bool', self.request.query_params.get('retag', None))
             logger.info(f'Retag: {resync}')
             async_task(ProcessPhotos.process_images, retag=resync, user=self.request.user,
                        add_record_to_db=self.add_record_to_db)
