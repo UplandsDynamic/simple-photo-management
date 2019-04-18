@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
-import glob, os
+import glob
+import os
 import pyexiv2
 from PIL import Image
 import hashlib
+from pathlib import Path
+import glob
 
-ORIGINAL_IMAGE_PATHS = set(os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}')))
-PROCESSED_IMAGE_PATH = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images/processed")}'))
-THUMB_PATH = os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images/processed/tn")}'))
+ORIGINAL_IMAGE_PATHS = set(os.path.normpath(os.path.normpath(
+    f'{os.path.join(os.getcwd(), "../test_images")}')))
+PROCESSED_IMAGE_PATH = os.path.normpath(os.path.normpath(
+    f'{os.path.join(os.getcwd(), "../test_images/processed")}'))
+THUMB_PATH = os.path.normpath(os.path.normpath(
+    f'{os.path.join(os.getcwd(), "../test_images/processed/tn")}'))
 CONVERSION_FORMAT = 'jpg'
 
 
@@ -16,8 +22,7 @@ class ProcessImages:
         - convert image format (e.g. .tif to .jpg)
         - read & transfer IPTC 'keyword' tags from original to converted image
     """
-
-    ALLOWED_CONVERSION_FORMATS = ['jpeg', 'jpg', 'tiff', 'tif', 'png']
+    ALLOWED_IMAGE_FORMATS = ['jpeg', 'jpg', 'tiff', 'tif', 'png']
 
     def __init__(self, image_paths=None, processed_image_path=None, thumb_path=None, conversion_format=None,
                  retag=False):
@@ -35,25 +40,46 @@ class ProcessImages:
         self.PROCESSED_IMAGE_PATH = processed_image_path
         self.THUMB_PATH = thumb_path
         self.CONVERSION_FORMAT = conversion_format.lower() \
-            if conversion_format.lower() in self.ALLOWED_CONVERSION_FORMATS else 'jpg'
+            if conversion_format.lower() in self.ALLOWED_IMAGE_FORMATS else 'jpg'
         self.retag = retag if isinstance(retag, bool) else False
 
     @staticmethod
-    def get_filenames(directory):
+    def get_file_urls(directories, allowed_formats=None, recursive=False):
         """
-        method to get filenames of all files (not sub-dirs) in a directory
-        :param directory: the directory to scan for files
-        :return: a list of files
+        method to get full urls of all files in directories
+        :param recursive: whether to scan recursively
+        :param directories: list of directories in which to scan for files
+        :return: a list of file urls
         """
-        filenames = []
-        try:
-            for filename in os.listdir(directory):
-                if not os.path.isdir(os.path.join(directory, filename)):
-                    filenames.append(filename)
-            return filenames
-        except (IOError, Exception) as e:
-            print(f'An error occurred in get_filenames: {e}')
-        return False
+        file_urls = []
+        for index, directory in enumerate(directories):
+            # for filename in os.listdir(image_path):
+            try:
+                if recursive:
+                    if allowed_formats:
+                        # produce <generator object>
+                        url_list_generator = (Path(directory).glob(
+                            f'**/*.{f}') for f in allowed_formats)
+                        # produce [[], [PosixPath('/path/to/file.jpg')], []]
+                        url_list = [list(x_file_type)
+                                    for x_file_type in url_list_generator]
+                        #produce ['/path/to/file.jpg', '/path2/to/file_2.jpg']
+                        for urls_inner_list in url_list:
+                            file_urls.extend([str(u) for u in urls_inner_list])
+                    else:
+                        item_list = (list(Path(directory).glob(f'**/*')))
+                        file_urls.extend(
+                            [str(i) for i in item_list if not os.path.isdir(i)])
+                else:
+                    if allowed_formats:
+                        file_urls.extend(list(os.path.join(directory, f) for f in os.listdir(directory) if os.path.splitext(f)[
+                                         1].strip('.') in allowed_formats))
+                    else:
+                        file_urls.extend(list(os.path.join(directory, f) for f in os.listdir(directory) if not os.path.isdir(
+                            os.path.join(directory, f))))
+            except (IOError, Exception) as e:
+                print(f'An error occurred in get_file_urls: {e}')
+        return file_urls
 
     @staticmethod
     def read_iptc_tags(filename, path):
@@ -72,7 +98,8 @@ class ProcessImages:
             if iptc_keys:
                 for key in iptc_keys:
                     tag = meta[key]
-                    image_data.append({'iptc_key': key, 'tags': tag.raw_value or []})
+                    image_data.append(
+                        {'iptc_key': key, 'tags': tag.raw_value or []})
                 print(image_data)
             else:
                 image_data.append({'iptc_key': '', 'tags': []})
@@ -82,11 +109,10 @@ class ProcessImages:
             return False
 
     @staticmethod
-    def write_iptc_tags(path, filename, tag_data):
+    def write_iptc_tags(new_file_url, tag_data):
         """
         method to write IPTC tags to image
-        :param path: path to target image
-        :param filename: filename of target image
+        :param new_file_url: filename of target image
         :param tag_data: original image data: in form: {'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']}
         :return: True | False
         """
@@ -94,8 +120,7 @@ class ProcessImages:
             iptc_key = tag_data['iptc_key']
             if iptc_key:
                 tags = tag_data['tags']
-                url = os.path.join(path, filename)
-                meta = pyexiv2.ImageMetadata(os.path.join(url))
+                meta = pyexiv2.ImageMetadata(new_file_url)
                 meta.read()
                 meta[iptc_key] = pyexiv2.IptcTag(iptc_key, tags)
                 meta.write()
@@ -126,11 +151,14 @@ class ProcessImages:
             with Image.open(url) as img:
                 # convert to conversion_format
                 img.convert('RGB')  # convert to RGBA to ensure consistency
-                new_filename = ProcessImages.generate_image_hash(image_url=url)  # generate unique hash for image
-                outfile = f'{new_filename}.{conversion_format}'  # define new filename (inc. extension for new format)
+                new_filename = ProcessImages.generate_image_hash(
+                    image_url=url)  # generate unique hash for image
+                # define new filename (inc. extension for new format)
+                outfile = f'{new_filename}.{conversion_format}'
                 img.save(os.path.normpath(os.path.join(save_path, outfile)))
                 # create thumbs
-                thumb_sizes = [(1080, 1080), (720, 720), (350, 350), (150, 150), (75, 75)]
+                thumb_sizes = [(1080, 1080), (720, 720),
+                               (350, 350), (150, 150), (75, 75)]
                 for tn in thumb_sizes:
                     thumb_save_url = os.path.normpath(
                         f'{save_path}/tn/{new_filename}-{"_".join((str(t) for t in tn))}.{conversion_format}')
@@ -175,60 +203,63 @@ class ProcessImages:
             2. Only handle KEYWORDS IPTC key (TODO: for now! Implement others later - may require some debug)
         """
         try:
-            for image_path in self.ORIGINAL_IMAGE_PATHS:
-                for filename in os.listdir(image_path):
-                    if not os.path.isdir(os.path.join(image_path, filename)):  # if file (not dir)
-                        processed_data = {'conversion_data': {'orig_path': '', 'processed_path': '', 'filename': ''},
-                                          'tag_data': {'iptc_key': '', 'tags': []}}
-                        """
-                        save converted file
-                        """
-                        # check if converted file already exists (need to check every file added, to prevent dupes)
-                        original_img_hash = self.generate_image_hash(image_url=os.path.join(image_path, filename))
-                        new_filename = f'{original_img_hash}.{self.CONVERSION_FORMAT}'
-                        converted_did_exist = new_filename in self.get_filenames(self.PROCESSED_IMAGE_PATH)
-                        print(f'Already exists in processed directory? : {converted_did_exist}')
-                        print(f'Processed (new) filename: {new_filename}')
-                        if not converted_did_exist:  # if filename does not already exist (not already converted)
-                            # save copy of the image with converted format & generate thumbs
-                            converted = self.convert_image(orig_filename=filename,
-                                                           path=image_path,
-                                                           save_path=self.PROCESSED_IMAGE_PATH,
-                                                           conversion_format=self.CONVERSION_FORMAT)
-                            processed_data['conversion_data'] = converted
-                        else:
-                            """
-                            if converted image file already existed, save existing conversions in
-                            a list for the return dict here, as it was not already returned by the new image 
-                            conversion function (above)
-                            """
-                            processed_data['conversion_data'] = {'orig_path': image_path,
-                                                                 'processed_path': self.PROCESSED_IMAGE_PATH,
-                                                                 'new_filename': new_filename,
-                                                                 'orig_filename': filename}
-                        """
-                        write tags to file
-                        """
-                        if self.retag or not converted_did_exist:  # if retag is set, or newly converted image
-                            # read tag data from original image
-                            tag_data = self.read_iptc_tags(filename=filename, path=image_path)
-                            # any additions or updates to the incoming tag data
-                            if tag_data:
-                                print(f'TAG DATA: Filename: {filename} || {tag_data}')
-                                for tag in tag_data:  # only handle IPTC keywords (for now)
-                                    if tag['iptc_key'] == 'Iptc.Application2.Keywords':
-                                        tag['tags'].append(
-                                            'SPM: TAGS COPIED FROM ORIGINAL')  # add tag to identify as copied
-                                        processed_data['tag_data'] = tag  # add to the return dicts
-                                        # write the tags to the converted file
-                                        self.write_iptc_tags(path=self.PROCESSED_IMAGE_PATH,
-                                                             filename=new_filename,
-                                                             tag_data=tag)
-                                    else:
-                                        file = os.path.join(self.PROCESSED_IMAGE_PATH, new_filename)
-                                        print(f'No tag was saved for this file: {file}')
-                                print(f'PROCESSED DATA: {processed_data}')
-                        yield processed_data
+            file_urls = self.get_file_urls(
+                directories=self.ORIGINAL_IMAGE_PATHS, allowed_formats=self.ALLOWED_IMAGE_FORMATS, recursive=True)
+            for file_url in file_urls:
+                """
+                save converted file
+                """
+                # check if converted file already exists (need to check every file added, to prevent dupes)
+                original_img_hash = self.generate_image_hash(
+                    image_url=file_url)
+                new_file_url = os.path.join(
+                    self.PROCESSED_IMAGE_PATH, f'{original_img_hash}.{self.CONVERSION_FORMAT}')
+                converted_did_exist = new_file_url in self.get_file_urls(
+                    directories=[self.PROCESSED_IMAGE_PATH])
+                processed_data = {
+                    'conversion_data': {
+                        'orig_path': os.path.split(file_url)[0],
+                        'orig_filename': os.path.split(file_url)[1],
+                        'processed_path': self.PROCESSED_IMAGE_PATH,
+                        'new_filename': os.path.split(new_file_url)[1]
+                    },
+                    'tag_data': {
+                        'iptc_key': '', 'tags': []
+                    }}
+                print(
+                    f'Already exists in processed directory? : {converted_did_exist}')
+                print(f'Processed (new) filename: {new_file_url}')
+                # if filename does not already exist (not already converted)
+                if not converted_did_exist:
+                    # save copy of the image with converted format & generate thumbs
+                    converted = self.convert_image(orig_filename=processed_data['conversion_data']['orig_filename'],
+                                                   path=processed_data['conversion_data']['orig_path'],
+                                                   save_path=processed_data['conversion_data']['processed_path'],
+                                                   conversion_format=self.CONVERSION_FORMAT)
+                """
+                write tags to file
+                """
+                if self.retag or not converted_did_exist:  # if retag is set, or newly converted image
+                    # read tag data from original image
+                    tag_data = self.read_iptc_tags(filename=processed_data['conversion_data']['orig_filename'],
+                                                   path=processed_data['conversion_data']['orig_path'])
+                    # any additions or updates to the incoming tag data
+                    if tag_data:
+                        # only handle IPTC keywords (for now)
+                        for tag in tag_data:
+                            if tag['iptc_key'] == 'Iptc.Application2.Keywords':
+                                tag['tags'].append(
+                                    'SPM: TAGS COPIED FROM ORIGINAL')  # add tag to identify as copied
+                                # add to the return dicts
+                                processed_data['tag_data'] = tag
+                                # write the tags to the converted file
+                                self.write_iptc_tags(
+                                    new_file_url=new_file_url, tag_data=tag)
+                            else:
+                                print(
+                                    f'No tag was saved for this file: {new_file_url}')
+                        print(f'PROCESSED DATA: {processed_data}')
+                    yield processed_data
         except (TypeError, Exception) as e:
             print(f'Error occurred processing images, in main(): {e}')
         return False
