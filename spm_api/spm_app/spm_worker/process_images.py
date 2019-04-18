@@ -150,7 +150,7 @@ class ProcessImages:
             url = os.path.join(path, orig_filename)
             with Image.open(url) as img:
                 # convert to conversion_format
-                img.convert('RGB')  # convert to RGBA to ensure consistency
+                #img.convert('RGB')  # convert to RGBA to ensure consistency
                 new_filename = ProcessImages.generate_image_hash(
                     image_url=url)  # generate unique hash for image
                 # define new filename (inc. extension for new format)
@@ -228,7 +228,7 @@ class ProcessImages:
                     }}
                 print(
                     f'Already exists in processed directory? : {converted_did_exist}')
-                print(f'Processed (new) filename: {new_file_url}')
+                print(f'New filename: {new_file_url}')
                 # if filename does not already exist (not already converted)
                 if not converted_did_exist:
                     # save copy of the image with converted format & generate thumbs
