@@ -262,11 +262,11 @@ class ProcessPhotos(APIView):
                 processed_path = record['conversion_data']['processed_path']
                 logger.info(f'NEW FILENAME: {new_filename}')
                 photo_data_record, new_record_created = PhotoData.objects.update_or_create(
-                    file_name=os.path.splitext(new_filename)[0],
+                    original_url=os.path.join(original_path, orig_filename),
                     defaults={
                         'owner': owner,
+                        'file_name': os.path.splitext(new_filename)[0],
                         'file_format': os.path.splitext(new_filename)[1],
-                        'original_url': os.path.join(original_path, orig_filename),
                         'processed_url': os.path.join(processed_path, new_filename),
                         'public_img_url': os.path.normpath(settings.SPM['PUBLIC_URL']),
                         'public_img_tn_url': os.path.normpath(settings.SPM['PUBLIC_URL_TN'])

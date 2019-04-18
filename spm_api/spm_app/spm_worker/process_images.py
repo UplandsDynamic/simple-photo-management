@@ -150,12 +150,16 @@ class ProcessImages:
             url = os.path.join(path, orig_filename)
             with Image.open(url) as img:
                 # convert to conversion_format
-                #img.convert('RGB')  # convert to RGBA to ensure consistency
+                img.convert('RGB')  # convert to RGBA to ensure consistency
                 new_filename = ProcessImages.generate_image_hash(
                     image_url=url)  # generate unique hash for image
                 # define new filename (inc. extension for new format)
                 outfile = f'{new_filename}.{conversion_format}'
-                img.save(os.path.normpath(os.path.join(save_path, outfile)))
+                try:
+                    img.save(os.path.normpath(os.path.join(save_path, outfile)))
+                except Exception as e:
+                    img = img.point(lambda i:i*(1./256)).convert('L')
+                    img.save(os.path.normpath(os.path.join(save_path, outfile)))
                 # create thumbs
                 thumb_sizes = [(1080, 1080), (720, 720),
                                (350, 350), (150, 150), (75, 75)]
@@ -204,7 +208,9 @@ class ProcessImages:
         """
         try:
             file_urls = self.get_file_urls(
-                directories=self.ORIGINAL_IMAGE_PATHS, allowed_formats=self.ALLOWED_IMAGE_FORMATS, recursive=True)
+                directories=self.ORIGINAL_IMAGE_PATHS, 
+                allowed_formats=self.ALLOWED_IMAGE_FORMATS, 
+                recursive=True)
             for file_url in file_urls:
                 """
                 save converted file
