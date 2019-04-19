@@ -10,7 +10,7 @@ const DataTableData = ({record = {}, formatUTCDateTime, authMeta = {}} = {}) => 
         return (
             <tr data-toggle="modal" className={'d-flex dataTableRows'}>
                 <td className={'col-12 no-data'}>
-                    <div className={'alert alert-warning'}> Loading data ...</div>
+                    <div className={'alert alert-warning'}>No data to display!</div>
                 </td>
             </tr>
         )

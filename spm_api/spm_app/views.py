@@ -123,21 +123,31 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         ))
         # set username of requester to user attr of serializer to allow return admin status in response
         self.serializer_class.user = self.request.user
-        # if searching for a product by description
+        # handle search queries, if any
+        records = self.search_handler(records=all_records, request=self.request)
+        return records # return filtered records, or empty list if no incoming search query
+
+    @staticmethod
+    def search_handler(records=None, request=None):
+        """method to handle search queries
+        :param records: all records, to be filtered by search queries
+        :param request: incoming request data (inc. search query, if any)
+        :return: Queryset of matched records | None
+        """
         try:
-            if 'tag' in self.request.query_params:
+            # if searching for photos by tag
+            if 'tag' in request.query_params:
                 search_query = validate_search(
-                    self.request.query_params.get('tag', None))
-                if search_query:
-                    records = all_records.filter(
+                    request.query_params.get('tag', None))  # validate the incoming query first
+                if search_query:  # filter for tags. If no match, return records = None
+                    records = records.filter(
                         Q(tags__tag__icontains=search_query) if search_query else None).distinct()
-                else:
-                    records = all_records.filter(tags=None).distinct()
-                    logger.info(f'RECORDS: {records}')
+                else:  # if no query, return all photos with no tags
+                    records = records.filter(tags=None).distinct()
         except ValidationError as e:
             # if invalid search char, don't return error response, just return empty
             raise serializers.ValidationError(detail=f'Validation error: {e}')
-        return records if records else all_records   # return filtered records, or everything if no incoming search query
+        return records
 
     def perform_create(self, serializer_class):
         """
