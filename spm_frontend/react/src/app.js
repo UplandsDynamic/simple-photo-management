@@ -78,6 +78,15 @@ class App extends React.Component {
             csrfToken: null,
         };
         this.state = JSON.parse(JSON.stringify(this.initialState));
+        // bind methods to 'this' to enable to be passed as props
+        this.setMessage = this.setMessage.bind(this);
+        this.getSessionStorage = this.getSessionStorage.bind(this);
+        this.setSessionStorage = this.setSessionStorage.bind(this);
+        this.deleteSessionStorage = this.deleteSessionStorage.bind(this);
+        this.setAuthentication = this.setAuthentication.bind(this);
+        this.setRecordState = this.setRecordState.bind(this);
+        this.handleProcessPhotos = this.handleProcessPhotos.bind(this);
+        this.getRecordsHandler = this.getRecordsHandler.bind(this);
     }
 
     componentDidMount() {
@@ -210,7 +219,7 @@ class App extends React.Component {
             }
         }
         return false;
-    };
+    }
 
     setMessage({message = null, messageClass = ''} = {}) {
         this.setState({message: message, messageClass: messageClass});
@@ -238,8 +247,8 @@ class App extends React.Component {
                                        apiOptions={this.apiOptions}
                                        setRecordState={this.setRecordState}
                                        setMessage={this.setMessage}
-                                       getRecordsHandler={this.getRecordsHandler.bind(this)}
-                                       handleProcessPhotos={this.handleProcessPhotos.bind(this)}
+                                       getRecordsHandler={this.getRecordsHandler}
+                                       handleProcessPhotos={this.handleProcessPhotos}
                                        authMeta={this.state.authMeta}
                             />
                             <Footer footer={process.env.REACT_APP_FOOTER}

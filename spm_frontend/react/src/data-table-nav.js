@@ -10,6 +10,7 @@ class DataTableNav extends React.Component {
         this.state = {
             term: '',
         };
+
     }
 
     componentWillMount() {
@@ -22,6 +23,22 @@ class DataTableNav extends React.Component {
         this.setState({
             term: nextProps.record.meta.search,
         });
+    }
+
+    getRecords() {
+        let record = this.props.record;
+        Object.assign(record.meta, {page: 1});
+        this.props.handleGetRecords({record});
+    }
+
+    handleProcessPhotos({scan=false, retag=false, clean_db=false} = {}){
+        this.props.handleProcessPhotos({scan, retag, clean_db});
+    }
+
+    handleSearch(e) {
+        let record = this.props.record;
+        this.props.handleSearch({record, term: e.target.value});
+        this.setState({term: e.target.value});
     }
 
     render() {
@@ -45,22 +62,16 @@ class DataTableNav extends React.Component {
                         <div className={'row nav-row'}>
                             <div className={`${userIsAdmin ? 'col-4' : 'col-2'}`}>
                                 <div className={'btn-group'}>
-                                    <button onClick={() => {
-                                        Object.assign(record.meta, {page: 1});
-                                        this.props.handleGetRecords({record})
-                                    }} className={'btn btn-md btn-success mr-1 '}>
+                                    <button onClick={this.getRecords} className={'btn btn-md btn-success mr-1 '}>
                                         <FontAwesomeIcon icon={"sync-alt"}/></button>
-                                    <button onClick={(e) => {
-                                        userIsAdmin ? this.props.handleProcessPhotos({scan: true}) : e.preventDefault()
-                                    }} className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
+                                    <button onClick={userIsAdmin ? () => this.handleProcessPhotos({ scan: true }) : null} 
+                                        className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
                                         <FontAwesomeIcon icon={"plus"}/></button>
-                                    <button onClick={(e) => {
-                                        userIsAdmin ? this.props.handleProcessPhotos({retag: true}) : e.preventDefault();
-                                    }} className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
+                                    <button onClick={userIsAdmin ? () => this.handleProcessPhotos({retag: true}) :null} 
+                                    className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
                                         <FontAwesomeIcon icon={"tags"}/></button>
-                                        <button onClick={(e) => {
-                                        userIsAdmin ? this.props.handleProcessPhotos({clean_db: true}) : e.preventDefault();
-                                    }} className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
+                                        <button onClick={userIsAdmin ? () => this.handleProcessPhotos({clean_db: true}) :null} 
+                                        className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
                                         <FontAwesomeIcon icon={"broom"} /></button>
                                 </div>
                             </div>
@@ -68,10 +79,7 @@ class DataTableNav extends React.Component {
                                 <nav className={'search-navigation w-100 d-block ml-1'}>
                                     <input value={this.state.term} placeholder={'Search'}
                                            name={'search'} className={'form-control search'}
-                                           onChange={(e) => {
-                                               this.props.handleSearch({ record, term: e.target.value })
-                                               this.setState({term: e.target.value})
-                                           }
+                                           onChange={(e) => {this.handleSearch(e)}
                                            }/>
                                 </nav>
                             </div>
