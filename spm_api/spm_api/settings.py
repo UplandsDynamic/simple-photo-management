@@ -192,10 +192,10 @@ elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
         'ORIGIN_IMAGE_PATHS': {
             # os.path.normpath(
             #     '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/InProgress'),
-            # os.path.normpath(
-            #     '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Negatives/RAW/SCANNED_2017'),
             os.path.normpath(
-                '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Negatives/RAW/SCANNED_PRE_2017'),
+                '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Negatives/RAW/SCANNED_2017'),
+            # os.path.normpath(
+            #     '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Negatives/RAW/SCANNED_PRE_2017'),
             #  os.path.normpath(
             #     '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/tests'),
         },

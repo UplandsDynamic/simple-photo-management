@@ -10,7 +10,7 @@ class DataTableNav extends React.Component {
         this.state = {
             term: '',
         };
-
+        this.getRecords = this.getRecords.bind(this);
     }
 
     componentWillMount() {
@@ -44,7 +44,7 @@ class DataTableNav extends React.Component {
     render() {
         const {userIsAdmin} = this.props.authMeta;
         if (this.props.record) {
-            let {record} = this.props;
+            let record = this.props.record;
             return (
                 <React.Fragment>
                     <div className={'container'}>
