@@ -200,8 +200,9 @@ elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
             #     '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/tests'),
             # os.path.normpath(
             #     '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Prints/RAW'),
-            os.path.normpath(
-                '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Prints/Working_untagged'),
+            # os.path.normpath(
+            #     '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Prints/Working_untagged'),
+            os.path.normpath('/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Prints/FromOtherSources/BRIGHT_Jim_E_G'),
         },
         'PROCESSED_IMAGE_PATH': os.path.normpath(
             '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed'),
