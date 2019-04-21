@@ -177,7 +177,7 @@ Q_CLUSTER = {
 
 if RUN_TYPE == RUN_TYPE_OPTIONS[0]:  # DEVEL
     SPM = {
-        'ORIGINAL_IMAGE_PATHS': {
+        'ORIGIN_IMAGE_PATHS': {  # set of image paths
             os.path.normpath(os.path.join(MEDIA_ROOT, 'test_images')),
             os.path.normpath(os.path.join(MEDIA_ROOT, 'test_images_2')),
         },
@@ -188,8 +188,8 @@ if RUN_TYPE == RUN_TYPE_OPTIONS[0]:  # DEVEL
         'CONVERSION_FORMAT': 'JPG'
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
-    SPM = {
-        'ORIGINAL_IMAGE_PATHS': {
+    SPM = {  # set of image paths
+        'ORIGIN_IMAGE_PATHS': {
             # os.path.normpath(
             #     '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/InProgress'),
             # os.path.normpath(

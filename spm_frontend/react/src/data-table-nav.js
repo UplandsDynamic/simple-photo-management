@@ -51,13 +51,17 @@ class DataTableNav extends React.Component {
                                     }} className={'btn btn-md btn-success mr-1 '}>
                                         <FontAwesomeIcon icon={"sync-alt"}/></button>
                                     <button onClick={(e) => {
-                                        userIsAdmin ? this.props.handleRetagPhotos({retag: false}) : e.preventDefault()
+                                        userIsAdmin ? this.props.handleProcessPhotos({scan: true}) : e.preventDefault()
                                     }} className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
                                         <FontAwesomeIcon icon={"plus"}/></button>
                                     <button onClick={(e) => {
-                                        userIsAdmin ? this.props.handleRetagPhotos({retag: true}) : e.preventDefault();
+                                        userIsAdmin ? this.props.handleProcessPhotos({retag: true}) : e.preventDefault();
                                     }} className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
                                         <FontAwesomeIcon icon={"tags"}/></button>
+                                        <button onClick={(e) => {
+                                        userIsAdmin ? this.props.handleProcessPhotos({clean_db: true}) : e.preventDefault();
+                                    }} className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
+                                        <FontAwesomeIcon icon={"broom"} /></button>
                                 </div>
                             </div>
                             <div className={`${userIsAdmin ? 'col-8' : 'col-10'}`}>

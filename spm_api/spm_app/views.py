@@ -124,8 +124,9 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         # set username of requester to user attr of serializer to allow return admin status in response
         self.serializer_class.user = self.request.user
         # handle search queries, if any
-        records = self.search_handler(records=all_records, request=self.request)
-        return records # return filtered records, or empty list if no incoming search query
+        records = self.search_handler(
+            records=all_records, request=self.request)
+        return records  # return filtered records, or empty list if no incoming search query
 
     @staticmethod
     def search_handler(records=None, request=None):
@@ -316,7 +317,35 @@ class ProcessPhotos(APIView):
         return False
 
     @staticmethod
-    def process_images(retag=False, user=None, add_record_to_db=None):
+    def delete_record(record_id):
+        """method to delete record from database
+        :param record_id: id of record to be deleted
+        :return: True|False
+        """
+        PhotoData.objects.get(id=record_id).delete()
+        return True
+
+    @staticmethod
+    def clean_database(owner):
+        """
+        function to purge database of records referring to files that 
+        no longer exist in processed images directory
+        """
+        url_list_generator = ProcessImages.file_url_list_generator(directories={settings.SPM['PROCESSED_IMAGE_PATH']},
+                                                                   recursive=False)
+        filenames_set = {os.path.splitext(os.path.split(f)[1])[
+            0] for f in url_list_generator}
+        orphaned_db_records = set(PhotoData.objects.values_list(
+            'file_name', flat=True).all()) - filenames_set
+        for record in orphaned_db_records:
+            try:
+                PhotoData.objects.filter(file_name=record).delete()
+            except Exception as e:
+                logger.error(f'Error in clean_database: {e}')
+        return True
+
+    @staticmethod
+    def process_images(retag=False, clean_db=False, scan=False, user=None):
         """
         method to process images (make resized copy (i.e. a 'processed' copy) & copy tags from original to resized)
         :param retag: whether to re-copy over tags from original to processed image, if filename already exists
@@ -324,39 +353,44 @@ class ProcessPhotos(APIView):
         :param add_record_to_db: function, that submits records to DB model
         :return: True | False
         """
-        original_image_paths = settings.SPM['ORIGINAL_IMAGE_PATHS']
+        origin_image_paths = settings.SPM['ORIGIN_IMAGE_PATHS']
         processed_image_path = settings.SPM['PROCESSED_IMAGE_PATH']
         thumb_path = settings.SPM['PROCESSED_THUMBNAIL_PATH']
         conversion_format = settings.SPM['CONVERSION_FORMAT']
         try:
-            # initiate a ProcessImages object
-            image_processor = ProcessImages(image_paths=original_image_paths,
-                                            processed_image_path=processed_image_path,
-                                            thumb_path=thumb_path,
-                                            conversion_format=conversion_format,
-                                            retag=retag)
-            # get reference to the generator that processes images
-            process_images_generator = image_processor.generate_processed_copies()
-            if process_images_generator:
-                # iterate generator & pass records to function that submits them to DB model
-                """
-                # debug: test iterating generated values, one at a time
-                iterator = iter(process_images_generator)
-                print(next(iterator))
-                print(next(iterator))
-                """
-                for processed_record in process_images_generator:
-                    # pause if using sqlite to avoid db lock during concurrent writes
-                    if settings.RUN_TYPE == settings.RUN_TYPE_OPTIONS[0]:
-                        time.sleep(.300)
-                    # kick off async task to add records to database model
-                    async_task(add_record_to_db, record=processed_record,
-                               owner=user, resync_tags=retag)
-            else:
-                logger.error(
-                    f'An error occurred during image processing. Operation cancelled.')
-                return False
-            return True
+            # if action is to scan origin dirs for new files or retag existing processed files
+            if scan or retag:
+                # initiate a ProcessImages object
+                image_processor = ProcessImages(origin_image_paths=origin_image_paths,
+                                                processed_image_path=processed_image_path,
+                                                thumb_path=thumb_path,
+                                                conversion_format=conversion_format,
+                                                retag=retag)
+                # get reference to the generator that processes images
+                process_images_generator = image_processor.process_images()
+                if process_images_generator:
+                    # iterate generator & pass records to function that submits them to DB model
+                    """
+                    # debug: test iterating generated values, one at a time
+                    iterator = iter(process_images_generator)
+                    print(next(iterator))
+                    print(next(iterator))
+                    """
+                    for processed_record in process_images_generator:
+                        # pause if using sqlite to avoid db lock during concurrent writes
+                        if settings.RUN_TYPE == settings.RUN_TYPE_OPTIONS[0]:
+                            time.sleep(.300)
+                        # kick off async task to add records to database model
+                        async_task(ProcessPhotos.add_record_to_db, record=processed_record,
+                                   owner=user, resync_tags=retag)
+                else:
+                    logger.error(
+                        f'An error occurred during image processing. Operation cancelled.')
+                    return False
+                return True
+            # if action is to clean the database of obsolete image data (i.e. records referring to deleted images)
+            if clean_db:
+                async_task(ProcessPhotos.clean_database, owner=user)
         except (ValidationError, Exception) as e:
             if isinstance(e, ValidationError):
                 logger.error(f'Validation error: {e.message}')
@@ -368,12 +402,26 @@ class ProcessPhotos(APIView):
         """
         hand off the image processing and tagging task to django_q multiprocessing (async)
         """
+        action_queries = {
+            'scan': 'Scan the origin directories for new files, create web copies & copy tags from origin to processed images.',
+            'retag': 'Retag copied (processed) image files with tags on the origin image.',
+            'clear_db': 'Remove database records relating to images that have been removed from origin directories.'
+        }
         try:
-            resync = RequestQueryValidator.validate(
-                'bool', self.request.query_params.get('retag', None))
-            logger.info(f'Retag: {resync}')
-            async_task(ProcessPhotos.process_images, retag=resync, user=self.request.user,
-                       add_record_to_db=self.add_record_to_db)
-            return JsonResponse({'Status': 'Processing .......'}, status=202)
+            # check for request queries - & validate - that indicate required action on data
+            scan = RequestQueryValidator.validate(
+                'bool_or_none', self.request.query_params.get('scan', None))
+            retag = RequestQueryValidator.validate(
+                'bool_or_none', self.request.query_params.get('retag', None))
+            clean_db = RequestQueryValidator.validate(
+                'bool_or_none', self.request.query_params.get('clean_db', None))
+            """if at least 1 request query (query_params dict key) exists as a valid action query (action_queries dict key)
+            kick off the main async task to process next step.
+            """
+            if set(action_queries.keys()).intersection(self.request.query_params.keys()):
+                async_task(ProcessPhotos.process_images, retag=retag,
+                           user=self.request.user, clean_db=clean_db, scan=scan)
+                return JsonResponse({'Status': 'Processing .......'}, status=202)
+            return JsonResponse({'Status': 'Query invalid .......'}, status=400)
         except ValidationError as e:
             return JsonResponse({'Status': f'Error: {e}'}, status=400)

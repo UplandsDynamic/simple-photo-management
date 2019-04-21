@@ -11,7 +11,7 @@ import DataTableHead from "./data-table-head";
 
 const DataTable = ({
                        record = {}, apiOptions = {}, setMessage, getRecordsHandler, authMeta = {}, setRecordState,
-                       handleRetagPhotos
+                       handleProcessPhotos
                    } = {}) => {
 
     const _formatUTCDateTime = ({dateTime = null} = {}) => {
@@ -53,7 +53,7 @@ const DataTable = ({
             <DataTableNav
                 record={record}
                 handleGetRecords={getRecordsHandler}
-                handleRetagPhotos={handleRetagPhotos}
+                handleProcessPhotos={handleProcessPhotos}
                 handleSearch={_handleSearch}
                 authMeta={authMeta}
             />

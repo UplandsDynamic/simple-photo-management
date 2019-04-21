@@ -5,21 +5,15 @@ const processRequest = ({
                             queryFlags = {}
                         } = {}) => {
     const {requestType, method} = apiMode;
+    const {retag, scan, clean_db} = queryFlags;
     if (apiMode && requestType) {
         if (requestType === 'get_photos') {
-            return _getPhotos({record, csrfToken, requestMethod: method, url})  // returns a promise
+            return _getPhotos({record, csrfToken, requestMethod: method, url});  // returns a promise
         } else if (apiMode.requestType === 'process_photos') {
-            return _processPhotos({csrfToken, requestMethod: method, url, retag: queryFlags['retag']})  // returns a promise
+            return _processPhotos({csrfToken, requestMethod: method, url, retag, scan, clean_db});  // returns a promise
         }
-        // } else if (apiMode.requestType === 'patch_stock') {
-        //     return _updateStock({record, csrfToken, requestMethod: method, url})  // returns a promise
-        // } else if (apiMode.requestType === 'patch_stock') {
-        // } else if (apiMode.requestType === 'add_stock') {
-        //     return _addStock({record, csrfToken, requestMethod: method, url})  // returns a promise
-        // } else if (apiMode.requestType === 'delete_stock_line') {
-        //     return _deleteStock({record, csrfToken, requestMethod: method})
         else if (apiMode.requestType === 'post_auth' || requestType === 'patch_change_pw') {
-            return _auth({csrfToken, requestData, apiMode, requestMethod: method})
+            return _auth({csrfToken, requestData, apiMode, requestMethod: method});
         }
     }
     console.log(`
@@ -80,46 +74,16 @@ const _getPhotos = ({record = null, csrfToken = null, requestMethod = null, url 
         }
         return _makeRequest({record, csrfToken, requestMethod, url});  // returns a promise
     }
-    return false
+    return false;
 };
 
-const _processPhotos = ({csrfToken = null, requestMethod = null, url = null, retag = false} = {}) => {
+const _processPhotos = ({ csrfToken = null, requestMethod = null, url = null, 
+    retag = false, scan = false, clean_db = false } = {}) => {
     if (!url) { // build url unless pre-defined
-        url = `${process.env.REACT_APP_API_DATA_ROUTE}/process_photos?retag=${retag}`;
+        url = `${process.env.REACT_APP_API_DATA_ROUTE}/process_photos?retag=${retag}&scan=${scan}&clean_db=${clean_db}`;
     }
     return _makeRequest({csrfToken, requestMethod, url})  // returns a promise
 };
-
-// const _updateStock = ({record = null, csrfToken = null, requestMethod = null, url = null} = {}) => {
-//     // manager's transfer updates
-//     if ('records' in record) {
-//         url = `${process.env.REACT_APP_API_DATA_ROUTE}/stock/`;
-//         return _makeRequest({requestData: {...record}, csrfToken, requestMethod, url})
-//     } else if (record) // admin's stock record updates
-//     { // build url
-//         url = url ? url : `${process.env.REACT_APP_API_DATA_ROUTE}/stock/${record.data.updateData.id}/`;
-//         return _makeRequest({record, csrfToken, requestMethod, url})
-//     }
-//     return false
-// };
-//
-// const _addStock = ({record = null, csrfToken = null, requestMethod = null, url = null} = {}) => {
-//     if (record) {
-//         // build url
-//         url = url ? url : `${process.env.REACT_APP_API_DATA_ROUTE}/stock/`;
-//         return _makeRequest({record, csrfToken, requestMethod, url})
-//     }
-//     return false
-// };
-//
-// const _deleteStock = ({record = null, csrfToken = null, requestMethod = null, url = null} = {}) => {
-//     if (record) {
-//         // build url
-//         url = url ? url : `${process.env.REACT_APP_API_DATA_ROUTE}/stock/${record.data.updateData.id}/`;
-//         return _makeRequest({record, csrfToken, requestMethod, url})
-//     }
-//     return false;
-// };
 
 const _auth = ({requestMethod = null, csrfToken = null, requestData = null, apiMode = null} = {}) => {
     const apiRoute = process.env.REACT_APP_API_ROUTE;

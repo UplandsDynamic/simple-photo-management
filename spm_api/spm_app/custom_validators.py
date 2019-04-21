@@ -59,7 +59,7 @@ class RequestQueryValidator:
     order_by = 'validation of order_by param'
     valid_order_by_values = ['id', 'tags', 'file_name',
                              'file_type', '-id', '-tags', '-file_name', '-file_type']
-    bool = 'validation incoming value is a boolean value'
+    bool_or_none = 'validation incoming value is a boolean value or None'
 
     @staticmethod
     def validate(query_type, value):
@@ -82,9 +82,9 @@ class RequestQueryValidator:
             so no need to substitute query for fieldname before running order_by on the queryset.
             """
             return value if value in RequestQueryValidator.valid_order_by_values else 'id'
-        elif query_type == 'bool':
+        elif query_type == 'bool_or_none':
             # ensure true/false string or a boolean. Return boolean if so, if not, raise validation error
-            if not isinstance(value, bool):
+            if value and not isinstance(value, bool):
                 if isinstance(value, str) and value.lower() in ['true', 'false']:
                     return value.lower() == 'true'
                 else:

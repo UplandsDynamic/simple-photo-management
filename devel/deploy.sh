@@ -73,7 +73,7 @@ proceed;
 fi
 }
 
-function get_version {
+function set_version() {
 read -p "Version number (e.g. 2.3.6): " version
 echo ${version}
 }
@@ -115,7 +115,7 @@ REACT_ENV_FILE="${FRONTEND_DIR}/.env.production"
 REMOTE_SERVER_SSH_HOST=""
 printf "\nWorking on branch: master, deploying to PRODUCTION!\n\n"
 cd ${FRONTEND_DIR}
-# sed -i "/REACT_APP_VERSION/c\REACT_APP_VERSION = '$(get_version)'" ${REACT_ENV_FILE}  # no need if want to track dev version number
+# sed -i "/REACT_APP_VERSION/c\REACT_APP_VERSION = '$(set_version)'" ${REACT_ENV_FILE}  # no need if want to track dev version number
 cd ${PROJECT_ROOT_DIR}
 git_repos_commit_and_push
 echo "PRODUCTION" > ./run_type.txt
@@ -142,7 +142,7 @@ REMOTE_SERVICE_NAME="spm.staging.gunicorn.service"
 REACT_ENV_FILE="${FRONTEND_DIR}/.env.staging"
 REACT_ENV_FILE_PROD="${FRONTEND_DIR}/.env.production"
 REMOTE_SERVER_SSH_HOST="backup"
-VERSION=$(get_version)
+VERSION=$(set_version)
 printf "\nWorking on branch: devel, deploying to STAGING!\n\n"
 cd ${FRONTEND_DIR}
 sed -i "/REACT_APP_VERSION/c\REACT_APP_VERSION = '${VERSION}'" ${REACT_ENV_FILE}

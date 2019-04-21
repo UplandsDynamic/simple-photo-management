@@ -7,7 +7,7 @@ import hashlib
 from pathlib import Path
 import glob
 
-ORIGINAL_IMAGE_PATHS = set(os.path.normpath(os.path.normpath(
+ORIGIN_IMAGE_PATHS = set(os.path.normpath(os.path.normpath(
     f'{os.path.join(os.getcwd(), "../test_images")}')))
 PROCESSED_IMAGE_PATH = os.path.normpath(os.path.normpath(
     f'{os.path.join(os.getcwd(), "../test_images/processed")}'))
@@ -24,7 +24,7 @@ class ProcessImages:
     """
     ALLOWED_IMAGE_FORMATS = ['jpeg', 'jpg', 'tiff', 'tif', 'png']
 
-    def __init__(self, image_paths=None, processed_image_path=None, thumb_path=None, conversion_format=None,
+    def __init__(self, origin_image_paths=None, processed_image_path=None, thumb_path=None, conversion_format=None,
                  retag=False):
         """
         initiate the class
@@ -36,7 +36,7 @@ class ProcessImages:
             converted images are saved.
         Note: standardise on lowercase file extensions
         """
-        self.ORIGINAL_IMAGE_PATHS = image_paths
+        self.ORIGIN_IMAGE_PATHS = origin_image_paths
         self.PROCESSED_IMAGE_PATH = processed_image_path
         self.THUMB_PATH = thumb_path
         self.CONVERSION_FORMAT = conversion_format.lower() \
@@ -44,42 +44,46 @@ class ProcessImages:
         self.retag = retag if isinstance(retag, bool) else False
 
     @staticmethod
-    def get_file_urls(directories, allowed_formats=None, recursive=False):
+    def file_url_list_generator(directories: set, allowed_formats: list = None, recursive: bool = False) -> str:
         """
-        method to get full urls of all files in directories
+        generator method, to get full urls of all files in directories
         :param recursive: whether to scan recursively
-        :param directories: list of directories in which to scan for files
-        :return: a list of file urls
+        :param directories: set of directories in which to scan for files
+        :return: yield file urls (str) from the generated list
         """
         file_urls = []
-        for index, directory in enumerate(directories):
-            # for filename in os.listdir(image_path):
-            try:
-                if recursive:
-                    if allowed_formats:
-                        # produce <generator object>
-                        url_list_generator = (Path(directory).glob(
-                            f'**/*.{f}') for f in allowed_formats)
-                        # produce [[], [PosixPath('/path/to/file.jpg')], []]
-                        url_list = [list(x_file_type)
-                                    for x_file_type in url_list_generator]
-                        #produce ['/path/to/file.jpg', '/path2/to/file_2.jpg']
-                        for urls_inner_list in url_list:
-                            file_urls.extend([str(u) for u in urls_inner_list])
+        if isinstance(directories, set):
+            for index, directory in enumerate(directories):
+                try:
+                    if recursive:
+                        if allowed_formats:
+                            # produce <generator object>
+                            url_list_generator = (Path(directory).glob(
+                                f'**/*.{f}') for f in allowed_formats)
+                            # produce [[], [PosixPath('/path/to/file.jpg')], []]
+                            url_list = [list(x_file_type)
+                                        for x_file_type in url_list_generator]
+                            #produce ['/path/to/file.jpg', '/path2/to/file_2.jpg']
+                            for urls_inner_list in url_list:
+                                file_urls.extend([str(u)
+                                                  for u in urls_inner_list])
+                        else:
+                            item_list = (list(Path(directory).glob(f'**/*')))
+                            file_urls.extend(
+                                [str(i) for i in item_list if not os.path.isdir(i)])
                     else:
-                        item_list = (list(Path(directory).glob(f'**/*')))
-                        file_urls.extend(
-                            [str(i) for i in item_list if not os.path.isdir(i)])
-                else:
-                    if allowed_formats:
-                        file_urls.extend(list(os.path.join(directory, f) for f in os.listdir(directory) if os.path.splitext(f)[
-                                         1].strip('.') in allowed_formats))
-                    else:
-                        file_urls.extend(list(os.path.join(directory, f) for f in os.listdir(directory) if not os.path.isdir(
-                            os.path.join(directory, f))))
-            except (IOError, Exception) as e:
-                print(f'An error occurred in get_file_urls: {e}')
-        return file_urls
+                        if allowed_formats:
+                            file_urls.extend(list(os.path.join(directory, f) for f in os.listdir(directory) if os.path.splitext(f)[
+                                1].strip('.') in allowed_formats))
+                        else:
+                            file_urls.extend(list(os.path.join(directory, f) for f in os.listdir(directory) if not os.path.isdir(
+                                os.path.join(directory, f))))
+                except (IOError, Exception) as e:
+                    print(f'An error occurred in file_url_list_generator: {e}')
+             # return file_urls
+            for f in file_urls:
+                yield f
+        return False
 
     @staticmethod
     def read_iptc_tags(filename, path):
@@ -156,10 +160,12 @@ class ProcessImages:
                 # define new filename (inc. extension for new format)
                 outfile = f'{new_filename}.{conversion_format}'
                 try:
-                    img.save(os.path.normpath(os.path.join(save_path, outfile)))
+                    img.save(os.path.normpath(
+                        os.path.join(save_path, outfile)))
                 except Exception as e:
-                    img = img.point(lambda i:i*(1./256)).convert('L')
-                    img.save(os.path.normpath(os.path.join(save_path, outfile)))
+                    img = img.point(lambda i: i*(1./256)).convert('L')
+                    img.save(os.path.normpath(
+                        os.path.join(save_path, outfile)))
                 # create thumbs
                 thumb_sizes = [(1080, 1080), (720, 720),
                                (350, 350), (150, 150), (75, 75)]
@@ -193,7 +199,18 @@ class ProcessImages:
                 return hashlib.sha1(img.read()).hexdigest()
         return None
 
-    def generate_processed_copies(self):
+    @staticmethod
+    def find_orphaned_images(origin_directories: list, processed_direcor: str) -> list:
+        """function to identify images existing in processed_directory
+        which are not copies of an identical image in origin direcotires.
+        :param origin_directories: list of full paths to dirs containing origin files
+        :param processed_directory: url (str) of dir containing processed images to be scanned
+        :return: list of urls of orphaned image files in processed_directory
+        """
+        # TODO ... write this function
+        pass
+
+    def process_images(self):
         """
         generator method to run the image conversion and tagging processes
         :yield: generator, that processes files in an origin directory &
@@ -207,9 +224,9 @@ class ProcessImages:
             2. Only handle KEYWORDS IPTC key (TODO: for now! Implement others later - may require some debug)
         """
         try:
-            file_urls = self.get_file_urls(
-                directories=self.ORIGINAL_IMAGE_PATHS, 
-                allowed_formats=self.ALLOWED_IMAGE_FORMATS, 
+            file_urls = self.file_url_list_generator(
+                directories=self.ORIGIN_IMAGE_PATHS,
+                allowed_formats=self.ALLOWED_IMAGE_FORMATS,
                 recursive=True)
             for file_url in file_urls:
                 """
@@ -220,8 +237,8 @@ class ProcessImages:
                     image_url=file_url)
                 new_file_url = os.path.join(
                     self.PROCESSED_IMAGE_PATH, f'{original_img_hash}.{self.CONVERSION_FORMAT}')
-                converted_did_exist = new_file_url in self.get_file_urls(
-                    directories=[self.PROCESSED_IMAGE_PATH])
+                converted_did_exist = new_file_url in [f for f in self.file_url_list_generator(
+                    directories={self.PROCESSED_IMAGE_PATH})]
                 processed_data = {
                     'conversion_data': {
                         'orig_path': os.path.split(file_url)[0],
@@ -234,7 +251,6 @@ class ProcessImages:
                     }}
                 print(
                     f'Already exists in processed directory? : {converted_did_exist}')
-                print(f'New filename: {new_file_url}')
                 # if filename does not already exist (not already converted)
                 if not converted_did_exist:
                     # save copy of the image with converted format & generate thumbs
@@ -264,7 +280,6 @@ class ProcessImages:
                             else:
                                 print(
                                     f'No tag was saved for this file: {new_file_url}')
-                        print(f'PROCESSED DATA: {processed_data}')
                     yield processed_data
         except (TypeError, Exception) as e:
             print(f'Error occurred processing images, in main(): {e}')
@@ -272,8 +287,8 @@ class ProcessImages:
 
 
 if __name__ == '__main__':
-    ProcessImages(image_paths=ORIGINAL_IMAGE_PATHS,
+    ProcessImages(origin_image_paths=ORIGIN_IMAGE_PATHS,
                   processed_image_path=PROCESSED_IMAGE_PATH,
                   thumb_path=THUMB_PATH,
                   conversion_format=CONVERSION_FORMAT,
-                  retag=False).generate_processed_copies()
+                  retag=False).process_images()

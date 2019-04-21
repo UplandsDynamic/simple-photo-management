@@ -17,10 +17,10 @@ import './css/index.css';
 import {library} from '@fortawesome/fontawesome-svg-core'
 import {
     faSyncAlt, faEllipsisH, faPlus, faPlusSquare, faMinus, faMinusSquare,
-    faTrashAlt, faEdit, faRobot, faTags
+    faTrashAlt, faEdit, faRobot, faTags, faBroom
 } from '@fortawesome/free-solid-svg-icons'
 
-library.add(faSyncAlt, faEllipsisH, faPlus, faTrashAlt, faEdit, faPlusSquare, faMinus, faMinusSquare, faRobot, faTags);
+library.add(faSyncAlt, faEllipsisH, faPlus, faTrashAlt, faEdit, faPlusSquare, faMinus, faMinusSquare, faRobot, faTags, faBroom);
 
 
 axios.defaults.withCredentials = true;
@@ -30,30 +30,24 @@ class App extends React.Component {
 
     constructor(props) {
         super(props); // makes 'this' refer to component (i.e. like python self)
-        /* set local state. Only initialise stockData with required defaults for 1st request and
-        BEFORE data returned. Rest all added in call to stockDataHandler called after response received
-        */
+        this.statusMessages = {
+            retag: 'Processing of new photos & resync of existing photo tags in progress!',
+            scan: 'Processing of newly added photos in progress!',
+            clean_db: 'Database cleaning in progress!'
+        }
         this.apiOptions = {
             /* used to define available API options in the api-request component */
             GET_PHOTOS: {requestType: 'get_photos', method: 'GET', desc: 'request to get photo data'},
-            PROCESS_PHOTOS: {
-                requestType: 'process_photos',
-                method: 'GET',
-                desc: 'request to begin photo re-taggig operation'
-            },
-            PATCH_STOCK: {requestType: 'patch_stock', method: 'PATCH', desc: 'PATCH request to update stock data'},
-            ADD_STOCK: {requestType: 'add_stock', method: 'POST', desc: 'POST request to add stock data'},
-            DELETE_STOCK_LINE: {
-                requestType: 'delete_stock_line',
-                method: 'DELETE',
-                desc: 'DELETE request to delete stock line'
-            },
+            PROCESS_PHOTOS: {requestType: 'process_photos', method: 'GET', desc: 'request to begin photo re-taggig operation'},
+            // PATCH_PHOTOS: {requestType: 'patch_photos', method: 'PATCH', desc: 'PATCH request to update photo data'},
+            // ADD_PHOTOS: {requestType: 'add_add_photos', method: 'POST', desc: 'POST request to add photo data'},
+            // DELETE_PHOTOS: {
+            //     requestType: 'delete_photos',
+            //     method: 'DELETE',
+            //     desc: 'DELETE request to delete photos'
+            // },
             POST_AUTH: {requestType: 'post_auth', method: 'POST', desc: 'POST request to for authorization'},
-            PATCH_CHANGE_PW: {
-                requestType: 'patch_change_pw',
-                method: 'PATCH',
-                desc: 'PATCH request to for changing password'
-            },
+            PATCH_CHANGE_PW: {requestType: 'patch_change_pw', method: 'PATCH', desc: 'PATCH request to for changing password'},
         };
         this.initialState = {
             record: {
@@ -95,46 +89,46 @@ class App extends React.Component {
     componentDidUpdate(prevProps, prevState, snapshot) {
     }
 
-    getCSRFToken = () => {
+    getCSRFToken() {
         return Cookies.get('csrftoken')
-    };
+    }
 
-    setSessionStorage = ({key, value}) => {
+    setSessionStorage({key, value}) {
         sessionStorage.setItem(key, value);
-    };
+    }
 
-    getSessionStorage = (key) => {
+    getSessionStorage(key) {
         //return JSON.parse(localStorage.getItem(key));
         return sessionStorage.getItem(key);
-    };
+    }
 
-    deleteSessionStorage = (keys = []) => {
+    deleteSessionStorage(keys = []) {
         if (keys.length > 0) {
             keys.forEach((k) => {
                 sessionStorage.removeItem(k)
             });
         }
         return true;
-    };
+    }
 
-    setAuthentication = () => {
+    setAuthentication() {
         let authenticated = !!this.getSessionStorage('token');
         let clonedAuthMeta = JSON.parse(JSON.stringify(this.state.authMeta));
         Object.assign(clonedAuthMeta, {authenticated});
         // set authentication state and fetch new stock records when done (in a callback)
         this.setState({authMeta: {...clonedAuthMeta}}, this.getRecordsHandler);
-    };
+    }
 
-    setAuthorized = ({role = 'admin', state = false} = {}) => {
+    setAuthorized({role = 'admin', state = false} = {}) {
         // called after each api response returning stock data
         let clonedAuthMeta = JSON.parse(JSON.stringify(this.state.authMeta));
         if (role === 'admin') {
             Object.assign(clonedAuthMeta, {userIsAdmin: state});
         }
         this.setState({authMeta: {...clonedAuthMeta}});
-    };
+    }
 
-    setRecordState = ({newRecord} = {}) => {
+    setRecordState({newRecord} = {}) {
         /*
         method to update state for record being retrieved (GET request)
          */
@@ -146,13 +140,13 @@ class App extends React.Component {
             // set user admin status to what was returned from api in stock record data
             if (!!newRecord.data.results.length && newRecord.data.results[0].hasOwnProperty('user_is_admin')
             ) {
-                this.setAuthorized({role: 'admin', state: !!newRecord.data.results[0].user_is_admin})
+                this.setAuthorized({role: 'admin', state: !!newRecord.data.results[0].user_is_admin});
             }
         }
         this.setState({record: newRecord});
-    };
+    }
 
-    getRecordsHandler = ({record = this.state.record, url = null, notifyResponse = true} = {}) => {
+    getRecordsHandler({record = this.state.record, url = null, notifyResponse = true} = {}) {
         if (this.state.authMeta.authenticated) {
             const apiRequest = processRequest({
                 url: url,
@@ -185,13 +179,13 @@ class App extends React.Component {
                 });
             }
         }
-        return false
-    };
+        return false;
+    }
 
-    handleRetagPhotos = ({retag = false, notifyResponse = true} = {}) => {
+    handleProcessPhotos({ retag = false, scan = false, clean_db = false, notifyResponse = true } = {}) {
         if (this.state.authMeta.authenticated) {
             const apiRequest = processRequest({
-                queryFlags: {retag},
+                queryFlags: {retag, scan, clean_db},
                 apiMode: this.apiOptions.PROCESS_PHOTOS
             });
             if (apiRequest) {
@@ -199,8 +193,9 @@ class App extends React.Component {
                     if (response) {
                         if (notifyResponse) {
                             this.setMessage({
-                                message: retag ? 'Processing of new photos & resync of existing photo tags is underway' :
-                                    'Processing of newly added photos is underway',
+                                message: 
+                                retag ? this.statusMessages.retag : scan ? 
+                                this.statusMessages.scan :  clean_db ? this.statusMessages.clean_db : '',
                                 messageClass: 'alert alert-success'
                             });
                         }
@@ -214,12 +209,12 @@ class App extends React.Component {
                 });
             }
         }
-        return false
+        return false;
     };
 
-    setMessage = ({message = null, messageClass = ''} = {}) => {
+    setMessage({message = null, messageClass = ''} = {}) {
         this.setState({message: message, messageClass: messageClass});
-    };
+    }
 
     render() {
         return (
@@ -243,8 +238,8 @@ class App extends React.Component {
                                        apiOptions={this.apiOptions}
                                        setRecordState={this.setRecordState}
                                        setMessage={this.setMessage}
-                                       getRecordsHandler={this.getRecordsHandler}
-                                       handleRetagPhotos={this.handleRetagPhotos}
+                                       getRecordsHandler={this.getRecordsHandler.bind(this)}
+                                       handleProcessPhotos={this.handleProcessPhotos.bind(this)}
                                        authMeta={this.state.authMeta}
                             />
                             <Footer footer={process.env.REACT_APP_FOOTER}
