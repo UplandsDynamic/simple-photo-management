@@ -45,7 +45,7 @@ const DataTable = ({
     };
 
     const _validateTerm = (value) => {
-        return (/^[a-zA-Z\d.\- ]*$/.test(value)) ? value : record.meta.search
+        return (/^[a-zA-Z\d./+\- ]*$/.test(value)) ? value : record.meta.search
     };
 
     return (

@@ -124,30 +124,26 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         # set username of requester to user attr of serializer to allow return admin status in response
         self.serializer_class.user = self.request.user
         # handle search queries, if any
-        records = self.search_handler(
-            records=all_records, request=self.request)
+        if 'tag' in self.request.query_params and self.request.query_params.get('tag', None):
+                try:
+                    records = self.handle_search(records=all_records, 
+                    search_term=self.request.query_params.get('tag'))
+                except ValidationError as e:
+                    # if invalid search char, don't return error response, just return empty
+                    raise serializers.ValidationError(detail=f'Validation error: {e}')
         return records  # return filtered records, or empty list if no incoming search query
 
     @staticmethod
-    def search_handler(records=None, request=None):
-        """method to handle search queries
-        :param records: all records, to be filtered by search queries
-        :param request: incoming request data (inc. search query, if any)
-        :return: Queryset of matched records | None
+    def handle_search(records: queryset, search_term:str ) -> queryset:
+        """method to handle search
+        :param all_records: queryset of all records
+        :param search_term: search term string
+        :return: queryset of filtered results
         """
-        try:
-            # if searching for photos by tag
-            if 'tag' in request.query_params:
-                search_query = validate_search(
-                    request.query_params.get('tag', None))  # validate the incoming query first
-                if search_query:  # filter for tags. If no match, return records = None
-                    records = records.filter(
-                        Q(tags__tag__icontains=search_query) if search_query else None).distinct()
-                else:  # if no query, return all photos with no tags
-                    records = records.filter(tags=None).distinct()
-        except ValidationError as e:
-            # if invalid search char, don't return error response, just return empty
-            raise serializers.ValidationError(detail=f'Validation error: {e}')
+        search_query = validate_search(search_term)
+        terms = tuple(search_query.split('/'))
+        for t in terms:
+            records = records.filter(Q(tags__tag__icontains=t)).distinct() if t else records
         return records
 
     def perform_create(self, serializer_class):
@@ -210,15 +206,23 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
         # if searching for a product by description
         try:
             if 'tag' in self.request.query_params and self.request.query_params.get('tag', None):
-                search_query = validate_search(
-                    self.request.query_params.get('tag'))
-                records = records.filter(
-                    Q(tags__icontains=search_query) if search_query else None).distinct()
+                records = self.handle_search(all_records=records, search_term=self.request.query_params.get('tag'))
         except ValidationError as e:
             # if invalid search char, don't return error response, just return empty
             logger.info(f'Returning no results in response because: {e}')
             records = []
         return records  # return everything
+
+    @staticmethod
+    def handle_search(all_records: queryset, search_term:str ) -> queryset:
+        """method to handle search
+        :param all_records: queryset of all records
+        :param search_term: search term string
+        :return: queryset of filtered results
+        """
+        search_query = validate_search(search_term)
+        records = all_records.filter(Q(tags__icontains=search_query) if search_query else None).distinct()
+        return records
 
     def perform_create(self, serializer_class):
         """
