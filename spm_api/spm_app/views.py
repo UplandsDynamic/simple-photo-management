@@ -124,13 +124,15 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         # set username of requester to user attr of serializer to allow return admin status in response
         self.serializer_class.user = self.request.user
         # handle search queries, if any
-        if 'tag' in self.request.query_params and self.request.query_params.get('tag', None):
-                try:
-                    records = self.handle_search(records=all_records, 
-                    search_term=self.request.query_params.get('tag'))
-                except ValidationError as e:
-                    # if invalid search char, don't return error response, just return empty
-                    raise serializers.ValidationError(detail=f'Validation error: {e}')
+        search_query = self.request.query_params.get('tag', None)
+        if search_query:
+            try:
+                records = self.handle_search(records=all_records, search_term=search_query)
+            except ValidationError as e:
+                # if invalid search char, don't return error response, just return empty
+                raise serializers.ValidationError(detail=f'Validation error: {e}')
+        else:
+            records = all_records.filter(tags=None).distinct()
         return records  # return filtered records, or empty list if no incoming search query
 
     @staticmethod
@@ -141,7 +143,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         :return: queryset of filtered results
         """
         search_query = validate_search(search_term)
-        terms = tuple(search_query.split('/'))
+        terms = tuple(search_query.split('/'))  # create tuple of search tags, split by "/" character in search string
         for t in terms:
             records = records.filter(Q(tags__tag__icontains=t)).distinct() if t else records
         return records
