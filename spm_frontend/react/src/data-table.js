@@ -37,7 +37,8 @@ const DataTable = (props) => {
                 search: term
             });
             // get the matching records from the API
-            getRecordsHandler({ record });
+            setTimeout(function() {getRecordsHandler({record})}, 1000)
+            //getRecordsHandler({ record });
         }
     };
 

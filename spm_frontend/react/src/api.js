@@ -50,13 +50,14 @@ const _makeRequest = ({
             url: url,
             responseType: 'json',
             data: requestData,
+            cacheControl: cacheControl,
             //auth: {},
             headers: {
                 Authorization: _getSessionStorage('token') ?
                     `Token ${_getSessionStorage('token')}` : null,
                 //'cache-control': 'no-cache',
                 'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
+                'X-CSRFToken': csrfToken
             } // additional headers here
         })
     }

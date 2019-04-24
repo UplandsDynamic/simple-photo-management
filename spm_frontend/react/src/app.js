@@ -58,7 +58,7 @@ class App extends React.Component {
                     limit: process.env.REACT_APP_ROWS_PER_TABLE,
                     pagerMainSize: process.env.REACT_APP_PAGER_MAIN_SIZE,
                     pagerEndSize: process.env.REACT_APP_PAGER_END_SIZE,
-                    pageOrderBy: '',
+                    pageOrderBy: 'file_name',
                     pageOrderDir: '',
                     previous: null,
                     next: null,
@@ -154,7 +154,6 @@ class App extends React.Component {
             const admin = newRecord.data.results.length && 
                 newRecord.data.results[0].hasOwnProperty('user_is_admin') ? newRecord.data.results[0].user_is_admin : false;
             if (admin !== this.state.authMeta.userIsAdmin) {
-                console.log('setting admiN!')
                 this.setAuthorized({ role: 'admin', state: admin })
             }
             this.setState({ record: newRecord });
