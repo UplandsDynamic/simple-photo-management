@@ -26,8 +26,9 @@ Note: Mapping for actions (used in as_view), are:
     'post': 'create'
     'put': 'update',
     'patch': 'partial_update',
-    'patch': 'perform_single_update', # CUSTOM ACTION, routed in /api/v1/stock/<PK> (with path)
-    'patch': 'perform_bulk_partial_update',  # CUSTOM ACTION, routed in /api/v1/stock/ (without the ID in the path)
+    'patch': 'custom_update', # CUSTM ACTION
+    'patch': 'perform_single_update', # CUSTM ACTION
+    'patch': 'perform_bulk_partial_update',  # CUSTOM ACTION
     'delete': 'destroy',
     }
 """
@@ -39,9 +40,9 @@ functional_view_urlpatterns = [
     url('^v2/tags/(?P<pk>\d+)/$', views.PhotoTagViewSet.as_view(
         {'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy', 'put': 'update'}), name='photo-tag_detail'),
     url('^v2/photos/$', views.PhotoDataViewSet.as_view(
-        {'get': 'list', 'post': 'create', 'patch': 'partial_update'}), name='photo_data'),
+        {'get': 'list'}), name='photo_data'),
     url('^v2/photos/(?P<pk>\d+)/$', views.PhotoDataViewSet.as_view(
-        {'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy', 'put': 'update'}),
+        {'get': 'retrieve', 'patch': 'perform_update', 'delete': 'destroy', 'put': 'update'}),
         name='photo_data-detail'),
     url('^v2/process_photos', views.ProcessPhotos.as_view()),
     # url('^v2/stock/latest/$', views.StockDataViewSet.as_view(

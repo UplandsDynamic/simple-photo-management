@@ -189,9 +189,11 @@ class PhotoDataSerializer(serializers.HyperlinkedModelSerializer):
         overwrite update method if need to do extra stuff pre-save
         """
         # call parent method to do the update
-        super().update(instance, validated_data)
+        return super().update(instance, validated_data)
         # return the updated instance
-        return instance
+
+    
+    
 
 
 class PhotoTagSerializer(serializers.HyperlinkedModelSerializer):

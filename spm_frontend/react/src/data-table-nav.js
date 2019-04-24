@@ -2,93 +2,69 @@ import './css/data-table.css';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import Paginate from './paginate.js';
 import React from 'react';
+import {useState} from 'react';
 
-class DataTableNav extends React.Component {
+const DataTableNav = (props) => {
 
-    constructor(props) {
-        super(props);
-        this.state = {
-            term: '',
-        };
-        this.getRecords = this.getRecords.bind(this);
-    }
+    const {record = {}, authMeta = {}, handleGetRecords, handleProcessPhotos, handleSearch} = props
+    const [term, setTerm] = useState(''); // initial value
+    const userIsAdmin = authMeta.userIsAdmin;
 
-    componentWillMount() {
-        this.setState({
-            term: this.props.record.meta.search,
-        });
-    }
+    const validateTerm = (value) => {
+        return (/^[a-zA-Z\d./+\- ]*$/.test(value)) ? value : term;
+    };
 
-    componentWillReceiveProps(nextProps) {
-        this.setState({
-            term: nextProps.record.meta.search,
-        });
-    }
-
-    getRecords() {
-        let record = this.props.record;
+    const getRecords = () => {
         Object.assign(record.meta, {page: 1});
-        this.props.handleGetRecords({record});
-    }
+        handleGetRecords({record});
+    };
 
-    handleProcessPhotos({scan=false, retag=false, clean_db=false} = {}){
-        this.props.handleProcessPhotos({scan, retag, clean_db});
-    }
+    const handleProcessClick = ({scan=false, retag=false, clean_db=false} = {}) => {
+        handleProcessPhotos({ scan, retag, clean_db });
+    };
 
-    handleSearch(e) {
-        let record = this.props.record;
-        this.props.handleSearch({record, term: e.target.value});
-        this.setState({term: e.target.value});
-    }
+    const handleChange = (e)  => {
+        handleSearch({record, term: validateTerm(e.target.value)});
+        setTerm(validateTerm(e.target.value));
+    };
 
-    render() {
-        const {userIsAdmin} = this.props.authMeta;
-        if (this.props.record) {
-            let record = this.props.record;
-            return (
-                <React.Fragment>
-                    <div className={'container'}>
-                        <div className={'row nav-row'}>
-                            <div className={'col-12'}>
-                                <div className={'btn-group float-right'}>
-                                    <nav className="nav-pagination float-right" aria-label="Table data pages">
-                                        <Paginate record={record}
-                                                  handleGetRecords={this.props.handleGetRecords}
-                                        />
-                                    </nav>
-                                </div>
-                            </div>
-                        </div>
-                        <div className={'row nav-row'}>
-                            <div className={`${userIsAdmin ? 'col-4' : 'col-2'}`}>
-                                <div className={'btn-group'}>
-                                    <button onClick={this.getRecords} className={'btn btn-md btn-success mr-1 '}>
-                                        <FontAwesomeIcon icon={"sync-alt"}/></button>
-                                    <button onClick={userIsAdmin ? () => this.handleProcessPhotos({ scan: true }) : null} 
-                                        className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
-                                        <FontAwesomeIcon icon={"plus"}/></button>
-                                    <button onClick={userIsAdmin ? () => this.handleProcessPhotos({retag: true}) :null} 
-                                    className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
-                                        <FontAwesomeIcon icon={"tags"}/></button>
-                                        <button onClick={userIsAdmin ? () => this.handleProcessPhotos({clean_db: true}) :null} 
-                                        className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
-                                        <FontAwesomeIcon icon={"broom"} /></button>
-                                </div>
-                            </div>
-                            <div className={`${userIsAdmin ? 'col-8' : 'col-10'}`}>
-                                <nav className={'search-navigation w-100 d-block ml-1'}>
-                                    <input value={this.state.term} placeholder={'Search'}
-                                           name={'search'} className={'form-control search'}
-                                           onChange={(e) => {this.handleSearch(e)}
-                                           }/>
-                                </nav>
-                            </div>
-                        </div>
+    return (
+        <div className={'container'}>
+            <div className={'row nav-row'}>
+                <div className={'col-12'}>
+                    <div className={'btn-group float-right'}>
+                        <nav className="nav-pagination float-right" aria-label="Table data pages">
+                            <Paginate record={record}
+                                handleGetRecords={handleGetRecords}
+                            />
+                        </nav>
                     </div>
-                </React.Fragment>
-            )
-        }
-        return null;
+                </div>
+            </div>
+            <div className={'row nav-row'}>
+                <div className={`${userIsAdmin ? 'col-4' : 'col-2'}`}>
+                    <div className={'btn-group'}>
+                        <button onClick={getRecords} className={'btn btn-md btn-success mr-1 '}>
+                            <FontAwesomeIcon icon={"sync-alt"} /></button>
+                        <button onClick={userIsAdmin ? () => handleProcessClick({ scan: true }) : null}
+                            className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
+                            <FontAwesomeIcon icon={"plus"} /></button>
+                        <button onClick={userIsAdmin ? () => handleProcessClick({ retag: true }) : null}
+                            className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
+                            <FontAwesomeIcon icon={"tags"} /></button>
+                        <button onClick={userIsAdmin ? () => handleProcessClick({ clean_db: true }) : null}
+                            className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
+                            <FontAwesomeIcon icon={"broom"} /></button>
+                    </div>
+                </div>
+                <div className={`${userIsAdmin ? 'col-8' : 'col-10'}`}>
+                    <nav className={'search-navigation w-100 d-block ml-1'}>
+                        <input value={term} placeholder={'Search'}
+                            name={'search'} className={'form-control search'}
+                            onChange={handleChange} />
+                    </nav>
+                </div>
+            </div>
+        </div>)
     }
-}
 export default DataTableNav;

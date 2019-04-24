@@ -13,15 +13,16 @@ import Cookies from 'js-cookie';
 import axios from 'axios/index';
 /* css */
 import './css/index.css';
+/* debug */
+import './debug';
 /* font awesome icons */
-import {library} from '@fortawesome/fontawesome-svg-core'
+import { library } from '@fortawesome/fontawesome-svg-core'
 import {
     faSyncAlt, faEllipsisH, faPlus, faPlusSquare, faMinus, faMinusSquare,
     faTrashAlt, faEdit, faRobot, faTags, faBroom
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(faSyncAlt, faEllipsisH, faPlus, faTrashAlt, faEdit, faPlusSquare, faMinus, faMinusSquare, faRobot, faTags, faBroom);
-
 
 axios.defaults.withCredentials = true;
 
@@ -37,8 +38,9 @@ class App extends React.Component {
         }
         this.apiOptions = {
             /* used to define available API options in the api-request component */
-            GET_PHOTOS: {requestType: 'get_photos', method: 'GET', desc: 'request to get photo data'},
-            PROCESS_PHOTOS: {requestType: 'process_photos', method: 'GET', desc: 'request to begin photo re-taggig operation'},
+            GET_PHOTOS: { requestType: 'get_photos', method: 'GET', desc: 'request to get photo data' },
+            PROCESS_PHOTOS: { requestType: 'process_photos', method: 'GET', desc: 'request to begin photo re-taggig operation' },
+            ADD_TAGS: { requestType: 'add_tags', method: 'PATCH', desc: 'request to add tags to a photo' },
             // PATCH_PHOTOS: {requestType: 'patch_photos', method: 'PATCH', desc: 'PATCH request to update photo data'},
             // ADD_PHOTOS: {requestType: 'add_add_photos', method: 'POST', desc: 'POST request to add photo data'},
             // DELETE_PHOTOS: {
@@ -46,8 +48,8 @@ class App extends React.Component {
             //     method: 'DELETE',
             //     desc: 'DELETE request to delete photos'
             // },
-            POST_AUTH: {requestType: 'post_auth', method: 'POST', desc: 'POST request to for authorization'},
-            PATCH_CHANGE_PW: {requestType: 'patch_change_pw', method: 'PATCH', desc: 'PATCH request to for changing password'},
+            POST_AUTH: { requestType: 'post_auth', method: 'POST', desc: 'POST request to for authorization' },
+            PATCH_CHANGE_PW: { requestType: 'patch_change_pw', method: 'PATCH', desc: 'PATCH request to for changing password' },
         };
         this.initialState = {
             record: {
@@ -61,7 +63,8 @@ class App extends React.Component {
                     previous: null,
                     next: null,
                     cacheControl: 'no-cache',  // no caching by default, so always returns fresh data
-                    search: ''
+                    search: '',
+                    dataResponseReceived: false
                 },
                 data: {
                     results: [],
@@ -72,25 +75,24 @@ class App extends React.Component {
                 authenticated: false,
                 userIsAdmin: false,
             },
-            message: null,
-            messageClass: '',
             greeting: process.env.REACT_APP_GREETING,
             csrfToken: null,
         };
         this.state = JSON.parse(JSON.stringify(this.initialState));
+        this.message = {message: '', messageClass: ''}
         // bind methods to 'this' to enable to be passed as props
         this.setMessage = this.setMessage.bind(this);
         this.getSessionStorage = this.getSessionStorage.bind(this);
         this.setSessionStorage = this.setSessionStorage.bind(this);
         this.deleteSessionStorage = this.deleteSessionStorage.bind(this);
         this.setAuthentication = this.setAuthentication.bind(this);
-        this.setRecordState = this.setRecordState.bind(this);
         this.handleProcessPhotos = this.handleProcessPhotos.bind(this);
         this.getRecordsHandler = this.getRecordsHandler.bind(this);
+        this.handleAddTags = this.handleAddTags.bind(this);
     }
 
     componentDidMount() {
-        this.setState({csrfToken: this.getCSRFToken()});
+        this.setState({ csrfToken: this.getCSRFToken() });
         // kick off: attempt to authenticate (new authentication also requests stock data)
         this.setAuthentication();
     }
@@ -102,7 +104,7 @@ class App extends React.Component {
         return Cookies.get('csrftoken')
     }
 
-    setSessionStorage({key, value}) {
+    setSessionStorage({ key, value }) {
         sessionStorage.setItem(key, value);
     }
 
@@ -123,39 +125,43 @@ class App extends React.Component {
     setAuthentication() {
         let authenticated = !!this.getSessionStorage('token');
         let clonedAuthMeta = JSON.parse(JSON.stringify(this.state.authMeta));
-        Object.assign(clonedAuthMeta, {authenticated});
-        // set authentication state and fetch new stock records when done (in a callback)
-        this.setState({authMeta: {...clonedAuthMeta}}, this.getRecordsHandler);
+        clonedAuthMeta.authenticated = authenticated;
+        // set authentication state and fetch new records when done (in a callback)
+        this.setState({ authMeta: { ...clonedAuthMeta } }, this.getRecordsHandler);
     }
 
-    setAuthorized({role = 'admin', state = false} = {}) {
-        // called after each api response returning stock data
+    setAuthorized({ role = 'admin', state = false } = {}) {
+        // called after each api response
         let clonedAuthMeta = JSON.parse(JSON.stringify(this.state.authMeta));
         if (role === 'admin') {
-            Object.assign(clonedAuthMeta, {userIsAdmin: state});
+            if (state !== this.state.authMeta.userIsAdmin) {
+                clonedAuthMeta.userIsAdmin = state;
+                this.setState({ authMeta: { ...clonedAuthMeta } });
+            }
         }
-        this.setState({authMeta: {...clonedAuthMeta}});
     }
 
-    setRecordState({newRecord} = {}) {
+    _setRecordState({ newRecord } = {}) {
         /*
         method to update state for record being retrieved (GET request)
          */
-        let {page} = newRecord.meta;
+        let { page } = newRecord.meta;
         if (newRecord) {
             // ensure page never < 1
             let updatedPage = page < 1 ? 1 : page;
-            Object.assign(newRecord.meta, {page: updatedPage});
-            // set user admin status to what was returned from api in stock record data
-            if (!!newRecord.data.results.length && newRecord.data.results[0].hasOwnProperty('user_is_admin')
-            ) {
-                this.setAuthorized({role: 'admin', state: !!newRecord.data.results[0].user_is_admin});
+            Object.assign(newRecord.meta, { page: updatedPage });
+            // set user admin status to what was returned from api in record data
+            const admin = newRecord.data.results.length && 
+                newRecord.data.results[0].hasOwnProperty('user_is_admin') ? newRecord.data.results[0].user_is_admin : false;
+            if (admin !== this.state.authMeta.userIsAdmin) {
+                console.log('setting admiN!')
+                this.setAuthorized({ role: 'admin', state: admin })
             }
+            this.setState({ record: newRecord });
         }
-        this.setState({record: newRecord});
     }
 
-    getRecordsHandler({record = this.state.record, url = null, notifyResponse = true} = {}) {
+    getRecordsHandler({ record = this.state.record, url = null, notifyResponse = true } = {}) {
         if (this.state.authMeta.authenticated) {
             const apiRequest = processRequest({
                 url: url,
@@ -171,10 +177,12 @@ class App extends React.Component {
                                 messageClass: 'alert alert-success'
                             });
                         }
-                        Object.assign(record.data, {...response.data});
-                        Object.assign(record.meta, {...record.meta});
-                        // update recordMeta state in app.js
-                        this.setRecordState({newRecord: record});
+                        // set new state
+                        let recordCopy = JSON.parse(JSON.stringify(this.state.record));
+                        Object.assign(recordCopy.data, { ...response.data });
+                        Object.assign(recordCopy.meta, { ...record.meta });
+                        recordCopy.meta.dataResponseReceived = true;
+                        this._setRecordState({ newRecord: recordCopy });
                     }
                 }).catch(error => {
                     console.log(error);
@@ -182,7 +190,7 @@ class App extends React.Component {
                         message: 'An API error has occurred',
                         messageClass: 'alert alert-danger'
                     });
-                    this.setRecordState({
+                    this._setRecordState({
                         newRecord: record,
                     });
                 });
@@ -191,10 +199,11 @@ class App extends React.Component {
         return false;
     }
 
-    handleProcessPhotos({ retag = false, scan = false, clean_db = false, notifyResponse = true } = {}) {
+    handleProcessPhotos({ record = this.state.record, retag = false, scan = false,
+        clean_db = false, notifyResponse = true } = {}) {
         if (this.state.authMeta.authenticated) {
             const apiRequest = processRequest({
-                queryFlags: {retag, scan, clean_db},
+                queryFlags: { retag, scan, clean_db },
                 apiMode: this.apiOptions.PROCESS_PHOTOS
             });
             if (apiRequest) {
@@ -202,9 +211,9 @@ class App extends React.Component {
                     if (response) {
                         if (notifyResponse) {
                             this.setMessage({
-                                message: 
-                                retag ? this.statusMessages.retag : scan ? 
-                                this.statusMessages.scan :  clean_db ? this.statusMessages.clean_db : '',
+                                message:
+                                    retag ? this.statusMessages.retag : scan ?
+                                        this.statusMessages.scan : clean_db ? this.statusMessages.clean_db : '',
                                 messageClass: 'alert alert-success'
                             });
                         }
@@ -221,10 +230,62 @@ class App extends React.Component {
         return false;
     }
 
-    setMessage({message = null, messageClass = ''} = {}) {
-        this.setState({message: message, messageClass: messageClass});
+    handleAddTags({ record = this.state.record, tags = null,
+        recordItem, notifyResponse = true } = {}) {
+        if (tags && this.state.authMeta.authenticated) {
+            const apiRequest = processRequest({
+                queryFlags: {},
+                requestData: {
+                    id: recordItem.id,
+                    tags: tags.split('/')
+                },
+                apiMode: this.apiOptions.ADD_TAGS
+            });
+            if (apiRequest) {
+                apiRequest.then((response) => {
+                    if (response) {
+                        let recordCopy = JSON.parse(JSON.stringify(this.state.record));
+                        recordCopy.data.results.forEach((r, idx) => {
+                            if (r.id === response.data.id) {
+                                Object.assign(recordCopy.data.results[idx], response.data);
+                            }
+                        });
+                        this._setRecordState({ newRecord: recordCopy })
+                        if (notifyResponse) {
+                            this.setMessage({
+                                message: 'New tags successfully set!',
+                                messageClass: 'alert alert-success'
+                            });
+                        }
+                    }
+                }).catch(error => {
+                    console.log(error);
+                    this.setMessage({
+                        message: 'An API error has occurred. Setting new tags failed!',
+                        messageClass: 'alert alert-danger'
+                    });
+                });
+            }
+        }
+        return false;
     }
 
+    setMessage({ message = null, messageClass = '' } = {}) {
+        Object.assign(this.message, {message, messageClass})
+    }
+
+    DataTableWrapper() {
+        return (
+            <DataTable record={this.state.record}
+                apiOptions={this.apiOptions}
+                setMessage={this.setMessage}
+                getRecordsHandler={this.getRecordsHandler}
+                handleProcessPhotos={this.handleProcessPhotos}
+                authMeta={this.state.authMeta}
+                handleAddTags={this.handleAddTags} />
+        )
+    }
+       
     render() {
         return (
             <div className={'app-main'}>
@@ -232,28 +293,22 @@ class App extends React.Component {
                     <div className={'row'}>
                         <div className={'col-12'}>
                             <Header authMeta={this.state.authMeta}
-                                    apiOptions={this.apiOptions}
-                                    csrfToken={this.state.csrfToken}
-                                    setMessage={this.setMessage}
-                                    getSessionStorage={this.getSessionStorage}
-                                    setSessionStorage={this.setSessionStorage}
-                                    deleteSessionStorage={this.deleteSessionStorage}
-                                    setAuthentication={this.setAuthentication}
+                                apiOptions={this.apiOptions}
+                                csrfToken={this.state.csrfToken}
+                                setMessage={this.setMessage}
+                                getSessionStorage={this.getSessionStorage}
+                                setSessionStorage={this.setSessionStorage}
+                                deleteSessionStorage={this.deleteSessionStorage}
+                                setAuthentication={this.setAuthentication}
                             />
-                            <Message message={this.state.message}
-                                     messageClass={this.state.messageClass}
+                            <Message message={this.message.message}
+                                messageClass={this.message.messageClass}
                             />
-                            <DataTable record={this.state.record}
-                                       apiOptions={this.apiOptions}
-                                       setRecordState={this.setRecordState}
-                                       setMessage={this.setMessage}
-                                       getRecordsHandler={this.getRecordsHandler}
-                                       handleProcessPhotos={this.handleProcessPhotos}
-                                       authMeta={this.state.authMeta}
-                            />
+                            { this.state.authMeta.authenticated && 
+                                this.state.record.meta.dataResponseReceived ? this.DataTableWrapper() : null}
                             <Footer footer={process.env.REACT_APP_FOOTER}
-                                    copyright={process.env.REACT_APP_COPYRIGHT}
-                                    version={process.env.REACT_APP_VERSION}
+                                copyright={process.env.REACT_APP_COPYRIGHT}
+                                version={process.env.REACT_APP_VERSION}
                             />
                         </div>
                     </div>

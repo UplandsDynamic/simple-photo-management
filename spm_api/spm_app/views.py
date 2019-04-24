@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.utils.datetime_safe import datetime
 from rest_framework.views import APIView
 import os
-from .custom_validators import RequestQueryValidator, validate_search
+from .custom_validators import RequestQueryValidator, validate_search, validate_tag_list
 from django.core.exceptions import ValidationError
 from rest_framework import (viewsets, permissions, serializers, status)
 from .serializers import (
@@ -18,6 +18,8 @@ from .custom_permissions import AccessPermissions
 from .models import PhotoData, PhotoTag
 from django.db.models import Q
 from rest_framework.decorators import action
+from rest_framework.renderers import JSONRenderer
+from rest_framework.response import Response
 from .spm_worker.process_images import ProcessImages
 from django_q.tasks import async_task, result
 from functools import partial
@@ -135,6 +137,52 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
             records = all_records.filter(tags=None).distinct()
         return records  # return filtered records, or empty list if no incoming search query
 
+    def perform_create(self, serializer_class):
+        """
+        override perform_create to save the user as the owner of the record
+        """
+        serializer_class.save(owner=self.request.user)
+
+    def perform_update(self, request, *args, **kwargs):
+        """
+        override perform_update to perform any additional filtering, modification, etc
+        """
+        try:
+            try:
+                validate_tag_list(request.data['tags'])  # first validate the incoming data
+                tags_to_add = request.data['tags']
+            except ValidationError as e:
+                raise serializers.ValidationError(detail=f'Validation error: {e.message}')
+            added = self.handleAddTags(
+                record_id=kwargs['pk'], tags=tags_to_add, user=request.user)
+            updated_record = {
+                'id': added.id,
+                'owner': request.user.username,
+                'file_name': added.file_name,
+                'file_format': added.file_format,
+                'processed_url': added.processed_url,
+                'original_url': added.original_url,
+                'public_img_url': added.public_img_url,
+                'public_img_tn_url': added.public_img_tn_url,
+                'tags': [t for t in added.tags.all().values_list('tag', flat=True)],
+                'record_updated': added.record_updated,
+                'user_is_admin': request.user.groups.filter(name='administrators').exists()
+            }
+            return JsonResponse(data=updated_record, status=status.HTTP_202_ACCEPTED)
+        except Exception as e:
+            return JsonResponse({"status": f"Error: {e}"}, status=500)
+        # return JsonResponse(JSONRenderer().render(serializer.data), status=202) if added else JsonResponse(
+        #     {'Status': 'Error whilst adding tags!'}, status=500)
+        
+
+    def perform_destroy(self, instance):
+        # only allow admins to delete objects
+        if self.request.user.groups.filter(name='administrators').exists():
+            super().perform_destroy(instance)
+        else:
+            raise serializers.ValidationError(
+                detail='You are not authorized to delete photo data!')
+
     @staticmethod
     def handle_search(records: queryset, search_term:str ) -> queryset:
         """method to handle search
@@ -148,25 +196,36 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
             records = records.filter(Q(tags__tag__icontains=t)).distinct() if t else records
         return records
 
-    def perform_create(self, serializer_class):
+    @staticmethod
+    def handleAddTags(record_id: int, tags: list, user: User) -> bool:
+        """function to add tags to the PhotoData model
+        :param record_id: ID of record to be updated
+        :param tags: List of tags (strings) to add to the exising tags
+        :param user: user doing the updading
+        :return: updated PhotoData instance | False
         """
-        override perform_create to save the user as the owner of the record
-        """
-        serializer_class.save(owner=self.request.user)
-
-    def perform_update(self, serializer):
-        """
-        override perform_update to perform any additional filtering, modification, etc
-        """
-        super().perform_update(serializer)  # call to parent method to save the update
-
-    def perform_destroy(self, instance):
-        # only allow admins to delete objects
-        if self.request.user.groups.filter(name='administrators').exists():
-            super().perform_destroy(instance)
-        else:
-            raise serializers.ValidationError(
-                detail='You are not authorized to delete photo data!')
+        # first, update the tag model with new tags, if necessary
+        successfully_saved_tags = []
+        try:
+            for tag in tags:
+                try:
+                    tag, tag_created = PhotoTag.objects.get_or_create(
+                        tag=tag, defaults={'owner': user})
+                    successfully_saved_tags.append(tag)
+                except Exception as e:
+                    logger.warning(
+                        f'An exception occurred whilst attempting to save tags to database: {e}')
+            # save tags to PhotoData model
+            record_to_update = PhotoData.objects.get(id=record_id) # get model instance to update
+            for tag in successfully_saved_tags:
+                record_to_update.tags.add(tag)
+            record_to_update.record_updated = datetime.utcnow()
+            # save the model
+            record_to_update.save()
+            return record_to_update
+        except Exception as e:
+            logger.error(e)
+            return False
 
 
 class PhotoTagViewSet(viewsets.ModelViewSet):

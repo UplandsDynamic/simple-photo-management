@@ -1,33 +1,22 @@
 import './css/data-table.css';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import React from 'react'
-import ModalImage from 'react-modal-image'
+import React from 'react';
+import ModalImage from 'react-modal-image';
+import DataTableAddTags from './data-table-add-tags';
 
-const DataTableData = ({record = {}, formatUTCDateTime, authMeta = {}} = {}) => {
-    const {authenticated, userIsAdmin} = authMeta;
+const DataTableData = (props) => {
 
-    if (!record || !authenticated || (record && record.data.results.length < 1)) {
-        return (
-            <tr data-toggle="modal" className={'d-flex dataTableRows'}>
-                <td className={'col-12 no-data'}>
-                    <div className={'alert alert-warning'}>No data to display!</div>
-                </td>
-            </tr>
-        )
-    }
+    const { record = {}, handleAddTags } = props
+
     return record.data.results.map((item, index) => {
-        let {
-            datetime_of_request, file_format, file_name, id, owner, tags, user_is_admin, public_img_url,
-            public_img_tn_url
-        } = item;
+        let { file_format, file_name, tags, public_img_tn_url } = item;
         let rowClasses = ['d-flex', 'dataTableRows'];
         let imgClasses = ['img-fluid', 'img-thumbnail', 'd-block', 'mx-auto'];
         let small_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-150_150${file_format}`;
-        let medium_img_url= `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-720_720${file_format}`;
+        let medium_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-720_720${file_format}`;
         let full_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-1080_1080${file_format}`;
         return (<tr key={item.id} data-toggle="modal" className={rowClasses.join(' ')}>
-                    {/*<th scope="row">{item.id}</th>*/}
-            <td className={'col-5 photo'}>
+            {/*<th scope="row">{item.id}</th>*/}
+            <td className={'col-4 photo'}>
                 <ModalImage
                     small={small_img_url}
                     medium={medium_img_url}
@@ -36,16 +25,17 @@ const DataTableData = ({record = {}, formatUTCDateTime, authMeta = {}} = {}) => 
                     className={imgClasses.join(' ')}
                 />
             </td>
-            <td className={'col-5 tags'}>
+            <td className={'col-4 tags'}>
                 <ul>
                     {tags.map((tag, key) => <li key={key}>{tag}</li>)}
                 </ul>
             </td>
-            <td className={'action-col col-2 text-center'}>-</td>
+            <td className={'action-col col-4 text-center'}>
+                <DataTableAddTags handleAddTags={handleAddTags} recordItem={item} />
+            </td>
         </tr>)
     });
 };
-
 export default DataTableData;
 
 /*

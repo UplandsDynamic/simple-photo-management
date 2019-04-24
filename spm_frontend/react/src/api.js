@@ -15,6 +15,9 @@ const processRequest = ({
         else if (apiMode.requestType === 'post_auth' || requestType === 'patch_change_pw') {
             return _auth({csrfToken, requestData, apiMode, requestMethod: method});
         }
+        else if (apiMode.requestType === 'add_tags') {
+            return _add_tags({csrfToken, requestData, apiMode, requestMethod: method});
+        }
     }
     console.log(`
     No API mode, or stock record configuration set. API requested failed.
@@ -57,7 +60,7 @@ const _makeRequest = ({
             } // additional headers here
         })
     }
-    console.log('API did not send a request')
+    console.log('API did not send a request');
 };
 
 
@@ -83,6 +86,11 @@ const _processPhotos = ({ csrfToken = null, requestMethod = null, url = null,
         url = `${process.env.REACT_APP_API_DATA_ROUTE}/process_photos?retag=${retag}&scan=${scan}&clean_db=${clean_db}`;
     }
     return _makeRequest({csrfToken, requestMethod, url})  // returns a promise
+};
+
+const _add_tags = ({csrfToken, requestData, apiMode, requestMethod} = {}) => {
+    const url = `${process.env.REACT_APP_API_DATA_ROUTE}/photos/${requestData.id}/`;
+    return _makeRequest({csrfToken, requestData, requestMethod, url});  // returns a promise
 };
 
 const _auth = ({requestMethod = null, csrfToken = null, requestData = null, apiMode = null} = {}) => {
