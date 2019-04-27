@@ -46,8 +46,8 @@ const DataTableNav = (props) => {
                     <div className={'btn-group'}>
                         <button onClick={getRecords} className={'btn btn-md btn-success mr-1 '}>
                             <FontAwesomeIcon icon={"sync-alt"} /></button>
-                        <button onClick={userIsAdmin ? () => handleProcessClick({ scan: true }) : null}
-                            className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>
+                        <button onClick={() => handleProcessClick({ scan: true })}
+                            className={`btn btn-md btn-warning mr-1`}>
                             <FontAwesomeIcon icon={"plus"} /></button>
                         <button onClick={userIsAdmin ? () => handleProcessClick({ retag: true }) : null}
                             className={`btn btn-md btn-warning mr-1 ${!userIsAdmin ? 'disabled' : ''}`}>

@@ -129,10 +129,12 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         search_query = self.request.query_params.get('tag', None)
         if search_query:
             try:
-                records = self.handle_search(records=all_records, search_term=search_query)
+                records = self.handle_search(
+                    records=all_records, search_term=search_query)
             except ValidationError as e:
                 # if invalid search char, don't return error response, just return empty
-                raise serializers.ValidationError(detail=f'Validation error: {e}')
+                raise serializers.ValidationError(
+                    detail=f'Validation error: {e}')
         else:
             records = all_records.filter(tags=None).distinct()
         return records  # return filtered records, or empty list if no incoming search query
@@ -147,33 +149,39 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         """
         override perform_update to perform any additional filtering, modification, etc
         """
-        try:
-            try:
-                validate_tag_list(request.data['tags'])  # first validate the incoming data
-                tags_to_add = request.data['tags']
-            except ValidationError as e:
-                raise serializers.ValidationError(detail=f'Validation error: {e.message}')
-            added = self.handleAddTags(
-                record_id=kwargs['pk'], tags=tags_to_add, user=request.user)
-            updated_record = {
-                'id': added.id,
-                'owner': request.user.username,
-                'file_name': added.file_name,
-                'file_format': added.file_format,
-                'processed_url': added.processed_url,
-                'original_url': added.original_url,
-                'public_img_url': added.public_img_url,
-                'public_img_tn_url': added.public_img_tn_url,
-                'tags': [t for t in added.tags.all().values_list('tag', flat=True)],
-                'record_updated': added.record_updated,
-                'user_is_admin': request.user.groups.filter(name='administrators').exists()
-            }
-            return JsonResponse(data=updated_record, status=status.HTTP_202_ACCEPTED)
+        # define eligible update fields (useful to quickly disable updating of fields if required)
+        eligible_update_fields = {'tags'}
+        updated_record = None
+        try:  # first validate incoming data for fields eligible for update
+            if 'tags' in eligible_update_fields:  # tags
+                try:
+                    validate_tag_list(request.data['tags'])
+                    tags_to_add = request.data['tags']
+                except ValidationError as e:
+                    raise serializers.ValidationError(
+                        detail=f'Validation error: {e.message}')
+                added = self.handleAddTags(
+                    record_id=kwargs['pk'], tags=tags_to_add, user=request.user)
+                if added:
+                    updated_record = {
+                        'id': added.id,
+                        'owner': request.user.username,
+                        'file_name': added.file_name,
+                        'file_format': added.file_format,
+                        'processed_url': added.processed_url,
+                        'original_url': added.original_url,
+                        'public_img_url': added.public_img_url,
+                        'public_img_tn_url': added.public_img_tn_url,
+                        'tags': [t for t in added.tags.all().values_list('tag', flat=True)],
+                        'record_updated': added.record_updated,
+                        'user_is_admin': request.user.groups.filter(name='administrators').exists()
+                    }
+            return JsonResponse(data=updated_record, status=status.HTTP_202_ACCEPTED) if updated_record else JsonResponse(
+                {"status": "No tags added!"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
         except Exception as e:
             return JsonResponse({"status": f"Error: {e}"}, status=500)
         # return JsonResponse(JSONRenderer().render(serializer.data), status=202) if added else JsonResponse(
         #     {'Status': 'Error whilst adding tags!'}, status=500)
-        
 
     def perform_destroy(self, instance):
         # only allow admins to delete objects
@@ -184,48 +192,83 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 detail='You are not authorized to delete photo data!')
 
     @staticmethod
-    def handle_search(records: queryset, search_term:str ) -> queryset:
+    def handle_search(records: queryset, search_term: str) -> queryset:
         """method to handle search
         :param all_records: queryset of all records
         :param search_term: search term string
         :return: queryset of filtered results
         """
         search_query = validate_search(search_term)
-        terms = tuple(search_query.split('/'))  # create tuple of search tags, split by "/" character in search string
+        # create tuple of search tags, split by "/" character in search string
+        terms = tuple(search_query.split('/'))
         for t in terms:
-            records = records.filter(Q(tags__tag__icontains=t)).distinct() if t else records
+            records = records.filter(
+                Q(tags__tag__icontains=t)).distinct() if t else records
         return records
 
     @staticmethod
-    def handleAddTags(record_id: int, tags: list, user: User) -> bool:
+    def handleAddTags(record_id: int, tags: list, user: User, write_to_iptc: bool = True,
+                      iptc_key: str = 'Iptc.Application2.Keywords') -> bool:
         """function to add tags to the PhotoData model
         :param record_id: ID of record to be updated
         :param tags: List of tags (strings) to add to the exising tags
         :param user: user doing the updading
+        :param write_to_iptc: boolean: whether to write the new tags to the image
+        :param iptc_key: str: IPTC key. Defaults to keyword (Iptc.Application2.Keywords)
         :return: updated PhotoData instance | False
-        """
+        """ 
+        # get model instance to update
+        record = PhotoData.objects.get(id=record_id)
+        tag_write_success = False
         # first, update the tag model with new tags, if necessary
-        successfully_saved_tags = []
-        try:
-            for tag in tags:
-                try:
-                    tag, tag_created = PhotoTag.objects.get_or_create(
-                        tag=tag, defaults={'owner': user})
-                    successfully_saved_tags.append(tag)
-                except Exception as e:
-                    logger.warning(
-                        f'An exception occurred whilst attempting to save tags to database: {e}')
-            # save tags to PhotoData model
-            record_to_update = PhotoData.objects.get(id=record_id) # get model instance to update
-            for tag in successfully_saved_tags:
-                record_to_update.tags.add(tag)
-            record_to_update.record_updated = datetime.utcnow()
-            # save the model
-            record_to_update.save()
-            return record_to_update
-        except Exception as e:
-            logger.error(e)
-            return False
+        if write_to_iptc:
+            try:
+                origin_file_url = record.original_url
+                processed_image_path = settings.SPM['PROCESSED_IMAGE_PATH']
+                thumb_path = settings.SPM['PROCESSED_THUMBNAIL_PATH']
+                conversion_format = settings.SPM['CONVERSION_FORMAT']
+                tags_to_add = {'iptc_key': iptc_key, 'tags': tags}
+                # write tags to the origin image
+                tag_write_success = ProcessImages.add_tags(origin_file_url=origin_file_url, tags=tags_to_add)
+                if tag_write_success:
+                    # recreate the converted copy and thumbs
+                    Processor = ProcessImages(origin_file_url=origin_file_url, processed_image_path=processed_image_path, 
+                    thumb_path=thumb_path, conversion_format=conversion_format, process_single=True, tags=tags_to_add)
+                    # create the tagged converted copy and thumbs
+                    result = [i for i in Processor.process_images()]  # loop through process_images generator to process the image
+                    if result[0]:  # if a result was returned, indicating new conversions have been generated
+                        # remo`ve the now orphaned previous processed versions (inc. thumbs)
+                        async_task(Processor.delete_images, allowed_dirs={processed_image_path}, containing_str=record.file_name,
+                                allowed_formats=[conversion_format], recursive=True)
+                        # set new filename of newly created processed image
+                        new_data = result[0]['conversion_data']
+                        record.file_name = os.path.splitext(new_data['new_filename'])[0]
+                        record.file_format = os.path.splitext(new_data['new_filename'])[1]
+                        record.processed_url = os.path.join(new_data['processed_path'], new_data['new_filename'])
+            except Exception:
+                logger.error('An error occurred whilst attempting to add tags', exc_info=True)
+        # write tags to db only if successfully written to imgage (if required)
+        if tag_write_success or not write_to_iptc:
+            try:
+                successfully_added_tags = []
+                for tag in tags:
+                    try:
+                        tag, tag_created = PhotoTag.objects.get_or_create(
+                            tag=tag, defaults={'owner': user})
+                        successfully_added_tags.append(tag)
+                    except Exception as e:
+                        logger.warning(
+                            f'An exception occurred whilst attempting to save tags to database: {e}')
+                # save tags & updated image data to PhotoData model
+                for t in successfully_added_tags:
+                    record.tags.add(t)
+                record.record_updated = datetime.utcnow()
+                # save the model
+                record.save()
+                return record
+            except Exception as e:
+                logger.error(e)
+        return False
 
 
 class PhotoTagViewSet(viewsets.ModelViewSet):
@@ -267,7 +310,8 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
         # if searching for a product by description
         try:
             if 'tag' in self.request.query_params and self.request.query_params.get('tag', None):
-                records = self.handle_search(all_records=records, search_term=self.request.query_params.get('tag'))
+                records = self.handle_search(
+                    all_records=records, search_term=self.request.query_params.get('tag'))
         except ValidationError as e:
             # if invalid search char, don't return error response, just return empty
             logger.info(f'Returning no results in response because: {e}')
@@ -275,14 +319,15 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
         return records  # return everything
 
     @staticmethod
-    def handle_search(all_records: queryset, search_term:str ) -> queryset:
+    def handle_search(all_records: queryset, search_term: str) -> queryset:
         """method to handle search
         :param all_records: queryset of all records
         :param search_term: search term string
         :return: queryset of filtered results
         """
         search_query = validate_search(search_term)
-        records = all_records.filter(Q(tags__icontains=search_query) if search_query else None).distinct()
+        records = all_records.filter(
+            Q(tags__icontains=search_query) if search_query else None).distinct()
         return records
 
     def perform_create(self, serializer_class):
@@ -355,7 +400,8 @@ class ProcessPhotos(APIView):
             """
             if new image data was created - or resync_tags=True - , create PhotoTag objects
             (creating in the model if necessary with update_or_create), then populate saved
-            PhotoData model's M2M tags field with that list. Then, add image data to a list for return.
+            PhotoData model's M2M tags field with that list. 
+            Then, add image data to a list for return
             """
             if photo_data_record and (new_record_created or resync_tags):
                 if record['tag_data']['tags']:
@@ -402,6 +448,7 @@ class ProcessPhotos(APIView):
             0] for f in url_list_generator}
         orphaned_db_records = set(PhotoData.objects.values_list(
             'file_name', flat=True).all()) - filenames_set
+        logger.info(f'ORPHANED RECORDS: {orphaned_db_records}')
         for record in orphaned_db_records:
             try:
                 PhotoData.objects.filter(file_name=record).delete()

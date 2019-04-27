@@ -77,9 +77,9 @@ class App extends React.Component {
             },
             greeting: process.env.REACT_APP_GREETING,
             csrfToken: null,
+            message: {message: '', messageClass: ''}
         };
         this.state = JSON.parse(JSON.stringify(this.initialState));
-        this.message = {message: '', messageClass: ''}
         // bind methods to 'this' to enable to be passed as props
         this.setMessage = this.setMessage.bind(this);
         this.getSessionStorage = this.getSessionStorage.bind(this);
@@ -270,7 +270,7 @@ class App extends React.Component {
     }
 
     setMessage({ message = null, messageClass = '' } = {}) {
-        Object.assign(this.message, {message, messageClass})
+        this.setState({'message': Object.assign(this.state.message, {message, messageClass})})
     }
 
     DataTableWrapper() {
@@ -300,8 +300,8 @@ class App extends React.Component {
                                 deleteSessionStorage={this.deleteSessionStorage}
                                 setAuthentication={this.setAuthentication}
                             />
-                            <Message message={this.message.message}
-                                messageClass={this.message.messageClass}
+                            <Message message={this.state.message.message}
+                                messageClass={this.state.message.messageClass}
                             />
                             { this.state.authMeta.authenticated && 
                                 this.state.record.meta.dataResponseReceived ? this.DataTableWrapper() : null}
