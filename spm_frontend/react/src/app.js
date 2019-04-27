@@ -88,7 +88,7 @@ class App extends React.Component {
         this.setAuthentication = this.setAuthentication.bind(this);
         this.handleProcessPhotos = this.handleProcessPhotos.bind(this);
         this.getRecordsHandler = this.getRecordsHandler.bind(this);
-        this.handleAddTags = this.handleAddTags.bind(this);
+        this.handleUpdateTags = this.handleUpdateTags.bind(this);
     }
 
     componentDidMount() {
@@ -229,14 +229,15 @@ class App extends React.Component {
         return false;
     }
 
-    handleAddTags({ record = this.state.record, tags = null,
-        recordItem, notifyResponse = true } = {}) {
+    handleUpdateTags({ record = this.state.record, tags = null,
+        recordItem, updateMode, notifyResponse = true } = {}) {
         if (tags && this.state.authMeta.authenticated) {
             const apiRequest = processRequest({
                 queryFlags: {},
                 requestData: {
                     id: recordItem.id,
-                    tags: tags.split('/')
+                    tags: tags.split('/'),
+                    update_mode: updateMode
                 },
                 apiMode: this.apiOptions.ADD_TAGS
             });
@@ -281,7 +282,7 @@ class App extends React.Component {
                 getRecordsHandler={this.getRecordsHandler}
                 handleProcessPhotos={this.handleProcessPhotos}
                 authMeta={this.state.authMeta}
-                handleAddTags={this.handleAddTags} />
+                handleUpdateTags={this.handleUpdateTags} />
         )
     }
        

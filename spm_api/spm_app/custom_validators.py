@@ -9,17 +9,27 @@ def validate_alphanumplus(value):
             _(f'{value} contains invalid characters!')
         )
 
-def validate_tag_list(value:list):
+
+def validate_tag_list(value: list):
     if isinstance(value, list):
         for v in value:
             if not re.match(r'^[A-Za-z0-9\-: ]*$', v):
                 raise ValidationError(
                     _(f'{value} contains invalid characters!')
-            )
+                )
     else:
-         raise ValidationError(
-                    _(f'{value} is not a valid list of tags!')
-            )
+        raise ValidationError(
+            _(f'{value} is not a valid list of tags!')
+        )
+
+
+def validate_update_mode(value: str):
+    acceptable_values = {'add', 'remove'}
+    if value not in acceptable_values:
+        raise ValidationError(
+            _(f'{value} was not a valid update mode options!')
+        )
+
 
 def validate_url(value):
     if not re.match(r'^[A-Za-z0-9_/.\\-]*$', value):

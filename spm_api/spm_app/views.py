@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.utils.datetime_safe import datetime
 from rest_framework.views import APIView
 import os
-from .custom_validators import RequestQueryValidator, validate_search, validate_tag_list
+from .custom_validators import RequestQueryValidator, validate_search, validate_tag_list, validate_update_mode
 from django.core.exceptions import ValidationError
 from rest_framework import (viewsets, permissions, serializers, status)
 from .serializers import (
@@ -156,28 +156,35 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
             if 'tags' in eligible_update_fields:  # tags
                 try:
                     validate_tag_list(request.data['tags'])
-                    tags_to_add = request.data['tags']
+                    tags_to_update = request.data['tags']
                 except ValidationError as e:
                     raise serializers.ValidationError(
                         detail=f'Validation error: {e.message}')
-                added = self.handleAddTags(
-                    record_id=kwargs['pk'], tags=tags_to_add, user=request.user)
-                if added:
+                # validate update mode param
+                validate_update_mode(request.data.get('update_mode', None))
+                update_mode = request.data['update_mode']
+                if update_mode == 'add':
+                    updated_instance = self.handleAddTags(
+                        record_id=kwargs['pk'], tags=tags_to_update, user=request.user)
+                elif update_mode == 'remove':
+                    updated_instance = self.handleRemoveTags(record_id=kwargs['pk'], tags=tags_to_update, 
+                                                             user=request.user)
+                if updated_instance:
                     updated_record = {
-                        'id': added.id,
+                        'id': updated_instance.id,
                         'owner': request.user.username,
-                        'file_name': added.file_name,
-                        'file_format': added.file_format,
-                        'processed_url': added.processed_url,
-                        'original_url': added.original_url,
-                        'public_img_url': added.public_img_url,
-                        'public_img_tn_url': added.public_img_tn_url,
-                        'tags': [t for t in added.tags.all().values_list('tag', flat=True)],
-                        'record_updated': added.record_updated,
+                        'file_name': updated_instance.file_name,
+                        'file_format': updated_instance.file_format,
+                        'processed_url': updated_instance.processed_url,
+                        'original_url': updated_instance.original_url,
+                        'public_img_url': updated_instance.public_img_url,
+                        'public_img_tn_url': updated_instance.public_img_tn_url,
+                        'tags': [t for t in updated_instance.tags.all().values_list('tag', flat=True)],
+                        'record_updated': updated_instance.record_updated,
                         'user_is_admin': request.user.groups.filter(name='administrators').exists()
                     }
             return JsonResponse(data=updated_record, status=status.HTTP_202_ACCEPTED) if updated_record else JsonResponse(
-                {"status": "No tags added!"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+                {"status": "No tags updated!"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
         except Exception as e:
             return JsonResponse({"status": f"Error: {e}"}, status=500)
         # return JsonResponse(JSONRenderer().render(serializer.data), status=202) if added else JsonResponse(
@@ -193,7 +200,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def handle_search(records: queryset, search_term: str) -> queryset:
-        """method to handle search
+        """function to handle search
         :param all_records: queryset of all records
         :param search_term: search term string
         :return: queryset of filtered results
@@ -207,12 +214,37 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         return records
 
     @staticmethod
+    def handleRemoveTags(record_id: int, tags: list, user: User, write_to_iptc: bool = True,
+                      iptc_key: str = 'Iptc.Application2.Keywords') -> bool:
+        """function to:
+            - delete tags from origin images
+            - create new conversion images with new tags (call to process_images())
+            - remove old obsolete conversion images
+            :param record_id: ID of record to be updated
+        :param tags: List of tags (strings) to remove from the image
+        :param user: user doing the updating
+        :param write_to_iptc: boolean: whether to delete the tags from image (not only db record)
+        :param iptc_key: str: IPTC key. Defaults to keyword (Iptc.Application2.Keywords)
+            :return: updated PhotoData instance | False
+        """
+        # get model instance to update
+        record = PhotoData.objects.get(id=record_id)
+        tag_removal_success = False
+        
+
+        # TODO ... THIS!
+        ProcessImages.remove_tags(origin_file_url='', tags='')
+       
+
+        return True
+
+    @staticmethod
     def handleAddTags(record_id: int, tags: list, user: User, write_to_iptc: bool = True,
                       iptc_key: str = 'Iptc.Application2.Keywords') -> bool:
         """function to add tags to the PhotoData model
         :param record_id: ID of record to be updated
         :param tags: List of tags (strings) to add to the exising tags
-        :param user: user doing the updading
+        :param user: user doing the updating
         :param write_to_iptc: boolean: whether to write the new tags to the image
         :param iptc_key: str: IPTC key. Defaults to keyword (Iptc.Application2.Keywords)
         :return: updated PhotoData instance | False

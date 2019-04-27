@@ -5,7 +5,7 @@ import DataTableAddTags from './data-table-add-tags';
 
 const DataTableData = (props) => {
 
-    const { record = {}, handleAddTags } = props
+    const { record = {}, handleUpdateTags } = props
 
     return record.data.results.map((item, index) => {
         let { file_format, file_name, tags, public_img_tn_url } = item;
@@ -31,7 +31,7 @@ const DataTableData = (props) => {
                 </ul>
             </td>
             <td className={'action-col col-4 text-center'}>
-                <DataTableAddTags handleAddTags={handleAddTags} recordItem={item} />
+                <DataTableAddTags handleUpdateTags={handleUpdateTags} recordItem={item} />
             </td>
         </tr>)
     });

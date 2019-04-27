@@ -5,7 +5,7 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
 
 const DataTableAddTags = props => {
     const [tags, setTags] = useState(''); // initial value
-    const {handleAddTags, recordItem} = props;
+    const {handleUpdateTags, recordItem} = props;
 
     const _validateInput = (value) => {
         return (/^[a-zA-Z\d\-/: ]*$/.test(value)) ? value : tags;
@@ -17,7 +17,7 @@ const DataTableAddTags = props => {
 
     const handleSubmit = event => {
         event.preventDefault();
-        handleAddTags({ tags, recordItem });  // pass back through function prop
+        handleUpdateTags({ tags, recordItem, updateMode: 'add' });  // pass back through function prop
         setTags('');  // clear state
     };
 

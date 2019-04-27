@@ -247,18 +247,13 @@ class ProcessImages:
         return False
 
     @staticmethod
-    def add_tags(origin_file_url, tags):
+    def add_tags(origin_file_url:str, tags:dict) -> bool:
         """
-        method that:
-            1. adds IPTC tags to an origin file, retaining existing tags
-            2. makes a converted copy of the newly tagged origin file
-            3. copies tags from the origin file to the converted copy
-            Note: 
-                (2) and (3) are run through the process_images method.
-        :return: Result dict, in form: [{'conversion_data': {'orig_path': '/path/to/origin/files', 'orig_filename': 'origin_filename.jpg', 
-            'processed_path': '/path/to/processed/files', 'new_filename': 'new_filename.jpg'}, 
-            'tag_data': {'iptc_key': 'Iptc.Application2.Keywords', 'tags': ['tag1', 'new_tag1', 'SPM: TAGS COPIED FROM ORIGINAL']}}, {}]
-|False
+        method that  adds IPTC tags to an origin file, retaining existing tags
+        :param origin_file_url: url of the file to which to add tags
+        :param tags: tags to add to the file, in form e.g.:
+            {'iptc_key': 'Iptc.Application2.Keywords', 'tags': ['new tag 1', 'new tag 2']}
+        :return: True|False
         """
         try:
             # get existing tags, if any, Expects: [{'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']}] | False
@@ -279,6 +274,17 @@ class ProcessImages:
         except Exception as e:
             print(f'An exception occurred whilst attempting to add tags : {e}')
             return False
+
+    @staticmethod
+    def remove_tags(origin_file_url:str, tags:dict) -> bool:
+        """function to delete tags from image
+        :param origin_file_url: url to file containing tags to be deleted
+        :tags: dict of tags to be deleted, in form e.g.:
+            {'iptc_key': 'Iptc.Application2.Keywords', 'tags': ['new tag 1', 'new tag 2']}
+        """
+        # TODO ... THIS!
+        print(f'TAGS TO REMOVE: {tags}')
+        return True
 
     def process_images(self):
         """
