@@ -213,40 +213,37 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 Q(tags__tag__icontains=t)).distinct() if t else records
         return records
 
-    @staticmethod
-    def handleRemoveTags(record_id: int, tags: list, user: User, write_to_iptc: bool = True,
+    def handleRemoveTags(self, record_id: int, tags: [str], user: User, write_to_iptc: bool = True,
                       iptc_key: str = 'Iptc.Application2.Keywords') -> bool:
-        """function to:
-            - delete tags from origin images
-            - create new conversion images with new tags (call to process_images())
-            - remove old obsolete conversion images
-            :param record_id: ID of record to be updated
+        """function to delete tags from origin images.
+        - Compiles ammended tag list (orginal tags minus removed) to origin image
+        - Calls handleAddTags to write updated tags to origin image & generate new 
+            converted images (database then updated via the calling perform_update method)
+        :param record_id: ID of record to be updated
         :param tags: List of tags (strings) to remove from the image
         :param user: user doing the updating
         :param write_to_iptc: boolean: whether to delete the tags from image (not only db record)
         :param iptc_key: str: IPTC key. Defaults to keyword (Iptc.Application2.Keywords)
-            :return: updated PhotoData instance | False
+            :return: result from handleAddTags, in the form: updated PhotoData instance | False
         """
         # get model instance to update
         record = PhotoData.objects.get(id=record_id)
-        tag_removal_success = False
-        
-
-        # TODO ... THIS!
-        ProcessImages.remove_tags(origin_file_url='', tags='')
-       
-
-        return True
+        # create new converted images with the requested tags removed
+        updated_tags = set(t.tag for t in record.tags.all()) - set(tags)
+        # write new tag list to origin image
+        return self.handleAddTags(record_id=record_id, tags=list(updated_tags), user=user, write_to_iptc=write_to_iptc,
+                      iptc_key=iptc_key, retain_original=False)
 
     @staticmethod
-    def handleAddTags(record_id: int, tags: list, user: User, write_to_iptc: bool = True,
-                      iptc_key: str = 'Iptc.Application2.Keywords') -> bool:
+    def handleAddTags(record_id: int, tags: [str], user: User, write_to_iptc: bool = True,
+                      iptc_key: str = 'Iptc.Application2.Keywords', retain_original:bool = True) -> bool:
         """function to add tags to the PhotoData model
         :param record_id: ID of record to be updated
         :param tags: List of tags (strings) to add to the exising tags
         :param user: user doing the updating
         :param write_to_iptc: boolean: whether to write the new tags to the image
         :param iptc_key: str: IPTC key. Defaults to keyword (Iptc.Application2.Keywords)
+        :param retain_original: bool: whether to retain original tags or simply replace with new
         :return: updated PhotoData instance | False
         """ 
         # get model instance to update
@@ -261,7 +258,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 conversion_format = settings.SPM['CONVERSION_FORMAT']
                 tags_to_add = {'iptc_key': iptc_key, 'tags': tags}
                 # write tags to the origin image
-                tag_write_success = ProcessImages.add_tags(origin_file_url=origin_file_url, tags=tags_to_add)
+                tag_write_success = ProcessImages.add_tags(origin_file_url=origin_file_url, tags=tags_to_add, 
+                                                           retain_original=retain_original)
                 if tag_write_success:
                     # recreate the converted copy and thumbs
                     Processor = ProcessImages(origin_file_url=origin_file_url, processed_image_path=processed_image_path, 
@@ -292,8 +290,10 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                         logger.warning(
                             f'An exception occurred whilst attempting to save tags to database: {e}')
                 # save tags & updated image data to PhotoData model
-                for t in successfully_added_tags:
-                    record.tags.add(t)
+                if retain_original:
+                    [record.tags.add(t) for t in successfully_added_tags]
+                else:
+                    record.tags.set(successfully_added_tags)
                 record.record_updated = datetime.utcnow()
                 # save the model
                 record.save()

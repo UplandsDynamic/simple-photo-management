@@ -253,7 +253,7 @@ class App extends React.Component {
                         this._setRecordState({ newRecord: recordCopy })
                         if (notifyResponse) {
                             this.setMessage({
-                                message: 'New tags successfully set!',
+                                message: 'Updating tags succeeded!',
                                 messageClass: 'alert alert-success'
                             });
                         }
@@ -261,7 +261,7 @@ class App extends React.Component {
                 }).catch(error => {
                     console.log(error);
                     this.setMessage({
-                        message: 'An API error has occurred. Setting new tags failed!',
+                        message: 'An API error has occurred. Updating tags failed!',
                         messageClass: 'alert alert-danger'
                     });
                 });

@@ -86,6 +86,12 @@ input.search {
     border: 2px solid darkgoldenrod !important;
 }
 
+ul {
+    list-style-type: None!important;
+    padding:0!important;
+    font-size: 1.6vw;
+}
+
 .Modal {
     position: absolute;
     top: 40px;
@@ -104,8 +110,12 @@ input.search {
     background-color: rebeccapurple;
 }
 
+td li button {
+    border-radius:22px!important;
+}
+
 button.table-btn {
-    transition: all 200ms ease-in-out
+    transition: all 200ms ease-in-out;
 }
 
 button.table-btn:hover {

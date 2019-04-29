@@ -2,10 +2,15 @@ import './css/data-table.css';
 import React from 'react';
 import ModalImage from 'react-modal-image';
 import DataTableAddTags from './data-table-add-tags';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
 
 const DataTableData = (props) => {
 
     const { record = {}, handleUpdateTags } = props
+
+    const handleDeleteTag = (tag, recordItem) => {
+        handleUpdateTags({ tags:tag, recordItem, updateMode: 'remove' });  // pass back through function prop
+    }
 
     return record.data.results.map((item, index) => {
         let { file_format, file_name, tags, public_img_tn_url } = item;
@@ -16,7 +21,7 @@ const DataTableData = (props) => {
         let full_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-1080_1080${file_format}`;
         return (<tr key={item.id} data-toggle="modal" className={rowClasses.join(' ')}>
             {/*<th scope="row">{item.id}</th>*/}
-            <td className={'col-4 photo'}>
+            <td className={'col-3 photo'}>
                 <ModalImage
                     small={small_img_url}
                     medium={medium_img_url}
@@ -25,9 +30,12 @@ const DataTableData = (props) => {
                     className={imgClasses.join(' ')}
                 />
             </td>
-            <td className={'col-4 tags'}>
+            <td className={'col-5 tags'}>
                 <ul>
-                    {tags.map((tag, key) => <li key={key}>{tag}</li>)}
+                    {tags.map((tag, key) => <li key={key}>
+                    <span className={'badge badge-pill badge-warning'}>{tag}</span>
+                    <button className={'btn btn-sm btn-danger m-1'} onClick={(e) => handleDeleteTag(tag, item)}>
+                    <FontAwesomeIcon icon={'trash-alt'} /></button></li>)}
                 </ul>
             </td>
             <td className={'action-col col-4 text-center'}>
