@@ -12,7 +12,7 @@ import DataTableHead from "./data-table-head";
 const DataTable = (props) => {
 
     const {
-        record = {}, getRecordsHandler, authMeta = {}, handleProcessPhotos, handleUpdateTags
+        record = {}, getRecordsHandler, authMeta = {}, handleProcessPhotos, handleUpdate
     } = props
 
     const _formatUTCDateTime = ({ dateTime = null } = {}) => {
@@ -45,7 +45,7 @@ const DataTable = (props) => {
     const DataTableDataWrapper = () => (
         <DataTableData
             record={record}
-            handleUpdateTags={handleUpdateTags}
+            handleUpdate={handleUpdate}
         />
     )
 

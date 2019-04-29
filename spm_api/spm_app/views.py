@@ -4,7 +4,8 @@ from django.http import JsonResponse
 from django.utils.datetime_safe import datetime
 from rest_framework.views import APIView
 import os
-from .custom_validators import RequestQueryValidator, validate_search, validate_tag_list, validate_update_mode
+from .custom_validators import (RequestQueryValidator, validate_search, validate_tag_list, 
+validate_update_mode, validate_rotation_degrees)
 from django.core.exceptions import ValidationError
 from rest_framework import (viewsets, permissions, serializers, status)
 from .serializers import (
@@ -151,7 +152,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         """
         # define eligible update fields (useful to quickly disable updating of fields if required)
         eligible_update_fields = {'tags'}
-        updated_record = None
+        updated_record = updated_instance = None
         try:  # first validate incoming data for fields eligible for update
             if 'tags' in eligible_update_fields:  # tags
                 try:
@@ -160,33 +161,39 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 except ValidationError as e:
                     raise serializers.ValidationError(
                         detail=f'Validation error: {e.message}')
-                # validate update mode param
-                validate_update_mode(request.data.get('update_mode', None))
-                update_mode = request.data['update_mode']
-                if update_mode == 'add':
-                    updated_instance = self.handleAddTags(
-                        record_id=kwargs['pk'], tags=tags_to_update, user=request.user)
-                elif update_mode == 'remove':
-                    updated_instance = self.handleRemoveTags(record_id=kwargs['pk'], tags=tags_to_update, 
-                                                             user=request.user)
-                if updated_instance:
-                    updated_record = {
-                        'id': updated_instance.id,
-                        'owner': request.user.username,
-                        'file_name': updated_instance.file_name,
-                        'file_format': updated_instance.file_format,
-                        'processed_url': updated_instance.processed_url,
-                        'original_url': updated_instance.original_url,
-                        'public_img_url': updated_instance.public_img_url,
-                        'public_img_tn_url': updated_instance.public_img_tn_url,
-                        'tags': [t for t in updated_instance.tags.all().values_list('tag', flat=True)],
-                        'record_updated': updated_instance.record_updated,
-                        'user_is_admin': request.user.groups.filter(name='administrators').exists()
-                    }
+            # validate update mode param
+            validate_update_mode(request.data.get('update_mode', None))
+            update_mode = request.data['update_mode']
+            if update_mode == 'add_tags':
+                updated_instance = self.handleAddTags(
+                    record_id=kwargs['pk'], tags=tags_to_update, user=request.user)
+            elif update_mode == 'remove_tag':
+                updated_instance = self.handleRemoveTags(record_id=kwargs['pk'], tags=tags_to_update,
+                                                         user=request.user)
+            elif update_mode == 'rotate_image':
+                # validate rotation degree
+                validate_rotation_degrees(request.data['rotation_degrees'])
+                # rotate the image
+                updated_instance = self.handleMutateImage(record_id=kwargs['pk'], user=request.user,
+                                                          mutation={'rotation':{'degrees': request.data['rotation_degrees']}})
+            if updated_instance:
+                updated_record = {
+                    'id': updated_instance.id,
+                    'owner': request.user.username,
+                    'file_name': updated_instance.file_name,
+                    'file_format': updated_instance.file_format,
+                    'processed_url': updated_instance.processed_url,
+                    'original_url': updated_instance.original_url,
+                    'public_img_url': updated_instance.public_img_url,
+                    'public_img_tn_url': updated_instance.public_img_tn_url,
+                    'tags': [t for t in updated_instance.tags.all().values_list('tag', flat=True)],
+                    'record_updated': updated_instance.record_updated,
+                    'user_is_admin': request.user.groups.filter(name='administrators').exists()
+                }
             return JsonResponse(data=updated_record, status=status.HTTP_202_ACCEPTED) if updated_record else JsonResponse(
-                {"status": "No tags updated!"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+                {"status": "Nothing was updated!"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
         except Exception as e:
-            return JsonResponse({"status": f"Error: {e}"}, status=500)
+            return JsonResponse({"status": f"Error: {e}"}, status=422)
         # return JsonResponse(JSONRenderer().render(serializer.data), status=202) if added else JsonResponse(
         #     {'Status': 'Error whilst adding tags!'}, status=500)
 
@@ -213,8 +220,61 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 Q(tags__tag__icontains=t)).distinct() if t else records
         return records
 
+    def handleMutateImage(self, record_id: int, user: User, mutation:dict) -> PhotoData or bool:
+        """function to handle mutating the ORIGIN image. 
+        - Warning - this is a destructive process - the original version is overwritten!
+        - Tags are copied from the original version to the newly mutated image.
+        - Once origin image mutated, converted versions are recreated.
+        :param origin_file_url: str: url of the image file to rotate
+        :param mutation: dict: dict of mutation actions, in form {'the_mutation':{'mutation_param': 'param_value'}} 
+            e.g.: {'rotation':{'degrees': 90}}
+        :return: bool: PhotoData instance modified|False
+        """
+        try:
+            record = PhotoData.objects.get(id=record_id)
+            path = os.path.split(record.original_url)[0]
+            conversion_format = settings.SPM["CONVERSION_FORMAT"].lower()
+            orig_filename = os.path.split(record.original_url)[1]
+            save_path = settings.SPM['PROCESSED_IMAGE_PATH']
+            thumb_path = settings.SPM['PROCESSED_THUMBNAIL_PATH']
+            conversion_generated = mutated = False
+            # mutate origin image
+            Processor = ProcessImages(origin_file_url=record.original_url, processed_image_path=save_path,
+                                              thumb_path=thumb_path, conversion_format=conversion_format, process_single=True)
+            # do the mutation
+            if 'rotation' in mutation.keys():
+                mutated = Processor.rotate_image(origin_file_url=record.original_url, 
+                                                 rotation_degrees=mutation['rotation']['degrees'], copy_tags=True)
+            # generate converted image & thumbs
+            if mutated: # create the tagged converted copy and thumbs
+                # loop through process_images generator to process the image conversions
+                result = [i for i in Processor.process_images()]
+                if result[0]:  # if a result was returned, indicating new conversions have been generated
+                    # remove the now orphaned previous processed versions (inc. thumbs)
+                    async_task(Processor.delete_images, allowed_dirs={save_path}, containing_str=record.file_name,
+                                allowed_formats=[conversion_format], recursive=True)
+                    # update model date, inc. set new filename of newly created processed image
+                    new_data = result[0]['conversion_data']
+                    record.file_name = os.path.splitext(
+                        new_data['new_filename'])[0]
+                    record.file_format = os.path.splitext(
+                        new_data['new_filename'])[1]
+                    record.processed_url = os.path.join(
+                        new_data['processed_path'], new_data['new_filename'])
+                    record.record_updated = datetime.utcnow()
+                    # save the model
+                    record.save()
+                    conversion_generated = True
+        except PhotoData.DoesNotExist:
+            logger.error(
+                'The requested photo record does not exist in the database!')
+        except Exception:
+            logger.error(
+                'An error occurred whilst attempting to rotate the image!', exc_info=True)
+        return record if mutated and conversion_generated else False
+
     def handleRemoveTags(self, record_id: int, tags: [str], user: User, write_to_iptc: bool = True,
-                      iptc_key: str = 'Iptc.Application2.Keywords') -> bool:
+                         iptc_key: str = 'Iptc.Application2.Keywords') -> bool:
         """function to delete tags from origin images.
         - Compiles ammended tag list (orginal tags minus removed) to origin image
         - Calls handleAddTags to write updated tags to origin image & generate new 
@@ -232,11 +292,11 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         updated_tags = set(t.tag for t in record.tags.all()) - set(tags)
         # write new tag list to origin image
         return self.handleAddTags(record_id=record_id, tags=list(updated_tags), user=user, write_to_iptc=write_to_iptc,
-                      iptc_key=iptc_key, retain_original=False)
+                                  iptc_key=iptc_key, retain_original=False)
 
     @staticmethod
     def handleAddTags(record_id: int, tags: [str], user: User, write_to_iptc: bool = True,
-                      iptc_key: str = 'Iptc.Application2.Keywords', retain_original:bool = True) -> bool:
+                      iptc_key: str = 'Iptc.Application2.Keywords', retain_original: bool = True) -> PhotoData or bool:
         """function to add tags to the PhotoData model
         :param record_id: ID of record to be updated
         :param tags: List of tags (strings) to add to the exising tags
@@ -245,7 +305,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         :param iptc_key: str: IPTC key. Defaults to keyword (Iptc.Application2.Keywords)
         :param retain_original: bool: whether to retain original tags or simply replace with new
         :return: updated PhotoData instance | False
-        """ 
+        """
         # get model instance to update
         record = PhotoData.objects.get(id=record_id)
         tag_write_success = False
@@ -258,26 +318,31 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 conversion_format = settings.SPM['CONVERSION_FORMAT']
                 tags_to_add = {'iptc_key': iptc_key, 'tags': tags}
                 # write tags to the origin image
-                tag_write_success = ProcessImages.add_tags(origin_file_url=origin_file_url, tags=tags_to_add, 
+                tag_write_success = ProcessImages.add_tags(origin_file_url=origin_file_url, tags=tags_to_add,
                                                            retain_original=retain_original)
                 if tag_write_success:
                     # recreate the converted copy and thumbs
-                    Processor = ProcessImages(origin_file_url=origin_file_url, processed_image_path=processed_image_path, 
-                    thumb_path=thumb_path, conversion_format=conversion_format, process_single=True, tags=tags_to_add)
+                    Processor = ProcessImages(origin_file_url=origin_file_url, processed_image_path=processed_image_path,
+                                              thumb_path=thumb_path, conversion_format=conversion_format, process_single=True, tags=tags_to_add)
                     # create the tagged converted copy and thumbs
-                    result = [i for i in Processor.process_images()]  # loop through process_images generator to process the image
+                    # loop through process_images generator to process the image
+                    result = [i for i in Processor.process_images()]
                     if result[0]:  # if a result was returned, indicating new conversions have been generated
-                        # remo`ve the now orphaned previous processed versions (inc. thumbs)
+                        # remove the now orphaned previous processed versions (inc. thumbs)
                         async_task(Processor.delete_images, allowed_dirs={processed_image_path}, containing_str=record.file_name,
-                                allowed_formats=[conversion_format], recursive=True)
+                                   allowed_formats=[conversion_format], recursive=True)
                         # set new filename of newly created processed image
                         new_data = result[0]['conversion_data']
-                        record.file_name = os.path.splitext(new_data['new_filename'])[0]
-                        record.file_format = os.path.splitext(new_data['new_filename'])[1]
-                        record.processed_url = os.path.join(new_data['processed_path'], new_data['new_filename'])
+                        record.file_name = os.path.splitext(
+                            new_data['new_filename'])[0]
+                        record.file_format = os.path.splitext(
+                            new_data['new_filename'])[1]
+                        record.processed_url = os.path.join(
+                            new_data['processed_path'], new_data['new_filename'])
             except Exception:
-                logger.error('An error occurred whilst attempting to add tags', exc_info=True)
-        # write tags to db only if successfully written to imgage (if required)
+                logger.error(
+                    'An error occurred whilst attempting to add tags', exc_info=True)
+        # write tags to db only if successfully written to image (if required)
         if tag_write_success or not write_to_iptc:
             try:
                 successfully_added_tags = []

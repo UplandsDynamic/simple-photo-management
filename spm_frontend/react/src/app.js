@@ -64,12 +64,9 @@ class App extends React.Component {
                     next: null,
                     cacheControl: 'no-cache',  // no caching by default, so always returns fresh data
                     search: '',
-                    dataResponseReceived: false
                 },
                 data: {
-                    results: [],
-                    updateData: {}
-                }
+                    results: []                }
             },
             authMeta: {
                 authenticated: false,
@@ -88,7 +85,7 @@ class App extends React.Component {
         this.setAuthentication = this.setAuthentication.bind(this);
         this.handleProcessPhotos = this.handleProcessPhotos.bind(this);
         this.getRecordsHandler = this.getRecordsHandler.bind(this);
-        this.handleUpdateTags = this.handleUpdateTags.bind(this);
+        this.handleUpdate = this.handleUpdate.bind(this);
     }
 
     componentDidMount() {
@@ -180,7 +177,6 @@ class App extends React.Component {
                         let recordCopy = JSON.parse(JSON.stringify(this.state.record));
                         Object.assign(recordCopy.data, { ...response.data });
                         Object.assign(recordCopy.meta, { ...record.meta });
-                        recordCopy.meta.dataResponseReceived = true;
                         this._setRecordState({ newRecord: recordCopy });
                     }
                 }).catch(error => {
@@ -229,14 +225,19 @@ class App extends React.Component {
         return false;
     }
 
-    handleUpdateTags({ record = this.state.record, tags = null,
-        recordItem, updateMode, notifyResponse = true } = {}) {
+    handleUpdate({ record = this.state.record, rotationDegrees = 0,
+        recordItem, updateMode, tags = null, notifyResponse = true } = {}) {
+
+        updateMode = 'rotate_image';
+        rotationDegrees = -90;
+
         if (tags && this.state.authMeta.authenticated) {
             const apiRequest = processRequest({
                 queryFlags: {},
                 requestData: {
                     id: recordItem.id,
                     tags: tags.split('/'),
+                    rotation_degrees:rotationDegrees,
                     update_mode: updateMode
                 },
                 apiMode: this.apiOptions.ADD_TAGS
@@ -282,7 +283,7 @@ class App extends React.Component {
                 getRecordsHandler={this.getRecordsHandler}
                 handleProcessPhotos={this.handleProcessPhotos}
                 authMeta={this.state.authMeta}
-                handleUpdateTags={this.handleUpdateTags} />
+                handleUpdate={this.handleUpdate} />
         )
     }
        
@@ -304,8 +305,7 @@ class App extends React.Component {
                             <Message message={this.state.message.message}
                                 messageClass={this.state.message.messageClass}
                             />
-                            { this.state.authMeta.authenticated && 
-                                this.state.record.meta.dataResponseReceived ? this.DataTableWrapper() : null}
+                            { this.state.authMeta.authenticated ? this.DataTableWrapper() : null}
                             <Footer footer={process.env.REACT_APP_FOOTER}
                                 copyright={process.env.REACT_APP_COPYRIGHT}
                                 version={process.env.REACT_APP_VERSION}

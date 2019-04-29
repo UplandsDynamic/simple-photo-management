@@ -7,7 +7,9 @@ REMEMBER, BEFORE PRODUCTION RUN SECURITY CHECKS:
 
 """
 
-import os, string, random
+import os
+import string
+import random
 
 """ INITIAL PARAMETERS """
 
@@ -17,7 +19,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240  # higher than the count of fields
 
 # # # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # this setting will be OVERRIDDEN according tot the RUN_TYPE defined below.
+# this setting will be OVERRIDDEN according tot the RUN_TYPE defined below.
+DEBUG = True
 
 # # # RUN TYPE: Define run type of the application, as read from run_type.txt file in project root
 RUN_TYPE_PATH = os.path.join(BASE_DIR, 'run_type.txt')
@@ -193,7 +196,8 @@ if RUN_TYPE == RUN_TYPE_OPTIONS[0]:  # DEVEL
         'PROCESSED_THUMBNAIL_PATH': os.path.normpath(os.path.join(MEDIA_ROOT, 'test_images_processed/tn')),
         'PUBLIC_URL': os.path.normpath('/media'),
         'PUBLIC_URL_TN': os.path.normpath('/media/test_images_processed/tn'),
-        'CONVERSION_FORMAT': 'JPG'
+        'CONVERSION_FORMAT': 'jpg',
+        'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate_image'},
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
     SPM = {  # set of image paths
@@ -210,7 +214,8 @@ elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
             #     '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Prints/RAW'),
             # os.path.normpath(
             #     '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Prints/Working_untagged'),
-            os.path.normpath('/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Prints/FromOtherSources/BRIGHT_Jim_E_G'),
+            os.path.normpath(
+                '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Prints/FromOtherSources/BRIGHT_Jim_E_G'),
         },
         'PROCESSED_IMAGE_PATH': os.path.normpath(
             '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed'),
@@ -218,34 +223,40 @@ elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
             f'/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed/tn'),
         'PUBLIC_URL': os.path.normpath('/img'),
         'PUBLIC_URL_TN': os.path.normpath('/img/tn'),
-        'CONVERSION_FORMAT': 'JPG'
+        'CONVERSION_FORMAT': 'jpg',
+        'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate'},
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[2]:  # PRODUCTION
     SPM = {
         'ORIGINAL_IMAGE_PATH': set(),
         'PROCESSED_IMAGE_PATH': None,
-        'CONVERSION_FORMAT': 'JPG'
+        'CONVERSION_FORMAT': 'jpg',
+        'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate'},
     }
 
 # # # Caches
 USE_REDIS_CACHE = False
-SITE_WIDE_CACHE = True  # site-wide caching system. Set False for more granular control with view & template caching.
-DEFAULT_CACHES_TTL = 0  # 0 means equates to 'do not cache'. E.g. to cache for 24 hours: ((60 * 60) * 60) * 24
+# site-wide caching system. Set False for more granular control with view & template caching.
+SITE_WIDE_CACHE = True
+# 0 means equates to 'do not cache'. E.g. to cache for 24 hours: ((60 * 60) * 60) * 24
+DEFAULT_CACHES_TTL = 0
 CACHE_SESSION_SECONDS = 60 * 60
 
 if SITE_WIDE_CACHE:
     CACHE_MIDDLEWARE_ALIAS = 'default'
     CACHE_MIDDLEWARE_SECONDS = DEFAULT_CACHES_TTL  # cache session data for an hour
     CACHE_MIDDLEWARE_KEY_PREFIX = 'simple_photo_management_production_server'
-    MIDDLEWARE.insert(0, 'django.middleware.cache.UpdateCacheMiddleware')  # HAS TO GO FIRST IN MIDDLEWARE LIST
-    MIDDLEWARE.append('django.middleware.cache.FetchFromCacheMiddleware')  # HAS TO GO LAST IN MIDDLEWARE LIST
+    # HAS TO GO FIRST IN MIDDLEWARE LIST
+    MIDDLEWARE.insert(0, 'django.middleware.cache.UpdateCacheMiddleware')
+    # HAS TO GO LAST IN MIDDLEWARE LIST
+    MIDDLEWARE.append('django.middleware.cache.FetchFromCacheMiddleware')
 
 if not USE_REDIS_CACHE:
     CACHES = {'default':
-                  {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-                   'TIMEOUT': DEFAULT_CACHES_TTL,
-                   'LOCATION': 'simple_photo_management-backend-cache'
-                   },
+              {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+               'TIMEOUT': DEFAULT_CACHES_TTL,
+               'LOCATION': 'simple_photo_management-backend-cache'
+               },
               'template_fragments':
                   {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
                    'TIMEOUT': DEFAULT_CACHES_TTL,
@@ -257,7 +268,8 @@ else:
         'default': {
             'BACKEND': 'django_redis.cache.RedisCache',
             'LOCATION': 'redis://redis:6379/1',
-            'TIMEOUT': DEFAULT_CACHES_TTL,  # default TTL for the cache in sects(e.g. 5 mins = 'TIMEOUT': 60 * 5)
+            # default TTL for the cache in sects(e.g. 5 mins = 'TIMEOUT': 60 * 5)
+            'TIMEOUT': DEFAULT_CACHES_TTL,
             'OPTIONS': {
                 'CLIENT_CLASS': 'django_redis.client.DefaultClient'
             },

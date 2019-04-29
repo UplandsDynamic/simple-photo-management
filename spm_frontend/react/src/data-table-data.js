@@ -6,10 +6,10 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
 
 const DataTableData = (props) => {
 
-    const { record = {}, handleUpdateTags } = props
+    const { record = {}, handleUpdate } = props
 
     const handleDeleteTag = (tag, recordItem) => {
-        handleUpdateTags({ tags:tag, recordItem, updateMode: 'remove' });  // pass back through function prop
+        handleUpdate({ tags:tag, recordItem, updateMode: 'remove_tag' });  // pass back through function prop
     }
 
     return record.data.results.map((item, index) => {
@@ -39,7 +39,7 @@ const DataTableData = (props) => {
                 </ul>
             </td>
             <td className={'action-col col-4 text-center'}>
-                <DataTableAddTags handleUpdateTags={handleUpdateTags} recordItem={item} />
+                <DataTableAddTags handleUpdate={handleUpdate} recordItem={item} />
             </td>
         </tr>)
     });

@@ -149,7 +149,7 @@ class ProcessImages:
         return False
 
     @staticmethod
-    def convert_image(orig_filename, path, save_path, conversion_format):
+    def convert_image(orig_filename:str, path:str, save_path:str, conversion_format:str) -> dict or bool:
         """
         method to convert the format and resize an image file
         :param orig_filename: original filename of image
@@ -277,6 +277,30 @@ class ProcessImages:
         except Exception as e:
             print(f'An exception occurred whilst attempting to add tags : {e}')
             return False
+
+    @staticmethod
+    def rotate_image(origin_file_url:str, rotation_degrees:int=90, copy_tags:bool=True) -> bool:
+        """function to rotate an image
+        :param origin_file_url: str: url of the image file to rotate
+        :param copy_tags: bool: whether to copy IPTC tags from original to rotated image
+        :param degrees: int: number of degrees to rotate the image
+        :return: bool: True|False
+        """
+        try:
+            tags = []
+            if copy_tags: # read tags
+                tags = ProcessImages.read_iptc_tags(filename=os.path.split(origin_file_url)[1],
+                path=os.path.split(origin_file_url)[0])
+            # rotate the image (makes a new copy & overwrites the origial)
+            with Image.open(origin_file_url) as img:
+                img.rotate(rotation_degrees).save(origin_file_url, format='JPEG')
+            if copy_tags and tags: # write tags to new copy
+                for tag in tags:
+                    ProcessImages.write_iptc_tags(new_file_url=origin_file_url, tag_data=tag)
+            return True
+        except IOError as e:
+            print(f'Image rotation failed: {e}')
+        return False
 
     def process_images(self):
         """

@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from django.conf import settings
 import re
 
 
@@ -22,12 +23,23 @@ def validate_tag_list(value: list):
             _(f'{value} is not a valid list of tags!')
         )
 
+def validate_rotation_degrees(value: int):
+    if not isinstance(value, int):
+        raise ValidationError(
+            _(f'{value} is not a valid degree!')
+        )
+    else:
+        if value > 360 or value < -360:
+            raise ValidationError(
+                _(f'{value} You cannot rotate more than 360 degrees!')
+            )
+
 
 def validate_update_mode(value: str):
-    acceptable_values = {'add', 'remove'}
+    acceptable_values = settings.SPM['VALID_UPDATE_MODES']
     if value not in acceptable_values:
         raise ValidationError(
-            _(f'{value} was not a valid update mode options!')
+            _(f'{value} was not a valid update mode option!')
         )
 
 
