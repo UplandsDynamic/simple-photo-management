@@ -149,47 +149,59 @@ class ProcessImages:
         return False
 
     @staticmethod
-    def convert_image(orig_filename:str, path:str, save_path:str, conversion_format:str) -> dict or bool:
+    def convert_image(orig_filename:str, path:str, save_path:str, conversion_format:str,
+                      thumb_path: str = '', change_filename:bool=True) -> dict or bool:
         """
         method to convert the format and resize an image file
         :param orig_filename: original filename of image
-        :param path: path of image
+        :param path: path of origin image
+        :param save_path: path to save the converstion to
         :param conversion_format: file format to covert to
-        :param save_path: where to save the converted image
+        :param thumb_path: path to save the thumbnails to
+        :param change_filename: bool: whether to generate a new filename, based on hash of origin file
         :return: {'orig_file_path': path, 'processed_path': save_path, 'new_filename': outfile,
-        'orig_filename': orig_filename} | False
+        'orig_filename': orig_filename, 'thumb_path': thumb_path} | False
         Note: filename of converted file is a hexdigest sha1 hash of the original image file
         (the actual file - not the filename). This is to ensure unique files from different
         origin directories - but sharing the same filename - can be stored in processed
         directory without overwriting each other.
         """
         try:
-            url = os.path.join(path, orig_filename)
-            with Image.open(url) as img:
-                # convert to conversion_format
-                img.convert('RGB')  # convert to RGBA to ensure consistency
-                new_filename = ProcessImages.generate_image_hash(
-                    image_url=url)  # generate unique hash for image
-                # define new filename (inc. extension for new format)
-                outfile = f'{new_filename}.{conversion_format}'
-                try:
-                    img.save(os.path.normpath(
-                        os.path.join(save_path, outfile)))
-                except Exception as e:
-                    img = img.point(lambda i: i*(1./256)).convert('L')
-                    img.save(os.path.normpath(
-                        os.path.join(save_path, outfile)))
-                # create thumbs
-                thumb_sizes = [(1080, 1080), (720, 720),
-                               (350, 350), (150, 150), (75, 75)]
-                for tn in thumb_sizes:
-                    thumb_save_url = os.path.normpath(
-                        f'{save_path}/tn/{new_filename}-{"_".join((str(t) for t in tn))}.{conversion_format}')
-                    img.thumbnail(tn, resample=Image.BICUBIC)
-                    img.save(thumb_save_url, quality=100)
-                print('Conversion done!')
-                return {'orig_path': path, 'processed_path': save_path, 'new_filename': outfile,
-                        'orig_filename': orig_filename}
+            new_format = {'jpg': 'JPEG', 'png': 'PNG'} # Map arg to uppercase, jpg to JPEG, etc
+            if conversion_format in new_format.keys():
+                url = os.path.join(path, orig_filename)
+                with Image.open(url) as img:
+                    # convert to conversion_format
+                    img.convert('RGB')  # convert to RGBA to ensure consistency
+                    if change_filename:
+                        new_filename = ProcessImages.generate_image_hash(
+                        image_url=url) # generate unique hash for image if required
+                    else:
+                        new_filename = os.path.splitext(orig_filename)[0]  # get filename minus format extension
+                    # define new filename (inc. extension for new format)
+                    outfile = f'{new_filename}.{conversion_format}'
+                    try:
+                        img.save(os.path.normpath(
+                            os.path.join(save_path, outfile)))
+                    except Exception as e:
+                        img = img.point(lambda i: i*(1./256)).convert('L')
+                        img.save(os.path.normpath(
+                            os.path.join(save_path, outfile)))
+                    # create thumbs
+                    thumb_sizes = [(1080, 1080), (720, 720),
+                                (350, 350), (150, 150), (75, 75)]
+                    for tn in thumb_sizes:
+                        if thumb_path:
+                            thumb_save_url = os.path.join(thumb_path, f'{new_filename}-{"_".join((str(t) for t in tn))}.{conversion_format}')
+                        else:
+                            thumb_save_url = os.path.join(save_path, 'tn', f'{new_filename}-{"_".join((str(t) for t in tn))}.{conversion_format}')
+                        img.thumbnail(tn, resample=Image.BICUBIC)
+                        img.save(thumb_save_url, quality=100)
+                    print('Conversion done!')
+                    return {'orig_path': path, 'processed_path': save_path, 'new_filename': outfile,
+                            'orig_filename': orig_filename, 'thumb_path': thumb_path}
+            else:
+                print(f'Unrecognised file converstion format!')
         except (IOError, Exception) as e:
             print(f'An error occurred in convert_format: {e}')
         return False
@@ -279,7 +291,8 @@ class ProcessImages:
             return False
 
     @staticmethod
-    def rotate_image(origin_file_url:str, rotation_degrees:int=90, copy_tags:bool=True) -> bool:
+    def rotate_image(origin_file_url:str, rotation_degrees:int=90, copy_tags:bool=True,
+        recreate_thumbs:bool=True, save_path:str='', save_format:str='', thumb_path:str='') -> bool:
         """function to rotate an image
         :param origin_file_url: str: url of the image file to rotate
         :param copy_tags: bool: whether to copy IPTC tags from original to rotated image
@@ -288,15 +301,20 @@ class ProcessImages:
         """
         try:
             tags = []
+            path, filename = os.path.split(origin_file_url)
             if copy_tags: # read tags
-                tags = ProcessImages.read_iptc_tags(filename=os.path.split(origin_file_url)[1],
-                path=os.path.split(origin_file_url)[0])
+                tags = ProcessImages.read_iptc_tags(filename=filename, path=path)
             # rotate the image (makes a new copy & overwrites the origial)
             with Image.open(origin_file_url) as img:
-                img.rotate(rotation_degrees).save(origin_file_url, format='JPEG')
+                img.rotate(rotation_degrees, resample=Image.BICUBIC,
+                           expand=True).save(origin_file_url)
             if copy_tags and tags: # write tags to new copy
                 for tag in tags:
                     ProcessImages.write_iptc_tags(new_file_url=origin_file_url, tag_data=tag)
+            # convert to create thumbs
+            if recreate_thumbs:
+                ProcessImages.convert_image(orig_filename=filename, path=path, save_path=save_path, thumb_path=thumb_path,
+                conversion_format=save_format, change_filename=False)
             return True
         except IOError as e:
             print(f'Image rotation failed: {e}')

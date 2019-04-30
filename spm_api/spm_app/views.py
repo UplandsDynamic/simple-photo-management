@@ -27,6 +27,7 @@ from functools import partial
 from django.conf import settings
 import time
 import re
+import uuid
 
 """
 Note about data object (database record):
@@ -192,7 +193,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                     'public_img_tn_url': new_data.public_img_tn_url,
                     'tags': [t for t in new_data.tags.all().values_list('tag', flat=True)],
                     'record_updated': new_data.record_updated,
-                    'user_is_admin': request.user.groups.filter(name='administrators').exists()
+                    'user_is_admin': request.user.groups.filter(name='administrators').exists(),
+                    'uuid': uuid.uuid4().hex # add UUID to ensure caches can be cleared for new img
                 }
             return JsonResponse(data=updated_record, status=status.HTTP_202_ACCEPTED) if updated_instance['success'] else JsonResponse(
                 {"status": f"Nothing was updated: {updated_instance['data']}"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
@@ -225,10 +227,9 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         return records
 
     def handleMutateImage(self, record_id: int, user: User, mutation: dict) -> dict:
-        """function to handle mutating the ORIGIN image. 
-        - Warning - this is a destructive process - the original version is overwritten!
+        """function to handle mutating the PROCESSED image.
         - Tags are copied from the original version to the newly mutated image.
-        - Once origin image mutated, converted versions are recreated.
+        - Once image mutated, new thumbnails are recreated.
         :param origin_file_url: str: url of the image file to rotate
         :param mutation: dict: dict of mutation actions, in form {'the_mutation':{'mutation_param': 'param_value'}} 
             e.g.: {'rotation':{'degrees': 90}}
@@ -237,7 +238,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         try:
             record = PhotoData.objects.get(id=record_id)
             path = os.path.split(record.original_url)[0]
-            conversion_format = settings.SPM["CONVERSION_FORMAT"].lower()
+            conversion_format = settings.SPM["CONVERSION_FORMAT"]
             orig_filename = os.path.split(record.original_url)[1]
             save_path = settings.SPM['PROCESSED_IMAGE_PATH']
             thumb_path = settings.SPM['PROCESSED_THUMBNAIL_PATH']
@@ -248,35 +249,18 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 # set the mod_lock
                 record.mod_lock = True
                 record.save()
-                # mutate origin image
-                Processor = ProcessImages(origin_file_url=record.original_url, processed_image_path=save_path,
-                                          thumb_path=thumb_path, conversion_format=conversion_format, process_single=True)
                 # do the mutation
                 if 'rotation' in mutation.keys():
-                    mutated = Processor.rotate_image(origin_file_url=record.original_url,
-                                                     rotation_degrees=mutation['rotation']['degrees'], copy_tags=True)
+                    mutated = ProcessImages.rotate_image(origin_file_url=record.processed_url, rotation_degrees=mutation['rotation']['degrees'],
+                                                     copy_tags=True, thumb_path=thumb_path, save_path=save_path, save_format=conversion_format)
                 # generate converted image & thumbs
-                if mutated:  # create the tagged converted copy and thumbs
-                    # loop through process_images generator to process the image conversions
-                    result = [i for i in Processor.process_images()]
-                    if result[0]:  # if a result was returned, indicating new conversions have been generated
-                        # remove the now orphaned previous processed versions (inc. thumbs)
-                        async_task(Processor.delete_images, allowed_dirs={save_path}, containing_str=record.file_name,
-                                   allowed_formats=[conversion_format], recursive=True)
-                        # update model date, inc. set new filename of newly created processed image
-                        new_data = result[0]['conversion_data']
-                        record.file_name = os.path.splitext(
-                            new_data['new_filename'])[0]
-                        record.file_format = os.path.splitext(
-                            new_data['new_filename'])[1]
-                        record.processed_url = os.path.join(
-                            new_data['processed_path'], new_data['new_filename'])
-                        record.record_updated = datetime.utcnow()
-                        # unlock the mod lock
-                        record.mod_lock = False
-                        # save the model
-                        record.save()
-                        conversion_generated = True
+                if mutated:  # save to db model
+                    record.record_updated = datetime.utcnow()
+                    # unlock the mod lock
+                    record.mod_lock = False
+                    # save the model
+                    record.save()
+                    conversion_generated = True
             else:
                 error_message = 'MUTATION FAILED: Modification locked for this image!'
                 logger.info(error_message)
@@ -306,6 +290,9 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         """
         # get model instance to update
         record = PhotoData.objects.get(id=record_id)
+        # set modification lock
+        record.mod_lock = True
+        record.save()
         # create new converted images with the requested tags removed
         updated_tags = set(t.tag for t in record.tags.all()) - set(tags)
         # write new tag list to origin image
@@ -328,7 +315,10 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         record = PhotoData.objects.get(id=record_id)
         tag_write_success = False
         error_message = ''
-        # first, update the tag model with new tags, if necessary
+        # set modification lock
+        record.mod_lock = True
+        record.save()
+        # update the tag model with new tags, if necessary
         if write_to_iptc:
             try:
                 origin_file_url = record.original_url
@@ -340,24 +330,10 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 tag_write_success = ProcessImages.add_tags(origin_file_url=origin_file_url, tags=tags_to_add,
                                                            retain_original=retain_original)
                 if tag_write_success:
-                    # recreate the converted copy and thumbs
-                    Processor = ProcessImages(origin_file_url=origin_file_url, processed_image_path=processed_image_path,
-                                              thumb_path=thumb_path, conversion_format=conversion_format, process_single=True, tags=tags_to_add)
-                    # create the tagged converted copy and thumbs
-                    # loop through process_images generator to process the image
-                    result = [i for i in Processor.process_images()]
-                    if result[0]:  # if a result was returned, indicating new conversions have been generated
-                        # remove the now orphaned previous processed versions (inc. thumbs)
-                        async_task(Processor.delete_images, allowed_dirs={processed_image_path}, containing_str=record.file_name,
-                                   allowed_formats=[conversion_format], recursive=True)
-                        # set new filename of newly created processed image
-                        new_data = result[0]['conversion_data']
-                        record.file_name = os.path.splitext(
-                            new_data['new_filename'])[0]
-                        record.file_format = os.path.splitext(
-                            new_data['new_filename'])[1]
-                        record.processed_url = os.path.join(
-                            new_data['processed_path'], new_data['new_filename'])
+                    # write tags to converted copy
+                    ProcessImages.add_tags(origin_file_url=os.path.join(
+                        processed_image_path, f'{record.file_name}{record.file_format}'), tags=tags_to_add,
+                                                           retain_original=retain_original)
             except Exception:
                 error_message = 'An error occurred whilst attempting to add tags'
                 logger.error(error_message, exc_info=True)
@@ -379,12 +355,17 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 else:
                     record.tags.set(successfully_added_tags)
                 record.record_updated = datetime.utcnow()
+                # release modification lock
+                record.mod_lock = False
                 # save the model
                 record.save()
                 return {'success': True, 'data': record}
             except Exception as e:
                 error_message = e
                 logger.error(error_message)
+        # release modification lock
+        record.mod_lock = False
+        record.save()
         return {'success': False, 'data': error_message}
 
 

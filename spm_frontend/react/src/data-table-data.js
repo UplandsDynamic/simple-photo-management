@@ -17,17 +17,17 @@ const DataTableData = (props) => {
     }
 
     return record.data.results.map((item, index) => {
-        let { file_format, file_name, tags, public_img_tn_url } = item;
+        let { file_format, file_name, tags, public_img_tn_url, uuid } = item;
         let rowClasses = ['d-flex', 'dataTableRows'];
         let imgClasses = ['img-fluid', 'img-thumbnail', 'd-block', 'mx-auto', 'card-img-top'];
-        let small_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-350_350${file_format}`;
+        let small_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-350_350${file_format}?${uuid}`;
         let medium_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-720_720${file_format}`;
         let full_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-1080_1080${file_format}`;
         return (<tr key={item.id} data-toggle="modal" className={rowClasses.join(' ')}>
             {/*<th scope="row">{item.id}</th>*/}
             <td className={'col-3 photo'}>
                 <div className={'card bg-info'}>
-                    <ModalImage
+                <ModalImage
                         small={small_img_url}
                         medium={medium_img_url}
                         large={full_img_url}
