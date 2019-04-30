@@ -19,10 +19,11 @@ import './debug';
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
     faSyncAlt, faEllipsisH, faPlus, faPlusSquare, faMinus, faMinusSquare,
-    faTrashAlt, faEdit, faRobot, faTags, faBroom
+    faTrashAlt, faEdit, faRobot, faTags, faBroom, faCircleNotch
 } from '@fortawesome/free-solid-svg-icons'
 
-library.add(faSyncAlt, faEllipsisH, faPlus, faTrashAlt, faEdit, faPlusSquare, faMinus, faMinusSquare, faRobot, faTags, faBroom);
+library.add(faSyncAlt, faEllipsisH, faPlus, faTrashAlt, faEdit, faPlusSquare, 
+    faMinus, faMinusSquare, faRobot, faTags, faBroom, faCircleNotch);
 
 axios.defaults.withCredentials = true;
 
@@ -40,7 +41,7 @@ class App extends React.Component {
             /* used to define available API options in the api-request component */
             GET_PHOTOS: { requestType: 'get_photos', method: 'GET', desc: 'request to get photo data' },
             PROCESS_PHOTOS: { requestType: 'process_photos', method: 'GET', desc: 'request to begin photo re-taggig operation' },
-            ADD_TAGS: { requestType: 'add_tags', method: 'PATCH', desc: 'request to add tags to a photo' },
+            UPDATE_PHOTOS: { requestType: 'update_photos', method: 'PATCH', desc: 'request to update the photo, e.g. add tags, mutations' },
             // PATCH_PHOTOS: {requestType: 'patch_photos', method: 'PATCH', desc: 'PATCH request to update photo data'},
             // ADD_PHOTOS: {requestType: 'add_add_photos', method: 'POST', desc: 'POST request to add photo data'},
             // DELETE_PHOTOS: {
@@ -225,22 +226,18 @@ class App extends React.Component {
         return false;
     }
 
-    handleUpdate({ record = this.state.record, rotationDegrees = 0,
+    handleUpdate({ record = this.state.record, updateParams,
         recordItem, updateMode, tags = null, notifyResponse = true } = {}) {
-
-        updateMode = 'rotate_image';
-        rotationDegrees = -90;
-
-        if (tags && this.state.authMeta.authenticated) {
+        if (this.state.authMeta.authenticated) {
             const apiRequest = processRequest({
                 queryFlags: {},
                 requestData: {
                     id: recordItem.id,
-                    tags: tags.split('/'),
-                    rotation_degrees:rotationDegrees,
-                    update_mode: updateMode
+                    tags: tags ? tags.split('/') : [],
+                    update_mode: updateMode,
+                    update_params: updateParams,
                 },
-                apiMode: this.apiOptions.ADD_TAGS
+                apiMode: this.apiOptions.UPDATE_PHOTOS
             });
             if (apiRequest) {
                 apiRequest.then((response) => {

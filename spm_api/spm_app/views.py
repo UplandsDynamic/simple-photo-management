@@ -172,10 +172,11 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                                                          user=request.user)
             elif update_mode == 'rotate_image':
                 # validate rotation degree
-                validate_rotation_degrees(request.data['rotation_degrees'])
+                validate_rotation_degrees(request.data['update_params']['rotation_degrees'])
+                degrees = request.data['update_params']['rotation_degrees']
                 # rotate the image
                 updated_instance = self.handleMutateImage(record_id=kwargs['pk'], user=request.user,
-                                                          mutation={'rotation':{'degrees': request.data['rotation_degrees']}})
+                                                          mutation={'rotation':{'degrees': degrees}})
             if updated_instance:
                 updated_record = {
                     'id': updated_instance.id,

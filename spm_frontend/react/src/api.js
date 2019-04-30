@@ -15,8 +15,8 @@ const processRequest = ({
         else if (apiMode.requestType === 'post_auth' || requestType === 'patch_change_pw') {
             return _auth({csrfToken, requestData, apiMode, requestMethod: method});
         }
-        else if (apiMode.requestType === 'add_tags') {
-            return _add_tags({csrfToken, requestData, apiMode, requestMethod: method});
+        else if (apiMode.requestType === 'update_photos') {
+            return _update_photos({csrfToken, requestData, apiMode, requestMethod: method});
         }
     }
     console.log(`
@@ -89,7 +89,7 @@ const _processPhotos = ({ csrfToken = null, requestMethod = null, url = null,
     return _makeRequest({csrfToken, requestMethod, url})  // returns a promise
 };
 
-const _add_tags = ({csrfToken, requestData, apiMode, requestMethod} = {}) => {
+const _update_photos = ({csrfToken, requestData, apiMode, requestMethod} = {}) => {
     const url = `${process.env.REACT_APP_API_DATA_ROUTE}/photos/${requestData.id}/`;
     return _makeRequest({csrfToken, requestData, requestMethod, url});  // returns a promise
 };

@@ -12,34 +12,44 @@ const DataTableData = (props) => {
         handleUpdate({ tags:tag, recordItem, updateMode: 'remove_tag' });  // pass back through function prop
     }
 
+    const handleRotateImage = (recordItem) => {
+        handleUpdate({recordItem, updateMode: 'rotate_image', updateParams: {rotation_degrees: -90} });  // pass back through function prop
+    }
+
     return record.data.results.map((item, index) => {
         let { file_format, file_name, tags, public_img_tn_url } = item;
         let rowClasses = ['d-flex', 'dataTableRows'];
-        let imgClasses = ['img-fluid', 'img-thumbnail', 'd-block', 'mx-auto'];
-        let small_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-150_150${file_format}`;
+        let imgClasses = ['img-fluid', 'img-thumbnail', 'd-block', 'mx-auto', 'card-img-top'];
+        let small_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-350_350${file_format}`;
         let medium_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-720_720${file_format}`;
         let full_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-1080_1080${file_format}`;
         return (<tr key={item.id} data-toggle="modal" className={rowClasses.join(' ')}>
             {/*<th scope="row">{item.id}</th>*/}
             <td className={'col-3 photo'}>
-                <ModalImage
-                    small={small_img_url}
-                    medium={medium_img_url}
-                    large={full_img_url}
-                    alt={tags.join(', ')}
-                    className={imgClasses.join(' ')}
-                />
+                <div className={'card bg-info'}>
+                    <ModalImage
+                        small={small_img_url}
+                        medium={medium_img_url}
+                        large={full_img_url}
+                        alt={tags.join(', ')}
+                        className={imgClasses.join(' ')}
+                    />
+                    <div className={'card-footer'}>
+                        <button disabled={!item.user_is_admin} onClick={() => handleRotateImage(item)}
+                        className={'btn btn-sm btn-warning'}><FontAwesomeIcon icon={'circle-notch'}/></button>
+                    </div>
+                </div>
             </td>
             <td className={'col-5 tags'}>
                 <ul>
                     {tags.map((tag, key) => <li key={key}>
                     <span className={'badge badge-pill badge-warning'}>{tag}</span>
-                    <button className={'btn btn-sm btn-danger m-1'} onClick={(e) => handleDeleteTag(tag, item)}>
+                    <button className={'btn btn-sm btn-danger m-1'} onClick={() => handleDeleteTag(tag, item)}>
                     <FontAwesomeIcon icon={'trash-alt'} /></button></li>)}
                 </ul>
             </td>
             <td className={'action-col col-4 text-center'}>
-                <DataTableAddTags handleUpdate={handleUpdate} recordItem={item} />
+                <DataTableAddTags handleUpdate={handleUpdate} recordItem={item}/>
             </td>
         </tr>)
     });
