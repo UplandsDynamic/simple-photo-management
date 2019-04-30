@@ -224,14 +224,14 @@ elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
         'PUBLIC_URL': os.path.normpath('/img'),
         'PUBLIC_URL_TN': os.path.normpath('/img/tn'),
         'CONVERSION_FORMAT': 'jpg',
-        'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate'},
+        'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate_image'},
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[2]:  # PRODUCTION
     SPM = {
         'ORIGINAL_IMAGE_PATH': set(),
         'PROCESSED_IMAGE_PATH': None,
         'CONVERSION_FORMAT': 'jpg',
-        'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate'},
+        'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate_image'},
     }
 
 # # # Caches
