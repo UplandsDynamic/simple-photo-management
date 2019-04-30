@@ -204,8 +204,8 @@ elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
         'ORIGIN_IMAGE_PATHS': {
             # os.path.normpath(
             #     '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/InProgress'),
-            # os.path.normpath(
-            #     '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Negatives/RAW/SCANNED_2017'),
+             os.path.normpath(
+                 '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Negatives/RAW/SCANNED_2017'),
             # os.path.normpath(
             #     '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Negatives/RAW/SCANNED_PRE_2017'),
             #  os.path.normpath(
@@ -214,8 +214,8 @@ elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
             #     '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Prints/RAW'),
             # os.path.normpath(
             #     '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Prints/Working_untagged'),
-            os.path.normpath(
-                '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Prints/FromOtherSources/BRIGHT_Jim_E_G'),
+            #os.path.normpath(
+            #    '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Prints/FromOtherSources/BRIGHT_Jim_E_G'),
         },
         'PROCESSED_IMAGE_PATH': os.path.normpath(
             '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed'),
