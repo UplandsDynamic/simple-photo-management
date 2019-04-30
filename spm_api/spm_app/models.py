@@ -50,6 +50,7 @@ class PhotoData(models.Model):
                                       validators=[custom_validators.validate_url])
     public_img_tn_url = models.CharField(max_length=255, blank=False, null=False, unique=False,
                                          validators=[custom_validators.validate_url])
+    mod_lock = models.BooleanField(null=False, default=False)
 
     class Meta:
         ordering = ('id','original_url')

@@ -4,8 +4,8 @@ from django.http import JsonResponse
 from django.utils.datetime_safe import datetime
 from rest_framework.views import APIView
 import os
-from .custom_validators import (RequestQueryValidator, validate_search, validate_tag_list, 
-validate_update_mode, validate_rotation_degrees)
+from .custom_validators import (RequestQueryValidator, validate_search, validate_tag_list,
+                                validate_update_mode, validate_rotation_degrees)
 from django.core.exceptions import ValidationError
 from rest_framework import (viewsets, permissions, serializers, status)
 from .serializers import (
@@ -152,7 +152,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         """
         # define eligible update fields (useful to quickly disable updating of fields if required)
         eligible_update_fields = {'tags'}
-        updated_record = updated_instance = None
+        updated_record = None
+        updated_instance = dict()
         try:  # first validate incoming data for fields eligible for update
             if 'tags' in eligible_update_fields:  # tags
                 try:
@@ -172,27 +173,29 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                                                          user=request.user)
             elif update_mode == 'rotate_image':
                 # validate rotation degree
-                validate_rotation_degrees(request.data['update_params']['rotation_degrees'])
+                validate_rotation_degrees(
+                    request.data['update_params']['rotation_degrees'])
                 degrees = request.data['update_params']['rotation_degrees']
                 # rotate the image
                 updated_instance = self.handleMutateImage(record_id=kwargs['pk'], user=request.user,
-                                                          mutation={'rotation':{'degrees': degrees}})
-            if updated_instance:
+                                                          mutation={'rotation': {'degrees': degrees}})
+            if updated_instance['success']:
+                new_data = updated_instance['data']
                 updated_record = {
-                    'id': updated_instance.id,
+                    'id': new_data.id,
                     'owner': request.user.username,
-                    'file_name': updated_instance.file_name,
-                    'file_format': updated_instance.file_format,
-                    'processed_url': updated_instance.processed_url,
-                    'original_url': updated_instance.original_url,
-                    'public_img_url': updated_instance.public_img_url,
-                    'public_img_tn_url': updated_instance.public_img_tn_url,
-                    'tags': [t for t in updated_instance.tags.all().values_list('tag', flat=True)],
-                    'record_updated': updated_instance.record_updated,
+                    'file_name': new_data.file_name,
+                    'file_format': new_data.file_format,
+                    'processed_url': new_data.processed_url,
+                    'original_url': new_data.original_url,
+                    'public_img_url': new_data.public_img_url,
+                    'public_img_tn_url': new_data.public_img_tn_url,
+                    'tags': [t for t in new_data.tags.all().values_list('tag', flat=True)],
+                    'record_updated': new_data.record_updated,
                     'user_is_admin': request.user.groups.filter(name='administrators').exists()
                 }
-            return JsonResponse(data=updated_record, status=status.HTTP_202_ACCEPTED) if updated_record else JsonResponse(
-                {"status": "Nothing was updated!"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return JsonResponse(data=updated_record, status=status.HTTP_202_ACCEPTED) if updated_instance['success'] else JsonResponse(
+                {"status": f"Nothing was updated: {updated_instance['data']}"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
         except Exception as e:
             return JsonResponse({"status": f"Error: {e}"}, status=422)
         # return JsonResponse(JSONRenderer().render(serializer.data), status=202) if added else JsonResponse(
@@ -221,7 +224,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 Q(tags__tag__icontains=t)).distinct() if t else records
         return records
 
-    def handleMutateImage(self, record_id: int, user: User, mutation:dict) -> PhotoData or bool:
+    def handleMutateImage(self, record_id: int, user: User, mutation: dict) -> dict:
         """function to handle mutating the ORIGIN image. 
         - Warning - this is a destructive process - the original version is overwritten!
         - Tags are copied from the original version to the newly mutated image.
@@ -229,7 +232,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         :param origin_file_url: str: url of the image file to rotate
         :param mutation: dict: dict of mutation actions, in form {'the_mutation':{'mutation_param': 'param_value'}} 
             e.g.: {'rotation':{'degrees': 90}}
-        :return: bool: PhotoData instance modified|False
+        :return: dict: {'success': True|False, 'data': Modified PhotoData instance | str: fail message}
         """
         try:
             record = PhotoData.objects.get(id=record_id)
@@ -239,40 +242,53 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
             save_path = settings.SPM['PROCESSED_IMAGE_PATH']
             thumb_path = settings.SPM['PROCESSED_THUMBNAIL_PATH']
             conversion_generated = mutated = False
-            # mutate origin image
-            Processor = ProcessImages(origin_file_url=record.original_url, processed_image_path=save_path,
-                                              thumb_path=thumb_path, conversion_format=conversion_format, process_single=True)
-            # do the mutation
-            if 'rotation' in mutation.keys():
-                mutated = Processor.rotate_image(origin_file_url=record.original_url, 
-                                                 rotation_degrees=mutation['rotation']['degrees'], copy_tags=True)
-            # generate converted image & thumbs
-            if mutated: # create the tagged converted copy and thumbs
-                # loop through process_images generator to process the image conversions
-                result = [i for i in Processor.process_images()]
-                if result[0]:  # if a result was returned, indicating new conversions have been generated
-                    # remove the now orphaned previous processed versions (inc. thumbs)
-                    async_task(Processor.delete_images, allowed_dirs={save_path}, containing_str=record.file_name,
-                                allowed_formats=[conversion_format], recursive=True)
-                    # update model date, inc. set new filename of newly created processed image
-                    new_data = result[0]['conversion_data']
-                    record.file_name = os.path.splitext(
-                        new_data['new_filename'])[0]
-                    record.file_format = os.path.splitext(
-                        new_data['new_filename'])[1]
-                    record.processed_url = os.path.join(
-                        new_data['processed_path'], new_data['new_filename'])
-                    record.record_updated = datetime.utcnow()
-                    # save the model
-                    record.save()
-                    conversion_generated = True
+            error_message = ''
+            # first, check modification lock, to guard against concurrent image modifications
+            if not record.mod_lock:
+                # set the mod_lock
+                record.mod_lock = True
+                record.save()
+                # mutate origin image
+                Processor = ProcessImages(origin_file_url=record.original_url, processed_image_path=save_path,
+                                          thumb_path=thumb_path, conversion_format=conversion_format, process_single=True)
+                # do the mutation
+                if 'rotation' in mutation.keys():
+                    mutated = Processor.rotate_image(origin_file_url=record.original_url,
+                                                     rotation_degrees=mutation['rotation']['degrees'], copy_tags=True)
+                # generate converted image & thumbs
+                if mutated:  # create the tagged converted copy and thumbs
+                    # loop through process_images generator to process the image conversions
+                    result = [i for i in Processor.process_images()]
+                    if result[0]:  # if a result was returned, indicating new conversions have been generated
+                        # remove the now orphaned previous processed versions (inc. thumbs)
+                        async_task(Processor.delete_images, allowed_dirs={save_path}, containing_str=record.file_name,
+                                   allowed_formats=[conversion_format], recursive=True)
+                        # update model date, inc. set new filename of newly created processed image
+                        new_data = result[0]['conversion_data']
+                        record.file_name = os.path.splitext(
+                            new_data['new_filename'])[0]
+                        record.file_format = os.path.splitext(
+                            new_data['new_filename'])[1]
+                        record.processed_url = os.path.join(
+                            new_data['processed_path'], new_data['new_filename'])
+                        record.record_updated = datetime.utcnow()
+                        # unlock the mod lock
+                        record.mod_lock = False
+                        # save the model
+                        record.save()
+                        conversion_generated = True
+            else:
+                error_message = 'MUTATION FAILED: Modification locked for this image!'
+                logger.info(error_message)
         except PhotoData.DoesNotExist:
-            logger.error(
-                'The requested photo record does not exist in the database!')
+            error_message = 'The requested photo record does not exist in the database!'
+            logger.error(error_message)
         except Exception:
-            logger.error(
-                'An error occurred whilst attempting to rotate the image!', exc_info=True)
-        return record if mutated and conversion_generated else False
+            error_message = 'An error occurred whilst attempting to rotate the image!'
+            logger.error(error_message, exc_info=True)
+        return {
+            'success': True if mutated and conversion_generated else False,
+            'data': record if mutated and conversion_generated else error_message}
 
     def handleRemoveTags(self, record_id: int, tags: [str], user: User, write_to_iptc: bool = True,
                          iptc_key: str = 'Iptc.Application2.Keywords') -> bool:
@@ -285,7 +301,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         :param user: user doing the updating
         :param write_to_iptc: boolean: whether to delete the tags from image (not only db record)
         :param iptc_key: str: IPTC key. Defaults to keyword (Iptc.Application2.Keywords)
-            :return: result from handleAddTags, in the form: updated PhotoData instance | False
+        :return: return of handleAddTags function, in form: 
+            dict: {'success': True|False, 'data': Modified PhotoData instance | str: fail message}
         """
         # get model instance to update
         record = PhotoData.objects.get(id=record_id)
@@ -305,11 +322,12 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         :param write_to_iptc: boolean: whether to write the new tags to the image
         :param iptc_key: str: IPTC key. Defaults to keyword (Iptc.Application2.Keywords)
         :param retain_original: bool: whether to retain original tags or simply replace with new
-        :return: updated PhotoData instance | False
+        :return: dict: {'success': True|False, 'data': Modified PhotoData instance | str: fail message}
         """
         # get model instance to update
         record = PhotoData.objects.get(id=record_id)
         tag_write_success = False
+        error_message = ''
         # first, update the tag model with new tags, if necessary
         if write_to_iptc:
             try:
@@ -341,8 +359,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                         record.processed_url = os.path.join(
                             new_data['processed_path'], new_data['new_filename'])
             except Exception:
-                logger.error(
-                    'An error occurred whilst attempting to add tags', exc_info=True)
+                error_message = 'An error occurred whilst attempting to add tags'
+                logger.error(error_message, exc_info=True)
         # write tags to db only if successfully written to image (if required)
         if tag_write_success or not write_to_iptc:
             try:
@@ -353,8 +371,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                             tag=tag, defaults={'owner': user})
                         successfully_added_tags.append(tag)
                     except Exception as e:
-                        logger.warning(
-                            f'An exception occurred whilst attempting to save tags to database: {e}')
+                        error_message = 'An exception occurred whilst attempting to save tags to database!'
+                        logger.warning(error_message, exc_info=True)
                 # save tags & updated image data to PhotoData model
                 if retain_original:
                     [record.tags.add(t) for t in successfully_added_tags]
@@ -363,10 +381,11 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 record.record_updated = datetime.utcnow()
                 # save the model
                 record.save()
-                return record
+                return {'success': True, 'data': record}
             except Exception as e:
-                logger.error(e)
-        return False
+                error_message = e
+                logger.error(error_message)
+        return {'success': False, 'data': error_message}
 
 
 class PhotoTagViewSet(viewsets.ModelViewSet):
