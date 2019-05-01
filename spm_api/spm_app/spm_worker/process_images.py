@@ -100,7 +100,7 @@ class ProcessImages:
         return False
 
     @staticmethod
-    def read_iptc_tags(filename, path):
+    def _read_iptc_tags(filename, path):
         """
         method to read IPTC tags
         :param filename: filename of image
@@ -126,7 +126,7 @@ class ProcessImages:
             return False
 
     @staticmethod
-    def write_iptc_tags(new_file_url: str, tag_data: dict) -> bool:
+    def _write_iptc_tags(new_file_url: str, tag_data: dict) -> bool:
         """
         method to write IPTC tags to image
         :param new_file_url: filename of target image
@@ -150,7 +150,7 @@ class ProcessImages:
 
     @staticmethod
     def convert_image(orig_filename:str, path:str, save_path:str, conversion_format:str,
-                      thumb_path: str = '', change_filename:bool=True) -> dict or bool:
+                      thumb_path: str = '', change_filename:bool=True, thumbs_only:bool=False) -> dict or bool:
         """
         method to convert the format and resize an image file
         :param orig_filename: original filename of image
@@ -159,6 +159,7 @@ class ProcessImages:
         :param conversion_format: file format to covert to
         :param thumb_path: path to save the thumbnails to
         :param change_filename: bool: whether to generate a new filename, based on hash of origin file
+        :param thumbs_only: bool: whether only to generate thumbs (not the full sized processed image)
         :return: {'orig_file_path': path, 'processed_path': save_path, 'new_filename': outfile,
         'orig_filename': orig_filename, 'thumb_path': thumb_path} | False
         Note: filename of converted file is a hexdigest sha1 hash of the original image file
@@ -178,15 +179,16 @@ class ProcessImages:
                         image_url=url) # generate unique hash for image if required
                     else:
                         new_filename = os.path.splitext(orig_filename)[0]  # get filename minus format extension
-                    # define new filename (inc. extension for new format)
-                    outfile = f'{new_filename}.{conversion_format}'
-                    try:
-                        img.save(os.path.normpath(
-                            os.path.join(save_path, outfile)))
-                    except Exception as e:
-                        img = img.point(lambda i: i*(1./256)).convert('L')
-                        img.save(os.path.normpath(
-                            os.path.join(save_path, outfile)))
+                    if not thumbs_only:  # if converting to a full-sized copy
+                        # define new filename (inc. extension for new format)
+                        outfile = f'{new_filename}.{conversion_format}'
+                        try:
+                            img.save(os.path.normpath(
+                                os.path.join(save_path, outfile)))
+                        except Exception as e:
+                            img = img.point(lambda i: i*(1./256)).convert('L')
+                            img.save(os.path.normpath(
+                                os.path.join(save_path, outfile)))
                     # create thumbs
                     thumb_sizes = [(1080, 1080), (720, 720),
                                 (350, 350), (150, 150), (75, 75)]
@@ -263,17 +265,19 @@ class ProcessImages:
         :param tags: tags to add to the file, in form e.g.:
             {'iptc_key': 'Iptc.Application2.Keywords', 'tags': ['new tag 1', 'new tag 2']}
         :param retain_original: bool: whether to retain original tags or simply replace with new
-        :return: True|False
+        :return: True (if Excpetion not raised)
         """
         try:
             # get existing tags, if any, Expects: [{'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']}] | False
-            origin_filename = os.path.split(origin_file_url)[1]
-            path = os.path.split(origin_file_url)[0]
+            path, origin_filename = os.path.split(origin_file_url)
             tags_to_write = []
             # merge existing & new tags to one list if retain_original is true
             if retain_original:
-                tags_to_write = ProcessImages.read_iptc_tags(
+                tags_to_write = ProcessImages._read_iptc_tags(
                     filename=origin_filename, path=path)
+                print(f'ORIGINAL TAGS TO COPY: {tags_to_write}')
+                print(f'COPIED FROM FILENAME: {origin_filename}')
+                print(f'COPED FROM PATH: {path}')
                 if tags_to_write:
                     for existing_tag in tags_to_write:
                         if existing_tag['iptc_key'] == tags['iptc_key']:
@@ -282,13 +286,14 @@ class ProcessImages:
             # if not merging with original or there were no original tags to merge, just use new
             tags_to_write = [tags] if not tags_to_write else tags_to_write
             # write tags to images (tags in form: {'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']})
+            print(f'TOTAL TAGS TO WRITE: {tags_to_write}')
             for tag in tags_to_write:
-                ProcessImages.write_iptc_tags(
+                ProcessImages._write_iptc_tags(
                     new_file_url=origin_file_url, tag_data=tag)
             return True
         except Exception as e:
             print(f'An exception occurred whilst attempting to add tags : {e}')
-            return False
+            raise
 
     @staticmethod
     def rotate_image(origin_file_url:str, rotation_degrees:int=90, copy_tags:bool=True,
@@ -303,18 +308,19 @@ class ProcessImages:
             tags = []
             path, filename = os.path.split(origin_file_url)
             if copy_tags: # read tags
-                tags = ProcessImages.read_iptc_tags(filename=filename, path=path)
+                tags = ProcessImages._read_iptc_tags(filename=filename, path=path)
+                print(f'ORGINAL TAGS: {tags}')
             # rotate the image (makes a new copy & overwrites the origial)
             with Image.open(origin_file_url) as img:
                 img.rotate(rotation_degrees, resample=Image.BICUBIC,
                            expand=True).save(origin_file_url)
             if copy_tags and tags: # write tags to new copy
                 for tag in tags:
-                    ProcessImages.write_iptc_tags(new_file_url=origin_file_url, tag_data=tag)
+                    ProcessImages.add_tags(origin_file_url=origin_file_url, tags=tag, retain_original=True)
             # convert to create thumbs
             if recreate_thumbs:
                 ProcessImages.convert_image(orig_filename=filename, path=path, save_path=save_path, thumb_path=thumb_path,
-                conversion_format=save_format, change_filename=False)
+                conversion_format=save_format, change_filename=False, thumbs_only=True)
             return True
         except IOError as e:
             print(f'Image rotation failed: {e}')
@@ -378,7 +384,7 @@ class ProcessImages:
                     """
                     if self.retag or not converted_did_exist:  # if retag is set, or newly converted image
                         # read tag data from original image
-                        tag_data = self.read_iptc_tags(filename=processed_data['conversion_data']['orig_filename'],
+                        tag_data = self._read_iptc_tags(filename=processed_data['conversion_data']['orig_filename'],
                                                        path=processed_data['conversion_data']['orig_path'])
                         # any additions or updates to the incoming tag data
                         if tag_data:
@@ -390,7 +396,7 @@ class ProcessImages:
                                     # add to the return dicts
                                     processed_data['tag_data'] = tag
                                     # write the tags to the converted file
-                                    self.write_iptc_tags(
+                                    self._write_iptc_tags(
                                         new_file_url=new_file_url, tag_data=tag)
                                 else:
                                     print(

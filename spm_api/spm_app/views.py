@@ -251,8 +251,11 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 record.save()
                 # do the mutation
                 if 'rotation' in mutation.keys():
-                    mutated = ProcessImages.rotate_image(origin_file_url=record.processed_url, rotation_degrees=mutation['rotation']['degrees'],
-                                                     copy_tags=True, thumb_path=thumb_path, save_path=save_path, save_format=conversion_format)
+                    mutated = ProcessImages.rotate_image(
+                        origin_file_url=record.processed_url,
+                    rotation_degrees=mutation['rotation']['degrees'],
+                    copy_tags=True, thumb_path=thumb_path, 
+                    save_path=save_path, save_format=conversion_format)
                 # generate converted image & thumbs
                 if mutated:  # save to db model
                     record.record_updated = datetime.utcnow()
@@ -301,7 +304,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def handleAddTags(record_id: int, tags: [str], user: User, write_to_iptc: bool = True,
-                      iptc_key: str = 'Iptc.Application2.Keywords', retain_original: bool = True) -> PhotoData or bool:
+                      iptc_key: str = 'Iptc.Application2.Keywords', retain_original: bool = True,
+                      processed_only:bool = False) -> PhotoData or bool:
         """function to add tags to the PhotoData model
         :param record_id: ID of record to be updated
         :param tags: List of tags (strings) to add to the exising tags
@@ -309,11 +313,12 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         :param write_to_iptc: boolean: whether to write the new tags to the image
         :param iptc_key: str: IPTC key. Defaults to keyword (Iptc.Application2.Keywords)
         :param retain_original: bool: whether to retain original tags or simply replace with new
+        :param processed_only: bool: whether to only write tags to processed image. False also writes to origin.
         :return: dict: {'success': True|False, 'data': Modified PhotoData instance | str: fail message}
         """
         # get model instance to update
         record = PhotoData.objects.get(id=record_id)
-        tag_write_success = False
+        tag_write_success = None
         error_message = ''
         # set modification lock
         record.mod_lock = True
@@ -326,43 +331,42 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 thumb_path = settings.SPM['PROCESSED_THUMBNAIL_PATH']
                 conversion_format = settings.SPM['CONVERSION_FORMAT']
                 tags_to_add = {'iptc_key': iptc_key, 'tags': tags}
+                logger.info(f'TAGS TO REPLACE WITH: {tags}')
                 # write tags to the origin image
-                tag_write_success = ProcessImages.add_tags(origin_file_url=origin_file_url, tags=tags_to_add,
-                                                           retain_original=retain_original)
-                if tag_write_success:
-                    # write tags to converted copy
-                    ProcessImages.add_tags(origin_file_url=os.path.join(
-                        processed_image_path, f'{record.file_name}{record.file_format}'), tags=tags_to_add,
-                                                           retain_original=retain_original)
+                if not processed_only:
+                    ProcessImages.add_tags(origin_file_url=origin_file_url, tags=tags_to_add,
+                                           retain_original=retain_original)
+                # write to processed image
+                ProcessImages.add_tags(origin_file_url=record.processed_url, tags=tags_to_add,
+                                       retain_original=retain_original)
             except Exception:
                 error_message = 'An error occurred whilst attempting to add tags'
                 logger.error(error_message, exc_info=True)
         # write tags to db only if successfully written to image (if required)
-        if tag_write_success or not write_to_iptc:
-            try:
-                successfully_added_tags = []
-                for tag in tags:
-                    try:
-                        tag, tag_created = PhotoTag.objects.get_or_create(
-                            tag=tag, defaults={'owner': user})
-                        successfully_added_tags.append(tag)
-                    except Exception as e:
-                        error_message = 'An exception occurred whilst attempting to save tags to database!'
-                        logger.warning(error_message, exc_info=True)
-                # save tags & updated image data to PhotoData model
-                if retain_original:
-                    [record.tags.add(t) for t in successfully_added_tags]
-                else:
-                    record.tags.set(successfully_added_tags)
-                record.record_updated = datetime.utcnow()
-                # release modification lock
-                record.mod_lock = False
-                # save the model
-                record.save()
-                return {'success': True, 'data': record}
-            except Exception as e:
-                error_message = e
-                logger.error(error_message)
+        try:
+            successfully_added_tags = []
+            for tag in tags:
+                try:
+                    tag, tag_created = PhotoTag.objects.get_or_create(
+                        tag=tag, defaults={'owner': user})
+                    successfully_added_tags.append(tag)
+                except Exception as e:
+                    error_message = 'An exception occurred whilst attempting to save tags to database!'
+                    logger.warning(error_message, exc_info=True)
+            # save tags & updated image data to PhotoData model
+            if retain_original:
+                [record.tags.add(t) for t in successfully_added_tags]
+            else:
+                record.tags.set(successfully_added_tags)
+            record.record_updated = datetime.utcnow()
+            # release modification lock
+            record.mod_lock = False
+            # save the model
+            record.save()
+            return {'success': True, 'data': record}
+        except Exception as e:
+            error_message = e
+            logger.error(error_message)
         # release modification lock
         record.mod_lock = False
         record.save()
