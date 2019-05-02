@@ -497,12 +497,12 @@ class ProcessPhotos(APIView):
             except Exception as e:
                 new_record_created = False
                 photo_data_record = None
-                logger.error(
-                    f'An exception occurred whilst saving image data to the database: {e}')
+                logger.info(
+                    f'Did not save image data to the database: {e}')
             """
             if new image data was created - or resync_tags=True - , create PhotoTag objects
             (creating in the model if necessary with update_or_create), then populate saved
-            PhotoData model's M2M tags field with that list. 
+            PhotoData model's M2M tags field with that list (& save again the now newly tagged model). 
             Then, add image data to a list for return
             """
             if photo_data_record and (new_record_created or resync_tags):

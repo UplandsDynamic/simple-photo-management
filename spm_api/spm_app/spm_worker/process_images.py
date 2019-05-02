@@ -179,9 +179,9 @@ class ProcessImages:
                         image_url=url) # generate unique hash for image if required
                     else:
                         new_filename = os.path.splitext(orig_filename)[0]  # get filename minus format extension
+                    # define new filename (inc. extension for new format)
+                    outfile = f'{new_filename}.{conversion_format}'
                     if not thumbs_only:  # if converting to a full-sized copy
-                        # define new filename (inc. extension for new format)
-                        outfile = f'{new_filename}.{conversion_format}'
                         try:
                             img.save(os.path.normpath(
                                 os.path.join(save_path, outfile)))
@@ -332,7 +332,7 @@ class ProcessImages:
         :yield: generator, that processes files in an origin directory &
         produces dicts of saved conversion data and tags: e.g.:
             {conversion_data: {'orig_path': '/path/to/orig/image', 'processed_path':'/path/to/processed_image',
-            'filename': '4058.jpeg'}, tag_data: {'iptc_key': 'Iptc.Application2.Keywords', 'tags':
+            'filename': 'jfJJeke5wrt54646ehgoe462.jpeg'}, tag_data: {'iptc_key': 'Iptc.Application2.Keywords', 'tags':
             ['DATE: 1974', 'PLACE: The Moon']}
         Notes:
             1. Hash of origin file assigned as file name to ensure duplicate name of files in other
