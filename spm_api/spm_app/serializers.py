@@ -8,6 +8,7 @@ from . import custom_validators
 from django.db import IntegrityError
 from django.utils.translation import gettext_lazy as _
 from .models import PhotoTag, PhotoData
+import uuid
 
 # Get an instance of a logger
 logger = logging.getLogger('django')
@@ -118,6 +119,12 @@ class PhotoDataSerializer(serializers.HyperlinkedModelSerializer):
     # return staff status of requester
     user_is_admin = serializers.SerializerMethodField(method_name='administrators_check')
 
+    # add UUID to ensure caches can be cleared for new img
+    uuid = serializers.SerializerMethodField(method_name='generate_uuid')
+
+    def generate_uuid(self, obj):
+        return uuid.uuid4().hex 
+
     def administrators_check(self, obj):
         return self.context['request'].user.groups.filter(name='administrators').exists()
 
@@ -137,7 +144,7 @@ class PhotoDataSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = PhotoData
         fields = ('id', 'owner', 'file_name', 'file_format', 'tags', 'user_is_admin',
-                  'datetime_of_request', 'public_img_url', 'public_img_tn_url', 'original_url')
+                  'datetime_of_request', 'public_img_url', 'public_img_tn_url', 'original_url', 'uuid')
 
     """
     Additional validations. 
