@@ -19,11 +19,11 @@ import './debug';
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
     faSyncAlt, faEllipsisH, faPlus, faPlusSquare, faMinus, faMinusSquare,
-    faTrashAlt, faEdit, faRobot, faTags, faBroom, faCircleNotch
+    faTrashAlt, faEdit, faRobot, faTags, faBroom, faUndo, faRedo
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(faSyncAlt, faEllipsisH, faPlus, faTrashAlt, faEdit, faPlusSquare, 
-    faMinus, faMinusSquare, faRobot, faTags, faBroom, faCircleNotch);
+    faMinus, faMinusSquare, faRobot, faTags, faBroom, faUndo, faRedo);
 
 axios.defaults.withCredentials = true;
 

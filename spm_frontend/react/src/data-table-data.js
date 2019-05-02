@@ -12,8 +12,8 @@ const DataTableData = (props) => {
         handleUpdate({ tags:tag, recordItem, updateMode: 'remove_tag' });  // pass back through function prop
     }
 
-    const handleRotateImage = (recordItem) => {
-        handleUpdate({recordItem, updateMode: 'rotate_image', updateParams: {rotation_degrees: -90} });  // pass back through function prop
+    const handleRotateImage = (recordItem, degrees) => {
+        handleUpdate({recordItem, updateMode: 'rotate_image', updateParams: {rotation_degrees: degrees} });  // pass back through function prop
     }
 
     return record.data.results.map((item, index) => {
@@ -34,9 +34,15 @@ const DataTableData = (props) => {
                         alt={tags.join(', ')}
                         className={imgClasses.join(' ')}
                     />
-                    <div className={'card-footer'}>
-                        <button disabled={!item.user_is_admin} onClick={() => handleRotateImage(item)}
-                        className={'btn btn-sm btn-warning'}><FontAwesomeIcon icon={'circle-notch'}/></button>
+                     <div className={'card-footer'}>
+                     <div className={'btn-toolbar'} role={'toolbar'} aria-label={'Photo mutation toolbar'}>
+                     <div className={'btn-group'} role={'group'} aria-label={'Group 1'}>
+                     <button disabled={!item.user_is_admin} onClick={() => handleRotateImage(item, 90)}
+                        className={'btn btn-sm btn-warning mr-1'}><FontAwesomeIcon icon={'undo'}/></button>
+                        <button disabled={!item.user_is_admin} onClick={() => handleRotateImage(item, -90)}
+                        className={'btn btn-sm btn-warning'}><FontAwesomeIcon icon={'redo'}/></button>
+                     </div>
+                     </div>
                     </div>
                 </div>
             </td>
