@@ -1,6 +1,6 @@
 div.data-table {
     min-height: 768px;
-    font-size: 1.7vm;
+    font-size: 1vm;
 }
 
 table {
@@ -29,22 +29,8 @@ td.action-col, th.action-col {
     color: white !important;
 }
 
-tr.outOfStock td.unitsTotal {
-    color: orangered !important;
-    font-size: 0.7em;
-}
-
-tr.outOfStock td.sku {
-    color: orangered !important;
-}
-
 table td.table-small-font {
     font-size: 0.8em;
-}
-
-table.stockTable thead th:hover {
-    color: #001e00 !important;
-    background-color: yellow !important;
 }
 
 table.stockTable-disabled, table.stockTable-disabled input {
@@ -89,7 +75,7 @@ input.search {
 ul {
     list-style-type: None!important;
     padding:0!important;
-    font-size: 1.8vw;
+    font-size: 1.5rem;
 }
 
 .Modal {
