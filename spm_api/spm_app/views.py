@@ -255,7 +255,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                         origin_file_url=record.processed_url,
                     rotation_degrees=mutation['rotation']['degrees'],
                     copy_tags=True, thumb_path=thumb_path, 
-                    save_path=save_path, save_format=conversion_format)
+                    save_path=save_path, save_format=conversion_format, thumb_sizes=settings.SPM['THUMB_SIZES'])
                 # generate converted image & thumbs
                 if mutated:  # save to db model
                     record.record_updated = datetime.utcnow()
@@ -318,8 +318,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         """
         # get model instance to update
         record = PhotoData.objects.get(id=record_id)
-        tag_write_success = None
         error_message = ''
+        renamed_main = False
         # set modification lock
         record.mod_lock = True
         record.save()
@@ -334,11 +334,31 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 logger.info(f'TAGS TO REPLACE WITH: {tags}')
                 # write tags to the origin image
                 if not processed_only:
-                    ProcessImages.add_tags(origin_file_url=origin_file_url, tags=tags_to_add,
+                    ProcessImages.add_tags(target_file_url=origin_file_url, tags=tags_to_add,
                                            retain_original=retain_original)
                 # write to processed image
-                ProcessImages.add_tags(origin_file_url=record.processed_url, tags=tags_to_add,
+                ProcessImages.add_tags(target_file_url=record.processed_url, tags=tags_to_add,
                                        retain_original=retain_original)
+                # rename processed file so name matches new hash of origin image
+                try:
+                    renamed_main = ProcessImages.rename_image(url_file_to_hash=origin_file_url,
+                                                     url_file_to_rename=record.processed_url, with_hash=True)
+                except Exception:
+                    logger.error('Renaming the processed file failed!', exc_info=True)
+                # rename thumbs as above
+                if renamed_main:
+                    path, new_file = os.path.split(renamed_main)
+                    new_filename, new_format = os.path.splitext(new_file)
+                    old_filename = record.file_name 
+                    old_format = record.file_format
+                    for tn in settings.SPM['THUMB_SIZES']:
+                        if thumb_path:
+                            old_url = os.path.join(thumb_path, f'{old_filename}-{"_".join((str(t) for t in tn))}{old_format}')
+                            new_name = f'{new_filename}-{"_".join((str(t) for t in tn))}{new_format}'
+                            try:
+                                ProcessImages.rename_image(url_file_to_rename=old_url, new_name=new_name)
+                            except Exception:
+                                logger.error('Renaming the thumbnail file failed!', exc_info=True)
             except Exception:
                 error_message = 'An error occurred whilst attempting to add tags'
                 logger.error(error_message, exc_info=True)
@@ -359,6 +379,11 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
             else:
                 record.tags.set(successfully_added_tags)
             record.record_updated = datetime.utcnow()
+            # update db with new processed image filenames
+            if renamed_main:
+                record.file_name = new_filename
+                record.file_foramt = new_format
+                record.processed_url = os.path.join(processed_image_path, new_filename + new_format)
             # release modification lock
             record.mod_lock = False
             # save the model
@@ -579,7 +604,8 @@ class ProcessPhotos(APIView):
                                                 processed_image_path=processed_image_path,
                                                 thumb_path=thumb_path,
                                                 conversion_format=conversion_format,
-                                                retag=retag)
+                                                retag=retag,
+                                                thumb_sizes=settings.SPM['THUMB_SIZES'])
                 # get reference to the generator that processes images
                 process_images_generator = image_processor.process_images()
                 if process_images_generator:

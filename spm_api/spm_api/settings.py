@@ -198,6 +198,7 @@ if RUN_TYPE == RUN_TYPE_OPTIONS[0]:  # DEVEL
         'PUBLIC_URL_TN': os.path.normpath('/media/test_images_processed/tn'),
         'CONVERSION_FORMAT': 'jpg',
         'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate_image'},
+        'THUMB_SIZES':  [(1080, 1080), (720, 720), (350, 350), (150, 150), (75, 75)]
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
     SPM = {  # set of image paths
@@ -213,6 +214,7 @@ elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
         'PUBLIC_URL_TN': os.path.normpath('/img/tn'),
         'CONVERSION_FORMAT': 'jpg',
         'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate_image'},
+        'THUMB_SIZES':  [(1080, 1080), (720, 720), (350, 350), (150, 150), (75, 75)]
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[2]:  # PRODUCTION
     SPM = {
