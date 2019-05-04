@@ -173,14 +173,14 @@ Q_CLUSTER = {
     'daemonize_workers': True,
     'compress': True,
     'workers': 2,
-    'recycle': 500,
+    'recycle': 5000,
     'timeout': None,
     # 'django_redis': 'default',
     'retry': 100000,
-    'queue_limit': 8,
-    'bulk': 10,
+    'queue_limit': 4,
+    'bulk': 1,
     'orm': 'default',
-    'sync': RUN_TYPE == RUN_TYPE_OPTIONS[0] or RUN_TYPE_OPTIONS[1],  # Set True to debug in sync mode.
+    'sync': RUN_TYPE == RUN_TYPE_OPTIONS[0],  # Set True to debug in sync mode.
     'guard_cycle': 5,
     'cpu_affinity': 1,
     'catch_up': True
