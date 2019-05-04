@@ -54,13 +54,14 @@ class ProcessImages:
         self.tags = tags
 
     @staticmethod
-    def file_url_list_generator(directories: set, allowed_formats: list = None, recursive: bool = False,
+    def file_url_list_generator(directories: set, allowed_formats: list = ALLOWED_IMAGE_FORMATS, recursive: bool = False,
                                 containing_str: str = '') -> str:
         """
         generator method, to get full urls of all files in directories
         :param recursive: whether to scan recursively
         :param directories: set of directories in which to scan for files
         :param containing_str: string that included filenames must contain (if any)
+        :param allowed_formats: list: list of file extensions to restrict to (default as ALLOWED_IMAGE_FORMATS const)
         :return: yield file urls (str) from the generated list
         """
         file_urls = []

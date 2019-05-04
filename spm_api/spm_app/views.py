@@ -194,7 +194,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                     'tags': [t for t in new_data.tags.all().values_list('tag', flat=True)],
                     'record_updated': new_data.record_updated,
                     'user_is_admin': request.user.groups.filter(name='administrators').exists(),
-                    'uuid': uuid.uuid4().hex # add UUID to ensure caches can be cleared for new img
+                    'uuid': uuid.uuid4().hex  # add UUID to ensure caches can be cleared for new img
                 }
             return JsonResponse(data=updated_record, status=status.HTTP_202_ACCEPTED) if updated_instance['success'] else JsonResponse(
                 {"status": f"Nothing was updated: {updated_instance['data']}"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
@@ -253,9 +253,9 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 if 'rotation' in mutation.keys():
                     mutated = ProcessImages.rotate_image(
                         origin_file_url=record.processed_url,
-                    rotation_degrees=mutation['rotation']['degrees'],
-                    copy_tags=True, thumb_path=thumb_path, 
-                    save_path=save_path, save_format=conversion_format, thumb_sizes=settings.SPM['THUMB_SIZES'])
+                        rotation_degrees=mutation['rotation']['degrees'],
+                        copy_tags=True, thumb_path=thumb_path,
+                        save_path=save_path, save_format=conversion_format, thumb_sizes=settings.SPM['THUMB_SIZES'])
                 # generate converted image & thumbs
                 if mutated:  # save to db model
                     record.record_updated = datetime.utcnow()
@@ -305,7 +305,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
     @staticmethod
     def handleAddTags(record_id: int, tags: [str], user: User, write_to_iptc: bool = True,
                       iptc_key: str = 'Iptc.Application2.Keywords', retain_original: bool = True,
-                      processed_only:bool = False) -> PhotoData or bool:
+                      processed_only: bool = False) -> PhotoData or bool:
         """function to add tags to the PhotoData model
         :param record_id: ID of record to be updated
         :param tags: List of tags (strings) to add to the exising tags
@@ -342,23 +342,27 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 # rename processed file so name matches new hash of origin image
                 try:
                     renamed_main = ProcessImages.rename_image(url_file_to_hash=origin_file_url,
-                                                     url_file_to_rename=record.processed_url, with_hash=True)
+                                                              url_file_to_rename=record.processed_url, with_hash=True)
                 except Exception:
-                    logger.error('Renaming the processed file failed!', exc_info=True)
+                    logger.error(
+                        'Renaming the processed file failed!', exc_info=True)
                 # rename thumbs as above
                 if renamed_main:
                     path, new_file = os.path.split(renamed_main)
                     new_filename, new_format = os.path.splitext(new_file)
-                    old_filename = record.file_name 
+                    old_filename = record.file_name
                     old_format = record.file_format
                     for tn in settings.SPM['THUMB_SIZES']:
                         if thumb_path:
-                            old_url = os.path.join(thumb_path, f'{old_filename}-{"_".join((str(t) for t in tn))}{old_format}')
+                            old_url = os.path.join(
+                                thumb_path, f'{old_filename}-{"_".join((str(t) for t in tn))}{old_format}')
                             new_name = f'{new_filename}-{"_".join((str(t) for t in tn))}{new_format}'
                             try:
-                                ProcessImages.rename_image(url_file_to_rename=old_url, new_name=new_name)
+                                ProcessImages.rename_image(
+                                    url_file_to_rename=old_url, new_name=new_name)
                             except Exception:
-                                logger.error('Renaming the thumbnail file failed!', exc_info=True)
+                                logger.error(
+                                    'Renaming the thumbnail file failed!', exc_info=True)
             except Exception:
                 error_message = 'An error occurred whilst attempting to add tags'
                 logger.error(error_message, exc_info=True)
@@ -383,7 +387,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
             if renamed_main:
                 record.file_name = new_filename
                 record.file_foramt = new_format
-                record.processed_url = os.path.join(processed_image_path, new_filename + new_format)
+                record.processed_url = os.path.join(
+                    processed_image_path, new_filename + new_format)
             # release modification lock
             record.mod_lock = False
             # save the model
@@ -564,23 +569,38 @@ class ProcessPhotos(APIView):
         return True
 
     @staticmethod
-    def clean_database(owner):
+    def clean_database(owner, origin_directories=False, processed_directories=False):
         """
         function to purge database of records referring to files that 
-        no longer exist in processed images directory
+        no longer exist in the image directories
         """
-        url_list_generator = ProcessImages.file_url_list_generator(directories={settings.SPM['PROCESSED_IMAGE_PATH']},
-                                                                   recursive=False)
-        filenames_set = {os.path.splitext(os.path.split(f)[1])[
-            0] for f in url_list_generator}
-        orphaned_db_records = set(PhotoData.objects.values_list(
-            'file_name', flat=True).all()) - filenames_set
-        logger.info(f'ORPHANED RECORDS: {orphaned_db_records}')
-        for record in orphaned_db_records:
-            try:
-                PhotoData.objects.filter(file_name=record).delete()
-            except Exception as e:
-                logger.error(f'Error in clean_database: {e}')
+        orphaned_processed_set = set()
+        orphaned_no_origin_set = set()
+        if processed_directories:
+            url_list_generator = ProcessImages.file_url_list_generator(directories={settings.SPM['PROCESSED_IMAGE_PATH']},
+                                                                       recursive=False)
+            filenames_set = {os.path.splitext(os.path.split(f)[1])[
+                0] for f in url_list_generator}
+            orphaned_processed_set = set(PhotoData.objects.values_list(
+                'file_name', flat=True).all()) - filenames_set
+        if origin_directories:
+            url_list_generator = ProcessImages.file_url_list_generator(
+                directories=settings.SPM['ORIGIN_IMAGE_PATHS'], recursive=True)
+            # combine sets using the "|" set union operator
+            origin_url_set = {f for f in url_list_generator}
+        if origin_url_set:
+            orphaned_no_origin_set = set(PhotoData.objects.values_list(
+                'original_url', flat=True).all()) - origin_url_set
+        # combine sets using the "|" set union operator
+        all_orphaned_records = orphaned_no_origin_set | orphaned_processed_set
+        logger.info(f'ALL ORPHANED RECORDS: {all_orphaned_records}')
+        if all_orphaned_records:
+            for record in all_orphaned_records:
+                try:
+                    PhotoData.objects.filter(Q(file_name=record) | Q(original_url=record) ).delete()
+                    logger.info(f'RECORD TO DELETE: {record}')
+                except Exception as e:
+                    logger.error(f'Error in clean_database: {e}')
         return True
 
     @staticmethod
@@ -630,7 +650,8 @@ class ProcessPhotos(APIView):
                 return True
             # if action is to clean the database of obsolete image data (i.e. records referring to deleted images)
             if clean_db:
-                async_task(ProcessPhotos.clean_database, owner=user)
+                async_task(ProcessPhotos.clean_database, owner=user,
+                           origin_directories=True, processed_directories=True)
         except (ValidationError, Exception) as e:
             if isinstance(e, ValidationError):
                 logger.error(f'Validation error: {e.message}')
