@@ -19,7 +19,7 @@
 ##  General:
 ##      - Servers and other configurations are defined in the script variables.
 ##  Referenced in code:
-##      1. Sets same version in production, so it tracks dev version when merged & deployed.
+##      1. Sets same version in production & docker deploys, so it tracks dev version when merged & deployed.
 ##      2. "If" statement only pushes to github if on branch master (production). To push to a
 ##         devel branch on github, remove the "if" statement.
 #######
@@ -45,6 +45,7 @@ elif [[ "$(git branch)" == *"* devel"* ]]
 then
 GIT_BRANCH='devel'
 sync_to_staging;
+sync_to_docker;
 else
 printf "\nNot working on a defined sync branch, so not syncing!\n\n"
 fi
@@ -141,12 +142,14 @@ REMOTE_API_DIR="/mnt/backupaninstancedatacenter/family-history-29032019-clone/sp
 REMOTE_SERVICE_NAME="spm.staging.gunicorn.service"
 REACT_ENV_FILE="${FRONTEND_DIR}/.env.staging"
 REACT_ENV_FILE_PROD="${FRONTEND_DIR}/.env.production"
+REACT_ENV_FILE_DOCKER="${FRONTEND_DIR}/.env.docker"
 REMOTE_SERVER_SSH_HOST="backup"
 VERSION=$(set_version)
 printf "\nWorking on branch: devel, deploying to STAGING!\n\n"
 cd ${FRONTEND_DIR}
 sed -i "/REACT_APP_VERSION/c\REACT_APP_VERSION = '${VERSION}'" ${REACT_ENV_FILE}
 sed -i "/REACT_APP_VERSION/c\REACT_APP_VERSION = '${VERSION}'" ${REACT_ENV_FILE_PROD}  # see Note (1) (up top)
+sed -i "/REACT_APP_VERSION/c\REACT_APP_VERSION = '${VERSION}'" ${REACT_ENV_FILE_DOCKER}  # see Note (1) (up top)
 cd ${PROJECT_ROOT_DIR}
 git_repos_commit_and_push
 echo "STAGING" > ./run_type.txt
@@ -164,6 +167,17 @@ ssh ${REMOTE_SERVER_SSH_HOST} "pkill -f \"python manage.py qcluster\""  # kill d
 #ssh ${REMOTE_SERVER_SSH_HOST} "${REMOTE_DIR}/venv/bin/python3 ${REMOTE_API_DIR}/manage.py qcluster"  # restart django_q
 echo "DEVEL" > ${PROJECT_ROOT_DIR}/run_type.txt
 printf "\nDEPLOYED TO STAGING!\n\n"
+}
+
+function sync_to_docker {
+REACT_ENV_FILE_DOCKER="${FRONTEND_DIR}/.env.docker"
+# build react frontend
+rm -rf ${BUILD_DIR}
+cd ${FRONTEND_DIR}
+npm run build:docker
+# sync code
+${SCRIPT_DIR}/docker/rsync-to-docker.sh
+printf "\nDEPLOYED TO DOCKER!\n\n"
 }
 
 deploy

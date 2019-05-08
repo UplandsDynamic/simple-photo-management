@@ -5,6 +5,7 @@
 #    pip-compile 
 #
 arrow==0.13.1
+autopep8==1.4.4
 blessed==1.15.0
 certifi==2019.3.9         # via requests
 chardet==3.0.4            # via requests
@@ -23,7 +24,9 @@ itypes==1.1.0             # via coreapi
 jinja2==2.10              # via coreschema
 markupsafe==1.1.1         # via jinja2
 pillow==5.4.1
+psycopg2==2.8.2
 py3exiv2==0.6.1
+pycodestyle==2.5.0        # via autopep8
 python-dateutil==2.8.0    # via arrow
 pytz==2018.9              # via django
 pyyaml==5.1

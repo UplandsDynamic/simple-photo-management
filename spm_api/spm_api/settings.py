@@ -216,12 +216,15 @@ elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
         'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate_image'},
         'THUMB_SIZES':  [(1080, 1080), (720, 720), (350, 350), (150, 150), (75, 75)]
     }
-elif RUN_TYPE == RUN_TYPE_OPTIONS[2]:  # PRODUCTION
+elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # DOCKER PRODUCTION
     SPM = {
-        'ORIGINAL_IMAGE_PATH': set(),
-        'PROCESSED_IMAGE_PATH': None,
+        'ORIGINAL_IMAGE_PATHS': set(),
+        'PROCESSED_IMAGE_PATH': '',
+        'PUBLIC_URL': '',
+        'PUBLIC_URL_TN': '',
         'CONVERSION_FORMAT': 'jpg',
         'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate_image'},
+         'THUMB_SIZES':  [(1080, 1080), (720, 720), (350, 350), (150, 150), (75, 75)]
     }
 
 # # # Caches
