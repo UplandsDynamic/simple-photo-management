@@ -14,6 +14,10 @@ The associated Docker image is available on DockerHub:
 
 <https://hub.docker.com/r/aninstance/simple-photo-management>
 
+To pull the image: 
+
+```docker pull aninstance/simple-photo-management```
+
 To use this source code for non-dockerised builds, please amend the settings.py configuration file accordingly.
 
 ## Key features

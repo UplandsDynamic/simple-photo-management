@@ -11,6 +11,7 @@ RUN mkdir /var/log/gunicorn
 RUN git clone https://github.com/Aninstance/simple-photo-management.git /repo
 RUN cp -a /repo/src/. /src
 RUN cp -a /repo/config/. /config
+RUN rm -rf /repo
 RUN pip install -r /config/requirements.txt
 WORKDIR /src
 EXPOSE 8000
