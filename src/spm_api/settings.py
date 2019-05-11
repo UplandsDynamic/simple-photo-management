@@ -124,12 +124,12 @@ Q_CLUSTER = {
 }
 
 SPM = {
-    'ORIGIN_IMAGE_PATHS': {os.environ.get('ORIGIN_IMAGE_PATH', None)},
-    'PROCESSED_IMAGE_PATH': os.environ.get('PROCESSED_IMAGE_PATH', None),
-    'PROCESSED_THUMBNAIL_PATH': os.environ.get('PROCESSED_TN_PATH', None),
-    'PUBLIC_URL': os.environ.get('PUBLIC_PHOTO_URL', None),
-    'PUBLIC_URL_TN': os.environ.get('PUBLIC_PHOTO_TN_URL', None),
-    'CONVERSION_FORMAT': os.environ.get('PHOTO_CONVERSION_FORMAT', '.jpg'),
+    'ORIGIN_IMAGE_PATHS': {os.environ.get('ORIGIN_IMAGE_PATH', default='/photo_directory')},
+    'PROCESSED_IMAGE_PATH': os.environ.get('PROCESSED_IMAGE_PATH', default='/src/media/photos'),
+    'PROCESSED_THUMBNAIL_PATH': os.environ.get('PROCESSED_TN_PATH', default='/src/media/photos_tn'),
+    'PUBLIC_URL': os.environ.get('PUBLIC_PHOTO_URL', default='/media/photos'),
+    'PUBLIC_URL_TN': os.environ.get('PUBLIC_PHOTO_TN_URL', default='/media/photos_tn'),
+    'CONVERSION_FORMAT': os.environ.get('PHOTO_CONVERSION_FORMAT', default='.jpg'),
     'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate_image'},
     'THUMB_SIZES':  [(1080, 1080), (720, 720), (350, 350), (150, 150), (75, 75)]
 }

@@ -1,0 +1,61 @@
+version: '3.5'
+
+services:
+  db:  # postgres database
+    image: postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_USER=example_db_user  # choose a database username
+      - POSTGRES_PASSWORD=rEaLlYbaDPa$sw0rD  # choose a database password
+      - POSTGRES_DB=spm  # choose a database name
+    volumes:
+      - ./postgres/postgres_data:/var/lib/postgresql/data/  # assumes non-transient host directory at $build_directory/postgres/postgres_data
+  adminier:  # optional database admin app
+    image: adminer:latest
+    restart: always
+    ports:
+      - 127.0.0.1:8080:8080
+    depends_on:
+    - db
+  app:
+    image aninstance/simple-photo-management
+    restart: always
+    environment:
+      - DEBUG=1
+      - APP_URL=localhost
+      - SQL_ENGINE=django.db.backends.postgresql
+      - SQL_DATABASE=spm  # match postgres database name (chosen above)
+      - SQL_USER=example_db_user  # match postgres username (chosen above)
+      - SQL_PASSWORD=rEaLlYbaDPa$sw0rD  # match postgres password (chosen above)
+      - SQL_HOST=db
+      - SQL_PORT=5432
+      - DATABASE=postgres  # comment out to use sqlite (transient - will be destroyed with container!)
+      - ORIGIN_IMAGE_PATH=/photo_directory
+      - PROCESSED_IMAGE_PATH=/src/media/photos
+      - PROCESSED_TN_PATH=/src/media/photos_tn
+      - PUBLIC_PHOTO_URL=/media/photos
+      - PUBLIC_PHOTO_TN_URL=/media/photos_tn
+      - PHOTO_CONVERSION_FORMAT=jpg
+    volumes:
+      - ./config:/config
+      - ./photo_directory:/photo_directory  # assumes non-transient host directory at $build_directory/photo_directory
+      - ./log:/var/log # assumes non-transient host directory at $build_directory/log
+      - ./static:/src/static # assumes non-transient host directory at $build_directory/static
+      - ./media:/src/media  # assumes non-transient host directory at $build_directory/media
+    entrypoint: /config/entrypoint.sh
+    expose:
+      - 8000
+    depends_on:
+    - db
+  nginx:
+    image aninstance/simple-photo-management-client
+    restart: always
+    volumes:
+      - ./static:/var/www/html/static  # assumes non-transient host directory at $build_directory/static
+      - ./media:/var/www/html/media  # assumes non-transient host directory at $build_directory/media
+      - ./log:/var/log/nginx  # assumes non-transient host directory at $build_directory/log/nginx
+      - ./config/nginx/spm.conf:/etc/nginx/conf.d/spm.conf  # assumes spm.conf (edit to spec) at $build_directory/config/nginx/spm.conf
+    ports:
+      - 127.0.0.1:1337:80
+    depends_on:
+      - app

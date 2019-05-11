@@ -15,4 +15,5 @@ RUN rm -rf /repo
 RUN pip install -r /config/requirements.txt
 WORKDIR /src
 EXPOSE 8000
+VOLUME ["/photo_directory"]
 ENTRYPOINT [ "/config/entrypoint.sh" ]
