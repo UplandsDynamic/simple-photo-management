@@ -4,19 +4,29 @@ __Important: Before scanning an image directory, please ensure you have backed u
 
 This a simple application built on web technologies to IPTC tag, search & image optimise digital photo libraries.
 
-It has web frontend that connects to a RESTful API backend. Data is stored in either a SQLite, mySQL or PostgreSQL (recommended) database.
+It has web frontend client that connects to a RESTful API backend. Data is stored in either a SQLite, mySQL or PostgreSQL (recommended) database.
 
-There is a web client (built with React.js) and a server backend (written in Python 3.6 using the Django framework).
+The web client is built with React.js and the server backend is written in Python 3.6 using the Django framework.
 
-This repository is for the dockerised version of the server. Please see aninstance/simple-photo-management-client for the frontend web client.
+The `master` branch of this repository is source for the dockerised version of the server. Please checkout the `frontend` branch for source of the dockerised frontend web client.
 
-The associated Docker image is available on DockerHub:
+The associated Docker images are available on DockerHub:
 
-<https://hub.docker.com/r/aninstance/simple-photo-management>
+- Server:
 
-To pull the image: 
+  URL: <https://hub.docker.com/r/aninstance/simple-photo-management>
+  
+  To pull the image:
+  
+  ```docker pull aninstance/simple-photo-management```
 
-```docker pull aninstance/simple-photo-management```
+- Frontend client:
+
+  URL: <https://hub.docker.com/r/aninstance/simple-photo-management-client>
+
+  To pull the image:
+
+  ```docker pull aninstance/simple-photo-management-client```
 
 To use this source code for non-dockerised builds, please amend the settings.py configuration file accordingly.
 
