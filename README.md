@@ -28,6 +28,10 @@ The associated Docker images are available on DockerHub:
 
   ```docker pull aninstance/simple-photo-management-client```
 
+- Docker Compose
+
+  Please see an example docker-compose file (which builds the entire stack, including the web client & server) in the `master` (server) branch.
+
 To use this source code for non-dockerised builds, please amend the settings.py configuration file accordingly.
 
 ## Key features
