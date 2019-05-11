@@ -15,6 +15,7 @@ fi
 # make migrations
 cd /src
 python manage.py makemigrations --no-input;
+python manage.py makemigrations spm_app --no-input;  # ensure app migrations have happened
 # migrate
 python manage.py migrate --no-input;
 # collect static
