@@ -18,7 +18,7 @@ services:
     depends_on:
     - db
   app:
-    image aninstance/simple-photo-management
+    image: aninstance/simple-photo-management
     restart: always
     environment:
       - DEBUG=1
@@ -48,7 +48,7 @@ services:
     depends_on:
     - db
   nginx:
-    image aninstance/simple-photo-management-client
+    image: aninstance/simple-photo-management-client
     restart: always
     volumes:
       - ./static:/var/www/html/static  # assumes non-transient host directory at $build_directory/static
