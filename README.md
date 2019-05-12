@@ -66,10 +66,11 @@ To use the Docker images orchastrated with docker-compose:
 
   - `docker-compose-example.yml` - save as docker-compose.yml
   - `config/nginx/spm-example.config` - save as spm.conf
+  - `config/.env.docker` - save as .env.docker (this is the frontend client configuration)
 
 - Create the following directories in the application's root directory. These are for persistent storage (i.e. they persist even after the app server & client containers have been stopped, started, deleted, upgraded):
 
-  - `photo_directory` - this is the directory where copies of your original images will be stored.
+  - `mkdir photo_directory` - this is the directory where copies of your original images will be stored.
   - `mkdir media` - this is the directory where the processed images will be stored.
   - `mkdir static` - this is the directory where static content will be stored (including the client code).
   - `mkdir postgres` - this is the directory where the database will be located.
@@ -93,7 +94,7 @@ To use the Docker images orchastrated with docker-compose:
 
 - If running for the first time, create an `administrators` group and add the new user to it, as follows:
 
-  - Login to django admin - default is http://localhost:1337/admin/
+  - Login at the django admin url - e.g. http://your_domain.tld/admin/
   - Click `add` next to `Groups` in the `Authentication & Authorization` section.
   - Name the new group `administrators`.
   - Under `Available permissions`, scroll to the bottom and select all the `spm_app` permissions, clicking the arrow on the right to add these to the `Chosen permissions` pane (you may hold `shift` to select multiple at once). Once done, click `Save`.
@@ -102,7 +103,7 @@ To use the Docker images orchastrated with docker-compose:
 
 - Copy your original images (or directories of images) into the `photo_directory` directory.
 
-- Navigate to the web client url - default is http://localhost:1337
+- Navigate to the web client url - e.g. http://your_domain.tld
 
 - Login to the web client using the superuser credentials you'd previously supplied.
 

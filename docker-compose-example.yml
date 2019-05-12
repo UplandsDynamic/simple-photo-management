@@ -55,7 +55,7 @@ services:
       - ./media:/var/www/html/media  # assumes non-transient host directory at $build_directory/media
       - ./log:/var/log/nginx  # assumes non-transient host directory at $build_directory/log/nginx
       - ./config/nginx/spm.conf:/etc/nginx/conf.d/spm.conf  # assumes spm.conf (edit to spec) at $build_directory/config/nginx/spm.conf
-      - ./config/nginx/nginx-entrypoint.sh:/nginx-entrypoint.sh  # assumes nginx-entrypoint.sh (edit to spec) at $build_directory/config/nginx/nginx-entrypoint.sh
+      - ./config/.env.docker:/npm_build/public/.env.docker.new # assumes .env.docker file (edit to spec) at $build_directory/config/.env.docker
     ports:
       - 127.0.0.1:1337:80
     depends_on:
