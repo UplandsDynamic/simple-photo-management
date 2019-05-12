@@ -11,15 +11,10 @@ RUN git clone --single-branch --branch frontend https://github.com/Aninstance/si
 WORKDIR  /npm_build/public
 RUN apt install npm -y
 RUN npm install --save
-RUN npm run build:docker
-RUN cp -a build/. /var/www/html/react/
-RUN cp -a /var/www/html/react/static/. /var/www/html/react/
-RUN rm -rf /var/www/html/react/static
 WORKDIR /npm_build
 COPY spm.conf /etc/nginx/conf.d/
 COPY nginx.conf /etc/nginx/
 COPY nginx-entrypoint.sh /
 WORKDIR /
-RUN rm -rf /npm_build
 EXPOSE 80
 ENTRYPOINT [ "/nginx-entrypoint.sh" ]
