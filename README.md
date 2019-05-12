@@ -56,9 +56,11 @@ To use this source code for non-dockerised builds, please amend the settings.py 
 
 To use the Docker images orchastrated with docker-compose:
 
-- Clone the repo:
+- Create your app root directory & clone the repo into it:
 
-  `git clone https://github.com/Aninstance/simple-photo-management.git`
+  `mkdir spm`
+  `cd spm`
+  `git clone https://github.com/Aninstance/simple-photo-management.git .`
 
 - Edit the following files to your specification:
 
@@ -71,6 +73,7 @@ To use the Docker images orchastrated with docker-compose:
   - `mkdir media` - this is the directory where the processed images will be stored.
   - `mkdir static` - this is the directory where static content will be stored (including the client code).
   - `mkdir postgres` - this is the directory where the database will be located.
+  - `mkdir -p log/gunicorn` - this is the directory where the logs will be located.
 
 - You may remove the `src` directory, since the source will already be installed in the Docker image.
 
@@ -78,9 +81,15 @@ To use the Docker images orchastrated with docker-compose:
 
   `docker-compose up --build --force-recreate -d`
 
-- If running for the first time (i.e. your persistent database folder is empty), define a superuser & by issuing the following command:
+- If running for the first time (i.e. your persistent database folder is empty), define a superuser & by issuing the following commands:
 
-  `docker exec -it simplephotomanagement_app_1 python manage.py createsuperuser`
+  - Note down the name of the server app (exposing port 8000) that is output in the following command (e.g. `spm_app_1`):
+
+    `docker-compose ps`
+
+  - Run the following, substituting `spm_app_1` with the correct name for the server app, as discussed above.
+
+    `docker exec -it smp_app_1 python manage.py createsuperuser`
 
 - If running for the first time, create an `administrators` group and add the new user to it, as follows:
 

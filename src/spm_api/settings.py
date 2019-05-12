@@ -4,7 +4,6 @@ Django settings for SimplePhotoManagement project.
 import os
 import string
 import random
-
 """ INITIAL PARAMETERS """
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -34,9 +33,9 @@ SECURE_BROWSER_XSS_FILTER = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 ALLOWED_HOSTS = [APP_URL]
-# CORS_ORIGIN_ALLOW_ALL = True
+#CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
-CORS_ORIGIN_WHITELIST = (APP_URL)
+CORS_ORIGIN_WHITELIST = (APP_URL, 'localhost')
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
