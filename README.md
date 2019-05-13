@@ -83,6 +83,8 @@ To use the Docker images orchestrated with docker-compose:
   - `config/nginx/spm-example.config` - save as spm.conf
   - `config/.env.docker` - save as .env.docker (this is the frontend client configuration, where you may configure things like the number of items displayed per page)
 
+  __Note: Don't forget to set the URL in both the `docker-compose.yml` (`app`'s `APP_URL` variable) and the `.env.docker` (`REACT_APP_ROUTE`, `REACT_APP_API_ROUTE` & `REACT_APP_API_DATA_ROUTE` variables) files (as above).__
+
 - Create the following directories in the application's root directory. These are for persistent storage (i.e. they persist even after the app server & client containers have been stopped, started, deleted, upgraded):
 
   - `mkdir photo_directory` - this is the directory where copies of your original images will be stored.
