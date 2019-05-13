@@ -38,6 +38,7 @@ services:
       - PHOTO_CONVERSION_FORMAT=jpg
     volumes:
       - ./config:/config
+      - ./config/secret_key:/src/secret_key
       - ./photo_directory:/photo_directory  # assumes non-transient host directory at $build_directory/photo_directory
       - ./log:/var/log # assumes non-transient host directory at $build_directory/log
       - ./static:/src/static # assumes non-transient host directory at $build_directory/static

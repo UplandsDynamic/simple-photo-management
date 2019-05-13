@@ -10,7 +10,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240  # higher than the count of fields
 DEBUG = int(os.environ.get('DEBUG', default=0))
 # # # GENERATE A NEW UNIQUE SECRET KEY (secret_key.txt) IF DOES NOT ALREADY EXIST
-KEY_PATH = os.path.join(BASE_DIR, 'secret_key.txt')
+KEY_PATH = os.path.join(BASE_DIR, 'secret_key', 'secret_key.txt')
 try:
     with open(KEY_PATH, 'r') as f:
         SECRET_KEY = f.read().strip()
