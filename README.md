@@ -69,6 +69,8 @@ To use this source code for non-dockerised builds, please amend the settings.py 
 
 ## Installation & usage (on Linux systems)
 
+__Note: These are basic instructions to install and run the app for demonstration purposes only and do not provide for a secure installation, such as would be required if the app was publicly available. Steps should be taken to harden the environment if using in production, such as applying suitable file & directory permissions; serving over a TLS connection; and running the Docker containers as a user other than root.__
+
 To use the Docker images orchestrated with docker-compose:
 
 - Create your app root directory & clone the repository into it:
