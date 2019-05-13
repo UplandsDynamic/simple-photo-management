@@ -638,8 +638,9 @@ class ProcessPhotos(APIView):
                     """
                     for processed_record in process_images_generator:
                         # pause if using sqlite to avoid db lock during concurrent writes
-                        if settings.RUN_TYPE == settings.RUN_TYPE_OPTIONS[0]:
-                            time.sleep(.300)
+                        if hasattr(settings, 'RUN_TYPE'):
+                            if settings.RUN_TYPE == settings.RUN_TYPE_OPTIONS[0]:
+                                time.sleep(.300)
                         # kick off async task to add records to database model
                         async_task(ProcessPhotos.add_record_to_db, record=processed_record,
                                    owner=user, resync_tags=retag)

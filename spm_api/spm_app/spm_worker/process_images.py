@@ -409,6 +409,7 @@ class ProcessImages:
                                            path=processed_data['conversion_data']['orig_path'],
                                            save_path=processed_data['conversion_data']['processed_path'],
                                            conversion_format=self.CONVERSION_FORMAT,
+                                           thumb_path=self.THUMB_PATH,
                                            thumb_sizes=self.THUMB_SIZES)
                     """
                     write tags to file

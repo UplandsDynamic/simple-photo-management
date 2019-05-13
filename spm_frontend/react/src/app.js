@@ -14,7 +14,7 @@ import axios from 'axios/index';
 /* css */
 import './css/index.css';
 /* debug */
-import './debug';
+//import './debug';
 /* font awesome icons */
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {

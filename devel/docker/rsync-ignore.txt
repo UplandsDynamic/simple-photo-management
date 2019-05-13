@@ -4,6 +4,7 @@
 .vscode/
 devel/
 spm_frontend/
+media/
 rsync-ignore.txt
 venv/
 .gitignore
@@ -16,3 +17,10 @@ db.sqlite3
 node_modules/
 settings.py
 __pycache__/
+build/
+.env.production
+.env.test
+.env.development
+.env.staging
+tests/
+
