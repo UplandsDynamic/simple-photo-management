@@ -8,31 +8,20 @@ It has web frontend client that connects to a RESTful API backend. Data is store
 
 The web client is built with React.js and the server backend is written in Python 3.6 using the Django framework.
 
-The `master` branch of this repository is source for the dockerised version of the server. Please checkout the `frontend` branch for source of the dockerised frontend web client.
+## Screenshots
 
-The associated Docker images are available on DockerHub:
+![Screenshot 1](./meta/img/screenshot_01.png?raw=true)
 
-- Server:
+## Live Demo
 
-  URL: <https://hub.docker.com/r/aninstance/simple-photo-management>
+There is a live demo available here:
 
-  To pull the image:
+http://spm.staging.aninstance.com
 
-  `docker pull aninstance/simple-photo-management`
+Login credentials are:
 
-- Frontend client:
-
-  URL: <https://hub.docker.com/r/aninstance/simple-photo-management-client>
-
-  To pull the image:
-
-  `docker pull aninstance/simple-photo-management-client`
-
-- Docker Compose
-
-  Please see an example docker-compose file (which builds the entire stack, including the web client & server) in the `master` (server) branch.
-
-To use this source code for non-dockerised builds, please amend the settings.py configuration file accordingly.
+- Username: picard
+- Password: makeITS0*
 
 ## Key features
 
@@ -52,11 +41,37 @@ To use this source code for non-dockerised builds, please amend the settings.py 
 - HTML5
 - CSS3
 
-## How to use on Linux systems
+## Docker deployment
 
-To use the Docker images orchastrated with docker-compose:
+The `master` branch of this repository is source for the dockerised version of the server. Please checkout the `frontend` branch for source of the dockerised frontend web client.
 
-- Create your app root directory & clone the repo into it:
+If deploying with Docker, it is highly recommended to use Docker Compose. Please find an example docker-compose file (which builds the entire stack, including the web client & server) in the `master` (server) branch.
+
+The associated Docker images for server and client are available on DockerHub:
+
+- Server:
+
+  URL: <https://hub.docker.com/r/aninstance/simple-photo-management>
+
+  To pull the image:
+
+  `docker pull aninstance/simple-photo-management`
+
+- Frontend client:
+
+  URL: <https://hub.docker.com/r/aninstance/simple-photo-management-client>
+
+  To pull the image:
+
+  `docker pull aninstance/simple-photo-management-client`
+
+To use this source code for non-dockerised builds, please amend the settings.py configuration file accordingly.
+
+## Installation & usage (on Linux systems)
+
+To use the Docker images orchestrated with docker-compose:
+
+- Create your app root directory & clone the repository into it:
 
   `mkdir spm`
   `cd spm`
@@ -66,12 +81,13 @@ To use the Docker images orchastrated with docker-compose:
 
   - `docker-compose-example.yml` - save as docker-compose.yml
   - `config/nginx/spm-example.config` - save as spm.conf
-  - `config/.env.docker` - save as .env.docker (this is the frontend client configuration)
+  - `config/.env.docker` - save as .env.docker (this is the frontend client configuration, where you may configure things like the number of items displayed per page)
 
 - Create the following directories in the application's root directory. These are for persistent storage (i.e. they persist even after the app server & client containers have been stopped, started, deleted, upgraded):
 
   - `mkdir photo_directory` - this is the directory where copies of your original images will be stored.
-  - `mkdir media` - this is the directory where the processed images will be stored.
+  - `mkdir -p media/photos` - this is the directory where the processed images will be stored.
+  - `mkdir -p media/photos_tn` - this is the directory where the processed thumbnail images will be stored.
   - `mkdir static` - this is the directory where static content will be stored (including the client code).
   - `mkdir postgres` - this is the directory where the database will be located.
   - `mkdir -p log/gunicorn` - this is the directory where the logs will be located.
@@ -103,7 +119,7 @@ To use the Docker images orchastrated with docker-compose:
 
 - Copy your original images (or directories of images) into the `photo_directory` directory.
 
-- Navigate to the web client url - e.g. http://your_domain.tld
+- Navigate to the web client url - e.g. http://your_domain.tld __Note: When starting a newly built or pulled container for the first time, the web client may take several minutes (depending on your server's resources) to create a fresh build. You will get a `502 Bad Gateway` error whilst the NPM build is occurring. Please be patient and try refreshing the page in a few moments.__
 
 - Login to the web client using the superuser credentials you'd previously supplied.
 
@@ -113,20 +129,11 @@ To use the Docker images orchastrated with docker-compose:
   - The digital images are processed, with a range of image sizes automatically generated.
 - Give it a few seconds and click the green refresh button (far left of the toolbar, beneath the page numbers). Images with no pre-existing IPTC keyword tags should be displayed (if any).
 - To display images that do have tags, try typing a phrase into the search bar.
+- To search for images that contain multiple tags, separate search phrases with a forward slash `/`
 - Clicking the button with the `tag` icon re-scans all images in photo_directory, adds any newly discovered images and recopies all IPTC keyword tags to the database. To simply add new images without re-copying the tags, use the `+` button instead.
 - Clicking the button with the `broom` icon cleans the database of references to any processed images that no longer exist in the `media` directories.
 - Add new tags to an image by entering them in the input field, in the `Action` column. Separate multiple tags with a `/`. This action both writes the new tag(s) to the metadata of the **ORIGINAL IMAGE** and the database.
 - The above guide is not definitive and is intended for users who know their way around Docker (and know how to troubleshoot!) If there are enough users of this app to warrant it, more thorough documentation would likely be made available. In the meantime, usage or installation questions can be sent to the contact details below.
-
-## Screenshots
-
-Coming soon ...
-
-## Live Demo
-
-There is a live demo available here:
-
-Coming soon ...
 
 ## Development Roadmap
 
