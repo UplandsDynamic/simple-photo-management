@@ -28,6 +28,7 @@ Login credentials are:
 - Recursively scan directories for digital image files
 - Add, remove & edit IPTC meta keyword tags from digital images via a web interface
 - Automatically create a range of smaller (optimised) versions of each larger image (e.g. .jpg from a .tiff)
+- Optimised versions named using a hash of the origin image file, to prevent duplication (note, the hash includes metadata, so if an identical looking image has had a change in metadata it is deemed 'different'.)
 - Display & download optimised & resized versions of large images in the web interface
 - Database IPTC tags associated with each image
 - Search for & display digital images containing single IPTC tags or a combination of multiple tags
@@ -135,13 +136,14 @@ To use the Docker images orchestrated with docker-compose:
 - To display images that do have tags, try typing a phrase into the search bar.
 - To search for images that contain multiple tags, separate search phrases with a forward slash `/`
 - Clicking the button with the `tag` icon re-scans all images in photo_directory, adds any newly discovered images and recopies all IPTC keyword tags to the database. To simply add new images without re-copying the tags, use the `+` button instead.
-- Clicking the button with the `broom` icon cleans the database of references to any processed images that no longer exist in the `media` directories.
+- Clicking the button with the `broom` icon cleans the database of references to any processed images that no longer exist in the `media` directories or the origin image `photo_directory`.
 - Add new tags to an image by entering them in the input field, in the `Action` column. Separate multiple tags with a `/`. This action both writes the new tag(s) to the metadata of the **ORIGINAL IMAGE** and the database.
 - The above guide is not definitive and is intended for users who know their way around Docker (and know how to troubleshoot!) If there are enough users of this app to warrant it, more thorough documentation would likely be made available. In the meantime, usage or installation questions can be sent to the contact details below.
 
 ## Development Roadmap
 
 - Automated display of tag suggestions (based on real-time character matching & most used) when adding IPTC tags to an image
+- Enhancement of `clean` to facilitate deletion of processed image files & thumbnails (rather just database entries) when origin image no longer exists
 - Tag suggestions based on facial recognition
 
 ## Support
