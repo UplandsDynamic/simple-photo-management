@@ -20,8 +20,8 @@ http://spm.staging.aninstance.com
 
 Login credentials are:
 
-- Username: picard
-- Password: makeITS0*
+- Username: riker
+- Password: z4Xd*7byV$xw
 
 ## Key features
 
