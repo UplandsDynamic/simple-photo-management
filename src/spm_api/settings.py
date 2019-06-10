@@ -1,9 +1,8 @@
 """
 Django settings for SimplePhotoManagement project.
 """
-import os
-import string
-import random
+import os, string, random
+from urllib.parse import urlsplit
 """ INITIAL PARAMETERS """
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -23,7 +22,7 @@ except IOError:
 """ MAIN CONFIGURATION """
 
 # # # Network
-APP_URL = os.environ.get('APP_URL', 'localhost')
+APP_URL = os.environ.get('APP_URL')
 ROOT_URLCONF = 'spm_api.urls'
 WSGI_APPLICATION = 'spm_api.wsgi.application'
 X_FRAME_OPTIONS = 'DENY'
@@ -32,10 +31,10 @@ SECURE_CONTENT_TYPE_NOSNIFF = False
 SECURE_BROWSER_XSS_FILTER = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
-ALLOWED_HOSTS = [APP_URL]
+ALLOWED_HOSTS = [urlsplit(APP_URL).netloc.split(':')[0]]
 #CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
-CORS_ORIGIN_WHITELIST = (APP_URL, 'localhost')
+CORS_ORIGIN_WHITELIST = (APP_URL,)
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
