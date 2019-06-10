@@ -40,11 +40,11 @@ run_django_tests
 if [[ "$(git branch)" == *"* master"* ]]
 then
 GIT_BRANCH='master'
-sync_to_production;
+#sync_to_production;
 elif [[ "$(git branch)" == *"* devel"* ]]
 then
 GIT_BRANCH='devel'
-sync_to_staging;
+#sync_to_staging;
 sync_to_docker;
 else
 printf "\nNot working on a defined sync branch, so not syncing!\n\n"

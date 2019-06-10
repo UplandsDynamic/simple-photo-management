@@ -36,7 +36,7 @@ except IOError:
         f.write(RUN_TYPE_OPTIONS[0])
 
 # # # GENERATE A NEW UNIQUE SECRET KEY (secret_key.txt) IF DOES NOT ALREADY EXIST
-KEY_PATH = os.path.join(BASE_DIR, 'secret_key.txt')
+KEY_PATH = os.path.join(BASE_DIR, 'secret_key', 'secret_key.txt')
 try:
     with open(KEY_PATH, 'r') as f:
         SECRET_KEY = f.read().strip()

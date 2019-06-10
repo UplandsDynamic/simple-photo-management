@@ -23,4 +23,5 @@ build/
 .env.development
 .env.staging
 tests/
+XDG_CACHE_HOME/
 

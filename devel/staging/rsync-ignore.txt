@@ -14,3 +14,4 @@ run_type.txt
 DEVEL/
 db.sqlite3
 node_modules/
+XDG_CACHE_HOME/
