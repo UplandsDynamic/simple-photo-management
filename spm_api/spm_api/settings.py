@@ -7,9 +7,8 @@ REMEMBER, BEFORE PRODUCTION RUN SECURITY CHECKS:
 
 """
 
-import os
-import string
-import random
+import os, string, random, locale
+from urllib.parse import urlsplit
 
 """ INITIAL PARAMETERS """
 
@@ -49,59 +48,24 @@ except IOError:
 """ MAIN CONFIGURATION """
 
 # # # Network
-WORKING_URL = ''
+APP_URL = 'http://localhost:3001'
 ROOT_URLCONF = 'spm_api.urls'
 WSGI_APPLICATION = 'spm_api.wsgi.application'
 X_FRAME_OPTIONS = 'DENY'
 # SECURE_HSTS_SECONDS = 3600
-if RUN_TYPE == 'DEVEL' or not RUN_TYPE:
-    DEBUG = True
-    WORKING_URL = 'localhost'
-    WORKING_PORT = '3000'
-    SECURE_CONTENT_TYPE_NOSNIFF = False
-    SECURE_BROWSER_XSS_FILTER = False
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-    ALLOWED_HOSTS = [WORKING_URL]
-    # CORS_ORIGIN_ALLOW_ALL = True
-    CORS_ALLOW_CREDENTIALS = True
-    CORS_ORIGIN_WHITELIST = (WORKING_URL, 'localhost:3001')
-    STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-elif RUN_TYPE == 'STAGING':
-    DEBUG = False
-    WORKING_URL = 'simplephotomanagement.lan'
-    WORKING_PORT = '80'
-    SECURE_CONTENT_TYPE_NOSNIFF = False
-    SECURE_BROWSER_XSS_FILTER = False
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-    #  SECURE_SSL_REDIRECT = True
-    # SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    ALLOWED_HOSTS = [WORKING_URL]
-    # CORS_ORIGIN_ALLOW_ALL = True
-    CORS_ALLOW_CREDENTIALS = True
-    CORS_ORIGIN_WHITELIST = (WORKING_URL,)
-    STATIC_ROOT = os.path.join('/var/www/spm/static')
-    MEDIA_ROOT = os.path.join('/var/www/spm/media')
-elif RUN_TYPE == 'PRODUCTION':
-    DEBUG = False
-    WORKING_URL = 'spm.aninstance.com'
-    WORKING_PORT = '443'
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_BROWSER_XSS_FILTER = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    #  SECURE_SSL_REDIRECT = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    ALLOWED_HOSTS = [WORKING_URL]
-    # CORS_ORIGIN_ALLOW_ALL = True
-    CORS_ALLOW_CREDENTIALS = True
-    CORS_ORIGIN_WHITELIST = (WORKING_URL,)
-    STATIC_ROOT = os.path.join('/var/www/django/'
-                               'spm.aninstance.com/static')
-    MEDIA_ROOT = os.path.join('/var/www/django/'
-                              'spm.aninstance.com/media')
+DEBUG = True
+SECURE_CONTENT_TYPE_NOSNIFF = False
+SECURE_BROWSER_XSS_FILTER = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+ALLOWED_HOSTS = [urlsplit(APP_URL).netloc.split(':')[0]]  # get domain + tld from url
+# CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_WHITELIST = (APP_URL,)
+STATIC_ROOT = os.path.join('/var/www/django/'
+                            'spm.aninstance.com/static')
+MEDIA_ROOT = os.path.join('/var/www/django/'
+                            'spm.aninstance.com/media')
 
 # # # Application definition
 INSTALLED_APPS = [
