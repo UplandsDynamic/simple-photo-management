@@ -52,6 +52,7 @@ class App extends React.Component {
             //     desc: 'DELETE request to delete photos'
             // },
             POST_AUTH: { requestType: 'post_auth', method: 'POST', desc: 'POST request to for authorization' },
+            POST_LOGOUT: { requestType: 'post_logout', method: 'POST', desc: 'POST request to for logout of server' },
             PATCH_CHANGE_PW: { requestType: 'patch_change_pw', method: 'PATCH', desc: 'PATCH request to for changing password' },
         };
         this.initialState = {
