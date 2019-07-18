@@ -90,6 +90,29 @@ class PasswordUpdateViewSet(viewsets.ModelViewSet):
         super().perform_update(serializer)
 
 
+class Logout(APIView):
+    def post(self, request, format=None):
+        logger.info(request.user)
+        try:
+            # delete the token to force a login
+            request.user.auth_token.delete()
+            return Response({
+                'success': True,
+                'logged_in': False,
+                'error': None,
+                'user_is_admin': False},
+                status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(e)
+            return Response({
+                'success': False,
+                'logged_in': True,
+                'error': str(e),
+                'user_is_admin': False
+            },
+                status=status.HTTP_400_BAD_REQUEST)
+
+
 class PhotoDataViewSet(viewsets.ModelViewSet):
     """
     API endpoints for PhotoData
@@ -597,7 +620,8 @@ class ProcessPhotos(APIView):
         if all_orphaned_records:
             for record in all_orphaned_records:
                 try:
-                    PhotoData.objects.filter(Q(file_name=record) | Q(original_url=record) ).delete()
+                    PhotoData.objects.filter(
+                        Q(file_name=record) | Q(original_url=record)).delete()
                     logger.info(f'RECORD TO DELETE: {record}')
                 except Exception as e:
                     logger.error(f'Error in clean_database: {e}')

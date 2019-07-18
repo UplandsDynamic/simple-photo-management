@@ -33,8 +33,10 @@ Note: Mapping for actions (used in as_view), are:
     }
 """
 functional_view_urlpatterns = [
-    url('^v2/change-password/(?P<username>[a-zA-Z0-9.].+)/$', views.PasswordUpdateViewSet.as_view(
-        {'patch': 'partial_update'})),
+    url('^v2/change-password/(?P<username>[a-zA-Z0-9.].+)/$',
+        views.PasswordUpdateViewSet.as_view(
+            {'patch': 'partial_update'})),
+    url(r'^v2/logout/$', views.Logout.as_view()),
     url('^v2/tags/$', views.PhotoTagViewSet.as_view(
         {'get': 'list', 'post': 'create', 'patch': 'partial_update'}), name='photo_tag'),
     url('^v2/tags/(?P<pk>\d+)/$', views.PhotoTagViewSet.as_view(
@@ -60,7 +62,8 @@ set up schema
 """
 schema_view = get_schema_view(
     title='Simple Photo Management API',
-    permission_classes=[permissions.IsAdminUser]  # not public api, so only allow admin to view the schema
+    # not public api, so only allow admin to view the schema
+    permission_classes=[permissions.IsAdminUser]
 )
 
 # final url patterns (everything included)
