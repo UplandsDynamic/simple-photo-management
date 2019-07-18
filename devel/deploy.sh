@@ -19,7 +19,7 @@
 ##  General:
 ##      - Servers and other configurations are defined in the script variables.
 ##  Referenced in code:
-##      1. Sets same version in production, so it tracks dev version when merged & deployed.
+##      1. Sets same version in production & docker deploys, so it tracks dev version when merged & deployed.
 ##      2. "If" statement only pushes to github if on branch master (production). To push to a
 ##         devel branch on github, remove the "if" statement.
 #######
@@ -40,11 +40,12 @@ run_django_tests
 if [[ "$(git branch)" == *"* master"* ]]
 then
 GIT_BRANCH='master'
-sync_to_production;
+#sync_to_production;
 elif [[ "$(git branch)" == *"* devel"* ]]
 then
 GIT_BRANCH='devel'
-sync_to_staging;
+#sync_to_staging;
+sync_to_docker;
 else
 printf "\nNot working on a defined sync branch, so not syncing!\n\n"
 fi
@@ -73,7 +74,7 @@ proceed;
 fi
 }
 
-function get_version {
+function set_version() {
 read -p "Version number (e.g. 2.3.6): " version
 echo ${version}
 }
@@ -115,7 +116,7 @@ REACT_ENV_FILE="${FRONTEND_DIR}/.env.production"
 REMOTE_SERVER_SSH_HOST=""
 printf "\nWorking on branch: master, deploying to PRODUCTION!\n\n"
 cd ${FRONTEND_DIR}
-# sed -i "/REACT_APP_VERSION/c\REACT_APP_VERSION = '$(get_version)'" ${REACT_ENV_FILE}  # no need if want to track dev version number
+# sed -i "/REACT_APP_VERSION/c\REACT_APP_VERSION = '$(set_version)'" ${REACT_ENV_FILE}  # no need if want to track dev version number
 cd ${PROJECT_ROOT_DIR}
 git_repos_commit_and_push
 echo "PRODUCTION" > ./run_type.txt
@@ -129,7 +130,7 @@ ${SCRIPT_DIR}/prod/rsync-to-prod.sh
 ssh ${REMOTE_SERVER_SSH_HOST} "${REMOTE_DIR}/venv/bin/python3 ${REMOTE_API_DIR}/manage.py collectstatic --noinput"
 ssh ${REMOTE_SERVER_SSH_HOST} "chown -R django ${REMOTE_DIR}"
 ssh ${REMOTE_SERVER_SSH_HOST} systemctl restart ${REMOTE_SERVICE_NAME}
-#ssh ${REMOTE_SERVER_SSH_HOST} pkill -f "python manage.py qcluster"  # kill django_q worker processes
+#ssh ${REMOTE_SERVER_SSH_HOST}  "pkill -f \"python manage.py qcluster\"" # kill django_q worker processes
 ssh ${REMOTE_SERVER_SSH_HOST} "${REMOTE_DIR}/venv/bin/python3 ${REMOTE_API_DIR}/manage.py qcluster"  # restart django_q
 echo "DEVEL" > ${PROJECT_ROOT_DIR}/run_type.txt
 printf "\nDEPLOYED TO PRODUCTION!\n\n"
@@ -141,12 +142,14 @@ REMOTE_API_DIR="/mnt/backupaninstancedatacenter/family-history-29032019-clone/sp
 REMOTE_SERVICE_NAME="spm.staging.gunicorn.service"
 REACT_ENV_FILE="${FRONTEND_DIR}/.env.staging"
 REACT_ENV_FILE_PROD="${FRONTEND_DIR}/.env.production"
+REACT_ENV_FILE_DOCKER="${FRONTEND_DIR}/.env.docker"
 REMOTE_SERVER_SSH_HOST="backup"
-VERSION=$(get_version)
+VERSION=$(set_version)
 printf "\nWorking on branch: devel, deploying to STAGING!\n\n"
 cd ${FRONTEND_DIR}
 sed -i "/REACT_APP_VERSION/c\REACT_APP_VERSION = '${VERSION}'" ${REACT_ENV_FILE}
 sed -i "/REACT_APP_VERSION/c\REACT_APP_VERSION = '${VERSION}'" ${REACT_ENV_FILE_PROD}  # see Note (1) (up top)
+sed -i "/REACT_APP_VERSION/c\REACT_APP_VERSION = '${VERSION}'" ${REACT_ENV_FILE_DOCKER}  # see Note (1) (up top)
 cd ${PROJECT_ROOT_DIR}
 git_repos_commit_and_push
 echo "STAGING" > ./run_type.txt
@@ -164,6 +167,17 @@ ssh ${REMOTE_SERVER_SSH_HOST} "pkill -f \"python manage.py qcluster\""  # kill d
 #ssh ${REMOTE_SERVER_SSH_HOST} "${REMOTE_DIR}/venv/bin/python3 ${REMOTE_API_DIR}/manage.py qcluster"  # restart django_q
 echo "DEVEL" > ${PROJECT_ROOT_DIR}/run_type.txt
 printf "\nDEPLOYED TO STAGING!\n\n"
+}
+
+function sync_to_docker {
+REACT_ENV_FILE_DOCKER="${FRONTEND_DIR}/.env.docker"
+# build react frontend
+rm -rf ${BUILD_DIR}
+cd ${FRONTEND_DIR}
+npm run build:docker
+# sync code
+${SCRIPT_DIR}/docker/rsync-to-docker.sh
+printf "\nDEPLOYED TO DOCKER!\n\n"
 }
 
 deploy

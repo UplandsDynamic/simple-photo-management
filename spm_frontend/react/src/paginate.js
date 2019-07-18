@@ -10,7 +10,7 @@ class Paginate extends React.Component {
             record: {},
             totalPages: 0,
             currentPage: 1
-        }
+        };
     }
 
     componentWillMount() {
@@ -44,7 +44,7 @@ class Paginate extends React.Component {
         return /^[\d\s]*$/.test(value) ? parseInt(value) === 0 ? 1 : value : this.state.currentPage;
     }
 
-    switchPage = ({linkedPage = 0, dir = 'selected'} = {}) => {
+    switchPage ({linkedPage = 0, dir = 'selected'} = {}) {
         let {url, page, previous, next} = this.state.record.meta;
         switch (dir) {
             case 'selected':
@@ -67,9 +67,11 @@ class Paginate extends React.Component {
         let newRecord = JSON.parse(JSON.stringify(this.state.record));
         Object.assign(newRecord.meta, {page: page, limit: this.state.record.meta.limit});
         this.props.handleGetRecords({record: newRecord, url: url});
-    };
+        // locally set page state, to prevent delay when quick typing, pending overwrite by new source-of-truth prop
+        this.setState({currentPage: page})
+    }
 
-    currentPage = () => {
+    currentPage () {
         return (
             <React.Fragment>
                 <div className={'linkedPage'}>

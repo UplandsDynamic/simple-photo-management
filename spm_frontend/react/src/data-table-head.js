@@ -1,22 +1,17 @@
 import './css/data-table.css';
 import React from 'react'
 
-const DataTableHead = ({handleColumnOrderChange, record} = {}) => {
+const DataTableHead = (props) => {
+    // const { handleColumnOrderChange, record } = props;  # uncomment if want to click headers to reorder
     return (
         <tr className={'d-flex text-center'}>
-            <th className={'col-6'} scope={'col'}
-                onClick={() => console.log('TODO: METHOD TO OPEN LARGE IN A MODAL')}>
+            <th className={'col-3'} scope={'col'}>
                 Photo
             </th>
-            <th className={'col-2'} scope={'col'}
-                onClick={() => handleColumnOrderChange({record, newOrder: 'file_name'})}>
-                Filename
-            </th>
-            <th className={'col-3'} scope={'col'}
-                onClick={() => console.log('Nothing to see here ...')}>
+            <th className={'col-5'} scope={'col'}>
                 Tags
             </th>
-            <th className={'col-1 action-col'} scope={'col'}>
+            <th className={'col-4 action-col'} scope={'col'}>
                 Action
             </th>
         </tr>

@@ -7,15 +7,19 @@ REMEMBER, BEFORE PRODUCTION RUN SECURITY CHECKS:
 
 """
 
-import os, string, random
+import os, string, random, locale
+from urllib.parse import urlsplit
 
 """ INITIAL PARAMETERS """
 
 # # # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240  # higher than the count of fields
+
 # # # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # this setting will be OVERRIDDEN according tot the RUN_TYPE defined below.
+# this setting will be OVERRIDDEN according tot the RUN_TYPE defined below.
+DEBUG = True
 
 # # # RUN TYPE: Define run type of the application, as read from run_type.txt file in project root
 RUN_TYPE_PATH = os.path.join(BASE_DIR, 'run_type.txt')
@@ -31,7 +35,7 @@ except IOError:
         f.write(RUN_TYPE_OPTIONS[0])
 
 # # # GENERATE A NEW UNIQUE SECRET KEY (secret_key.txt) IF DOES NOT ALREADY EXIST
-KEY_PATH = os.path.join(BASE_DIR, 'secret_key.txt')
+KEY_PATH = os.path.join(BASE_DIR, 'secret_key', 'secret_key.txt')
 try:
     with open(KEY_PATH, 'r') as f:
         SECRET_KEY = f.read().strip()
@@ -44,59 +48,24 @@ except IOError:
 """ MAIN CONFIGURATION """
 
 # # # Network
-WORKING_URL = ''
+APP_URL = 'http://localhost:3001'
 ROOT_URLCONF = 'spm_api.urls'
 WSGI_APPLICATION = 'spm_api.wsgi.application'
 X_FRAME_OPTIONS = 'DENY'
 # SECURE_HSTS_SECONDS = 3600
-if RUN_TYPE == 'DEVEL' or not RUN_TYPE:
-    DEBUG = True
-    WORKING_URL = 'localhost'
-    WORKING_PORT = '3000'
-    SECURE_CONTENT_TYPE_NOSNIFF = False
-    SECURE_BROWSER_XSS_FILTER = False
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-    ALLOWED_HOSTS = [WORKING_URL]
-    # CORS_ORIGIN_ALLOW_ALL = True
-    CORS_ALLOW_CREDENTIALS = True
-    CORS_ORIGIN_WHITELIST = (WORKING_URL, 'localhost:3001')
-    STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-elif RUN_TYPE == 'STAGING':
-    DEBUG = False
-    WORKING_URL = 'simplephotomanagement.lan'
-    WORKING_PORT = '80'
-    SECURE_CONTENT_TYPE_NOSNIFF = False
-    SECURE_BROWSER_XSS_FILTER = False
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-    #  SECURE_SSL_REDIRECT = True
-    # SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    ALLOWED_HOSTS = [WORKING_URL]
-    # CORS_ORIGIN_ALLOW_ALL = True
-    CORS_ALLOW_CREDENTIALS = True
-    CORS_ORIGIN_WHITELIST = (WORKING_URL,)
-    STATIC_ROOT = os.path.join('/var/www/spm/static')
-    MEDIA_ROOT = os.path.join('/var/www/spm/media')
-elif RUN_TYPE == 'PRODUCTION':
-    DEBUG = False
-    WORKING_URL = 'spm.aninstance.com'
-    WORKING_PORT = '443'
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_BROWSER_XSS_FILTER = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    #  SECURE_SSL_REDIRECT = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    ALLOWED_HOSTS = [WORKING_URL]
-    # CORS_ORIGIN_ALLOW_ALL = True
-    CORS_ALLOW_CREDENTIALS = True
-    CORS_ORIGIN_WHITELIST = (WORKING_URL,)
-    STATIC_ROOT = os.path.join('/var/www/django/'
-                               'spm.aninstance.com/static')
-    MEDIA_ROOT = os.path.join('/var/www/django/'
-                              'spm.aninstance.com/media')
+DEBUG = True
+SECURE_CONTENT_TYPE_NOSNIFF = False
+SECURE_BROWSER_XSS_FILTER = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+ALLOWED_HOSTS = [urlsplit(APP_URL).netloc.split(':')[0]]  # get domain + tld from url
+# CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_WHITELIST = (APP_URL,)
+STATIC_ROOT = os.path.join('/var/www/django/'
+                            'spm.aninstance.com/static')
+MEDIA_ROOT = os.path.join('/var/www/django/'
+                            'spm.aninstance.com/media')
 
 # # # Application definition
 INSTALLED_APPS = [
@@ -124,7 +93,15 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
-    )
+    ),
+    # 'DEFAULT_THROTTLE_CLASSES': (
+    #     'rest_framework.throttling.AnonRateThrottle',
+    #     'rest_framework.throttling.UserRateThrottle'
+    # ),
+    # 'DEFAULT_THROTTLE_RATES': {
+    #     'anon': '1/second',
+    #     'user': '2/second'
+    # }
 }
 
 MIDDLEWARE = [
@@ -160,14 +137,14 @@ Q_CLUSTER = {
     'daemonize_workers': True,
     'compress': True,
     'workers': 2,
-    'recycle': 500,
+    'recycle': 5000,
     'timeout': None,
     # 'django_redis': 'default',
     'retry': 100000,
-    'queue_limit': 8,
-    'bulk': 10,
+    'queue_limit': 4,
+    'bulk': 1,
     'orm': 'default',
-    'sync': False,  # True to debug in sync
+    'sync': RUN_TYPE == RUN_TYPE_OPTIONS[0],  # Set True to debug in sync mode.
     'guard_cycle': 5,
     'cpu_affinity': 1,
     'catch_up': True
@@ -175,45 +152,68 @@ Q_CLUSTER = {
 
 if RUN_TYPE == RUN_TYPE_OPTIONS[0]:  # DEVEL
     SPM = {
-        'ORIGINAL_IMAGE_PATH': os.path.normpath(os.path.normpath(f'{os.path.join(os.getcwd(), "../test_images")}')),
-        'PROCESSED_IMAGE_PATH': os.path.normpath(os.path.normpath(
-            f'{os.path.join(os.getcwd(), "../test_images/processed")}')),
-        'CONVERSION_FORMAT': 'jpg'
+        'ORIGIN_IMAGE_PATHS': {  # set of image paths
+            os.path.normpath(os.path.join(MEDIA_ROOT, 'test_images')),
+            os.path.normpath(os.path.join(MEDIA_ROOT, 'test_images_2')),
+        },
+        'PROCESSED_IMAGE_PATH': os.path.normpath(os.path.join(MEDIA_ROOT, 'test_images_processed')),
+        'PROCESSED_THUMBNAIL_PATH': os.path.normpath(os.path.join(MEDIA_ROOT, 'test_images_processed/tn')),
+        'PUBLIC_URL': os.path.normpath('/media'),
+        'PUBLIC_URL_TN': os.path.normpath('/media/test_images_processed/tn'),
+        'CONVERSION_FORMAT': 'jpg',
+        'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate_image'},
+        'THUMB_SIZES':  [(1080, 1080), (720, 720), (350, 350), (150, 150), (75, 75)]
     }
 elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # STAGING
-    SPM = {
-        'ORIGINAL_IMAGE_PATH': os.path.normpath(
-            os.path.normpath('/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/InProgress')),
-        'PROCESSED_IMAGE_PATH': os.path.normpath(os.path.normpath(
-            '/mnt/backupaninstancedatacenter/family-history-29032019-clone/IMAGE_ARCHIVE/Processed')),
-        'CONVERSION_FORMAT': 'jpg'
+    SPM = {  # set of image paths
+        'ORIGIN_IMAGE_PATHS': {
+             os.path.normpath(
+                 '/mnt/backupaninstancedatacenter/spm/family-history-data/IMAGE_ARCHIVE'),
+        },
+        'PROCESSED_IMAGE_PATH': os.path.normpath(
+            '/mnt/backupaninstancedatacenter/spm/spm_api/media/processed'),
+        'PROCESSED_THUMBNAIL_PATH': os.path.normpath(
+            f'/mnt/backupaninstancedatacenter/spm/spm_api/media/processed/tn'),
+        'PUBLIC_URL': os.path.normpath('/img'),
+        'PUBLIC_URL_TN': os.path.normpath('/img/tn'),
+        'CONVERSION_FORMAT': 'jpg',
+        'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate_image'},
+        'THUMB_SIZES':  [(1080, 1080), (720, 720), (350, 350), (150, 150), (75, 75)]
     }
-elif RUN_TYPE == RUN_TYPE_OPTIONS[2]:  # PRODUCTION
+elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # DOCKER PRODUCTION
     SPM = {
-        'ORIGINAL_IMAGE_PATH': None,
-        'PROCESSED_IMAGE_PATH': None,
-        'CONVERSION_FORMAT': 'jpg'
+        'ORIGINAL_IMAGE_PATHS': set(),
+        'PROCESSED_IMAGE_PATH': '',
+        'PUBLIC_URL': '',
+        'PUBLIC_URL_TN': '',
+        'CONVERSION_FORMAT': 'jpg',
+        'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate_image'},
+         'THUMB_SIZES':  [(1080, 1080), (720, 720), (350, 350), (150, 150), (75, 75)]
     }
 
 # # # Caches
 USE_REDIS_CACHE = False
-SITE_WIDE_CACHE = True  # site-wide caching system. Set False for more granular control with view & template caching.
-DEFAULT_CACHES_TTL = 0  # 0 means equates to 'do not cache'. E.g. to cache for 24 hours: ((60 * 60) * 60) * 24
+# site-wide caching system. Set False for more granular control with view & template caching.
+SITE_WIDE_CACHE = True
+# 0 means equates to 'do not cache'. E.g. to cache for 24 hours: ((60 * 60) * 60) * 24
+DEFAULT_CACHES_TTL = 0
 CACHE_SESSION_SECONDS = 60 * 60
 
 if SITE_WIDE_CACHE:
     CACHE_MIDDLEWARE_ALIAS = 'default'
     CACHE_MIDDLEWARE_SECONDS = DEFAULT_CACHES_TTL  # cache session data for an hour
     CACHE_MIDDLEWARE_KEY_PREFIX = 'simple_photo_management_production_server'
-    MIDDLEWARE.insert(0, 'django.middleware.cache.UpdateCacheMiddleware')  # HAS TO GO FIRST IN MIDDLEWARE LIST
-    MIDDLEWARE.append('django.middleware.cache.FetchFromCacheMiddleware')  # HAS TO GO LAST IN MIDDLEWARE LIST
+    # HAS TO GO FIRST IN MIDDLEWARE LIST
+    MIDDLEWARE.insert(0, 'django.middleware.cache.UpdateCacheMiddleware')
+    # HAS TO GO LAST IN MIDDLEWARE LIST
+    MIDDLEWARE.append('django.middleware.cache.FetchFromCacheMiddleware')
 
 if not USE_REDIS_CACHE:
     CACHES = {'default':
-                  {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-                   'TIMEOUT': DEFAULT_CACHES_TTL,
-                   'LOCATION': 'simple_photo_management-backend-cache'
-                   },
+              {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+               'TIMEOUT': DEFAULT_CACHES_TTL,
+               'LOCATION': 'simple_photo_management-backend-cache'
+               },
               'template_fragments':
                   {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
                    'TIMEOUT': DEFAULT_CACHES_TTL,
@@ -225,7 +225,8 @@ else:
         'default': {
             'BACKEND': 'django_redis.cache.RedisCache',
             'LOCATION': 'redis://redis:6379/1',
-            'TIMEOUT': DEFAULT_CACHES_TTL,  # default TTL for the cache in sects(e.g. 5 mins = 'TIMEOUT': 60 * 5)
+            # default TTL for the cache in sects(e.g. 5 mins = 'TIMEOUT': 60 * 5)
+            'TIMEOUT': DEFAULT_CACHES_TTL,
             'OPTIONS': {
                 'CLIENT_CLASS': 'django_redis.client.DefaultClient'
             },
@@ -282,9 +283,7 @@ else:
         }
     }
 
-STATICFILES_DIRS = [
-    # os.path.join(BASE_DIR, 'spm_frontend/static'),
-]
+STATICFILES_DIRS = []  # extra static files dirs
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'

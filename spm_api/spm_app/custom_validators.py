@@ -1,24 +1,57 @@
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from django.conf import settings
 import re
 
 
 def validate_alphanumplus(value):
-    if not re.match('^[A-Za-z0-9_.\- ]*$', value):
+    if not re.match(r'^[A-Za-z0-9_.\- ]*$', value):
         raise ValidationError(
             _(f'{value} contains invalid characters!')
         )
 
 
+def validate_tag_list(value: list):
+    if isinstance(value, list):
+        for v in value:
+            if not re.match(r'^[A-Za-z0-9\-: ]*$', v):
+                raise ValidationError(
+                    _(f'{value} contains invalid characters!')
+                )
+    else:
+        raise ValidationError(
+            _(f'{value} is not a valid list of tags!')
+        )
+
+def validate_rotation_degrees(value: int):
+    if not isinstance(value, int):
+        raise ValidationError(
+            _(f'{value} is not a valid degree!')
+        )
+    else:
+        if value > 360 or value < -360:
+            raise ValidationError(
+                _(f'{value} You cannot rotate more than 360 degrees!')
+            )
+
+
+def validate_update_mode(value: str):
+    acceptable_values = settings.SPM['VALID_UPDATE_MODES']
+    if value not in acceptable_values:
+        raise ValidationError(
+            _(f'{value} was not a valid update mode option!')
+        )
+
+
 def validate_url(value):
-    if not re.match('^[A-Za-z0-9_/.\\-]*$', value):
+    if not re.match(r'^[A-Za-z0-9_/.\\-]*$', value):
         raise ValidationError(
             _(f'{value} contains invalid characters!')
         )
 
 
 def validate_search(value):
-    if not re.match('^[A-Za-z0-9_.:\- ]*$', value):
+    if not re.match(r'^[A-Za-z0-9_.:+\/\- ]*$', value):
         raise ValidationError(
             _(f'{value} contains invalid characters!')
         )
@@ -27,7 +60,7 @@ def validate_search(value):
 
 def validate_unit_price(value):
     # note: not currently required as using DecimalField rather than FloatField
-    if not re.match('^[\d]*[\.]?[\d]{2}$', str(value)):
+    if not re.match(r'^[\d]*[\.]?[\d]{2}$', str(value)):
         raise ValidationError(
             _(f'{value} is not a valid price!')
         )
@@ -57,8 +90,9 @@ class RequestQueryValidator:
     page = 'validation of page limit param'
     results = 'validation of results limit param'
     order_by = 'validation of order_by param'
-    valid_order_by_values = ['id', 'tags', 'file_name', 'file_type', '-id', '-tags', '-file_name', '-file_type']
-    bool = 'validation incoming value is a boolean value'
+    valid_order_by_values = ['id', 'tags', 'file_name',
+                             'file_type', '-id', '-tags', '-file_name', '-file_type']
+    bool_or_none = 'validation incoming value is a boolean value or None'
 
     @staticmethod
     def validate(query_type, value):
@@ -81,11 +115,12 @@ class RequestQueryValidator:
             so no need to substitute query for fieldname before running order_by on the queryset.
             """
             return value if value in RequestQueryValidator.valid_order_by_values else 'id'
-        elif query_type == 'bool':
+        elif query_type == 'bool_or_none':
             # ensure true/false string or a boolean. Return boolean if so, if not, raise validation error
-            if not isinstance(value, bool):
+            if value and not isinstance(value, bool):
                 if isinstance(value, str) and value.lower() in ['true', 'false']:
                     return value.lower() == 'true'
                 else:
-                    raise ValidationError(_(f'This value needs to be True or False!'))
+                    raise ValidationError(
+                        _(f'This value needs to be True or False!'))
             return value

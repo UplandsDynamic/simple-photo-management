@@ -46,12 +46,17 @@ class PhotoData(models.Model):
                                     validators=[custom_validators.validate_url])
     processed_url = models.CharField(max_length=255, blank=False, null=True, unique=True,
                                      validators=[custom_validators.validate_url])
+    public_img_url = models.CharField(max_length=255, blank=False, null=False, unique=False,
+                                      validators=[custom_validators.validate_url])
+    public_img_tn_url = models.CharField(max_length=255, blank=False, null=False, unique=False,
+                                         validators=[custom_validators.validate_url])
+    mod_lock = models.BooleanField(null=False, default=False)
 
     class Meta:
-        ordering = ('id',)
-        indexes = [
-            models.Index(fields=['file_name']),
-        ]
+        ordering = ('id','original_url')
+        # indexes = [
+        #     models.Index(fields=['file_name']),
+        # ]
 
     def __str__(self):
         return f'{self.file_name}{self.file_format}'
