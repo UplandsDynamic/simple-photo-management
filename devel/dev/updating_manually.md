@@ -3,7 +3,7 @@
 ## Node (npm)
 
 - First
-  - $ cd /LocalRespositories/DEVELOPMENT/StockManagement/stock_control_frontend/react
+  - $ cd /LocalRespositories/DEVELOPMENT/SimplePhotoManagement/smp_frontend/react
   - In package.json, the follow 'semantic versioning' symbols are used, to restrict upgrades to patch, minor (point), or major:
 
     - Patch releases: "~" e.g. 1.0 or 1.0.x or ~1.0.4
