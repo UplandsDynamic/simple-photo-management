@@ -14,7 +14,7 @@ class LoginForm extends React.Component {
     failure: {
       authenticated: "Authentication failed!",
       changedPW: "Password change failed!",
-      loggedOut: 'Full server logout failed! Please contact an admin!'
+      loggedOut: "Full server logout failed! Please contact an admin!"
     }
   };
 
@@ -38,8 +38,11 @@ class LoginForm extends React.Component {
     this.setState(this.initialState);
   }
 
-  componentWillMount() {
-    this.setState({ authenticated: this.props.authMeta.authenticated });
+  static getDerivedStateFromProps(nextProps, prevState) {
+    return {
+      authenticated: nextProps.authMeta.authenticated,
+      csrfToken: nextProps.csrfToken
+    };
   }
 
   componentDidMount() {
@@ -54,13 +57,6 @@ class LoginForm extends React.Component {
     if (prevState.authenticated !== this.state.authenticated) {
       this.setFormToDisplay();
     }
-  }
-
-  componentWillReceiveProps(nextProps) {
-    this.setState({
-      authenticated: nextProps.authMeta.authenticated,
-      csrfToken: nextProps.csrfToken
-    });
   }
 
   setFormToDisplay({ form = null } = {}) {
@@ -117,7 +113,7 @@ class LoginForm extends React.Component {
     this.resetState();
   }
 
-  authenticate = ({ apiMode = null, requestData = {} } = {}) => {
+  authenticate({ apiMode = null, requestData = {} } = {}) {
     // triggers API to get auth token
     const apiRequest = processRequest({
       apiMode: apiMode,
@@ -161,20 +157,20 @@ class LoginForm extends React.Component {
               });
             }
           }
-          if (response.data.hasOwnProperty('logged_in')) {
+          if (response.data.hasOwnProperty("logged_in")) {
             // logout
             if (!response.data.logged_in) {
-                this.props.setMessage({
-                    message: this.state.messages.success.loggedOut,
-                    messageClass: 'alert alert-success'
-                });
+              this.props.setMessage({
+                message: this.state.messages.success.loggedOut,
+                messageClass: "alert alert-success"
+              });
             } else {
-                this.props.setMessage({
-                    message: this.state.messages.failure.loggedOut,
-                    messageClass: 'alert alert-danger'
-                });
+              this.props.setMessage({
+                message: this.state.messages.failure.loggedOut,
+                messageClass: "alert alert-danger"
+              });
             }
-        }
+          }
         })
         .catch(error => {
           let firstError = Object.keys(error.response.data)[0];
@@ -190,7 +186,7 @@ class LoginForm extends React.Component {
           });
         });
     }
-  };
+  }
 
   receivePassword(e) {
     this.setState({ password: e.target.value });
