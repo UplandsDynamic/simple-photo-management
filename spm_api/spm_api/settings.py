@@ -7,7 +7,10 @@ REMEMBER, BEFORE PRODUCTION RUN SECURITY CHECKS:
 
 """
 
-import os, string, random, locale
+import os
+import string
+import random
+import locale
 from urllib.parse import urlsplit
 
 """ INITIAL PARAMETERS """
@@ -58,14 +61,15 @@ SECURE_CONTENT_TYPE_NOSNIFF = False
 SECURE_BROWSER_XSS_FILTER = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
-ALLOWED_HOSTS = [urlsplit(APP_URL).netloc.split(':')[0]]  # get domain + tld from url
+ALLOWED_HOSTS = [urlsplit(APP_URL).netloc.split(':')[
+    0]]  # get domain + tld from url
 # CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_WHITELIST = (APP_URL,)
-STATIC_ROOT = os.path.join('/var/www/django/'
-                            'spm.aninstance.com/static')
-MEDIA_ROOT = os.path.join('/var/www/django/'
-                            'spm.aninstance.com/media')
+STATIC_ROOT = os.path.join(os.path.abspath(
+    os.path.dirname(__file__)), '../static')
+MEDIA_ROOT = os.path.join(os.path.abspath(
+    os.path.dirname(__file__)), '../media')
 
 # # # Application definition
 INSTALLED_APPS = [
@@ -154,11 +158,10 @@ if RUN_TYPE == RUN_TYPE_OPTIONS[0]:  # DEVEL
     SPM = {
         'ORIGIN_IMAGE_PATHS': {  # set of image paths
             os.path.normpath(os.path.join(MEDIA_ROOT, 'test_images')),
-            os.path.normpath(os.path.join(MEDIA_ROOT, 'test_images_2')),
         },
         'PROCESSED_IMAGE_PATH': os.path.normpath(os.path.join(MEDIA_ROOT, 'test_images_processed')),
         'PROCESSED_THUMBNAIL_PATH': os.path.normpath(os.path.join(MEDIA_ROOT, 'test_images_processed/tn')),
-        'PUBLIC_URL': os.path.normpath('/media'),
+        'PUBLIC_URL': os.path.normpath('/media/test_images_processed'),
         'PUBLIC_URL_TN': os.path.normpath('/media/test_images_processed/tn'),
         'CONVERSION_FORMAT': 'jpg',
         'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate_image'},
@@ -188,7 +191,7 @@ elif RUN_TYPE == RUN_TYPE_OPTIONS[1]:  # DOCKER PRODUCTION
         'PUBLIC_URL_TN': '',
         'CONVERSION_FORMAT': 'jpg',
         'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate_image'},
-         'THUMB_SIZES':  [(1080, 1080), (720, 720), (350, 350), (150, 150), (75, 75)]
+        'THUMB_SIZES':  [(1080, 1080), (720, 720), (350, 350), (150, 150), (75, 75)]
     }
 
 # # # Caches

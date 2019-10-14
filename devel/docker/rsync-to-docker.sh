@@ -3,9 +3,9 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 LOCAL_FRONTEND_DIR="${DIR}/../../spm_frontend/react/"
 LOCAL_DJANGO_API_CODE_PATH="${DIR}/../../spm_api/"
-DOCKER_DJANGO_API_CODE_PATH="/home/dan/Data/LocalRepositories/DOCKER/SimplePhotoManagement/src/"
-DOCKER_DJANGO_CONFIG_PATH="/home/dan/Data/LocalRepositories/DOCKER/SimplePhotoManagement/config/"
-DOCKER_FRONTEND="/home/dan/Data/LocalRepositories/DOCKER/SimplePhotoManagement/frontend/public/"
+DOCKER_DJANGO_API_CODE_PATH="/home/dan/dev/DOCKER/SimplePhotoManagement/src/"
+DOCKER_DJANGO_CONFIG_PATH="/home/dan/dev/DOCKER/SimplePhotoManagement/config/"
+DOCKER_FRONTEND="/home/dan/dev/DOCKER/SimplePhotoManagement/frontend/public"
 # copy over api code
 rsync -av --progress --exclude-from "${DIR}/rsync-ignore.txt" ${LOCAL_DJANGO_API_CODE_PATH} \
 ${DOCKER_DJANGO_API_CODE_PATH}
