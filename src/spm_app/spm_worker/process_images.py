@@ -27,7 +27,7 @@ class ProcessImages:
     ALLOWED_IMAGE_FORMATS = ['jpeg', 'jpg', 'tiff', 'tif', 'png']
 
     def __init__(self, origin_image_paths=None, origin_file_url=None, processed_image_path=None, thumb_path=None, conversion_format=None,
-                 retag=False, process_single=False, thumb_sizes:[tuple]=[], tags=None):
+                 retag=False, process_single=False, thumb_sizes: [tuple] = [], tags=None):
         """
         initiate the class
         :param origin_image_paths: set of paths of dirs of photos to be converted and/or tagged
@@ -154,9 +154,9 @@ class ProcessImages:
         return False
 
     @staticmethod
-    def convert_image(orig_filename:str, path:str, save_path:str, conversion_format:str,
-                      thumb_path: str = '', change_filename:bool=True, thumbs_only:bool=False,
-                      thumb_sizes:[tuple]=[(75,75)]) -> dict or bool:
+    def convert_image(orig_filename: str, path: str, save_path: str, conversion_format: str,
+                      thumb_path: str = '', change_filename: bool = True, thumbs_only: bool = False,
+                      thumb_sizes: [tuple] = [(75, 75)]) -> dict or bool:
         """
         method to convert the format and resize an image file
         :param orig_filename: original filename of image
@@ -175,7 +175,8 @@ class ProcessImages:
         directory without overwriting each other.
         """
         try:
-            new_format = {'jpg': 'JPEG', 'png': 'PNG'} # Map arg to uppercase, jpg to JPEG, etc
+            # Map arg to uppercase, jpg to JPEG, etc
+            new_format = {'jpg': 'JPEG', 'png': 'PNG'}
             if conversion_format in new_format.keys():
                 url = os.path.join(path, orig_filename)
                 with Image.open(url) as img:
@@ -183,9 +184,10 @@ class ProcessImages:
                     img.convert('RGB')  # convert to RGBA to ensure consistency
                     if change_filename:
                         new_filename = ProcessImages.generate_image_hash(
-                        image_url=url) # generate unique hash for image if required
+                            image_url=url)  # generate unique hash for image if required
                     else:
-                        new_filename = os.path.splitext(orig_filename)[0]  # get filename minus format extension
+                        # get filename minus format extension
+                        new_filename = os.path.splitext(orig_filename)[0]
                     # define new filename (inc. extension for new format)
                     outfile = f'{new_filename}.{conversion_format}'
                     if not thumbs_only:  # if converting to a full-sized copy
@@ -199,9 +201,11 @@ class ProcessImages:
                     # create thumbs
                     for tn in thumb_sizes:
                         if thumb_path:
-                            thumb_save_url = os.path.join(thumb_path, f'{new_filename}-{"_".join((str(t) for t in tn))}.{conversion_format}')
+                            thumb_save_url = os.path.join(
+                                thumb_path, f'{new_filename}-{"_".join((str(t) for t in tn))}.{conversion_format}')
                         else:
-                            thumb_save_url = os.path.join(save_path, 'tn', f'{new_filename}-{"_".join((str(t) for t in tn))}.{conversion_format}')
+                            thumb_save_url = os.path.join(
+                                save_path, 'tn', f'{new_filename}-{"_".join((str(t) for t in tn))}.{conversion_format}')
                         img.thumbnail(tn, resample=Image.BICUBIC)
                         img.save(thumb_save_url, quality=100)
                     print('Conversion done!')
@@ -299,9 +303,9 @@ class ProcessImages:
         except Exception as e:
             print(f'An exception occurred whilst attempting to add tags : {e}')
             raise
-    
+
     @staticmethod
-    def rename_image(url_file_to_hash:str='', url_file_to_rename:str='', with_hash:bool=False,
+    def rename_image(url_file_to_hash: str = '', url_file_to_rename: str = '', with_hash: bool = False,
                      new_name: str = '') -> str:
         """function to rename a file
         :param url_file_to_hash: str: url of image file to be sha1 hashed (if any)
@@ -313,20 +317,23 @@ class ProcessImages:
         try:
             path, old_filename = os.path.split(url_file_to_rename)
             if with_hash:
-                hash = ProcessImages.generate_image_hash(image_url=url_file_to_hash)
-                new_url = os.path.join(path, hash + os.path.splitext(old_filename)[1])
+                hash = ProcessImages.generate_image_hash(
+                    image_url=url_file_to_hash)
+                new_url = os.path.join(
+                    path, hash + os.path.splitext(old_filename)[1])
             else:
                 new_url = os.path.join(path, new_name)
             print(f'NEW URL: {new_url}')
             os.rename(src=url_file_to_rename, dst=new_url)
             return new_url
         except Exception as e:
-            print(f'An exception occurred whilst attempting to rename the files: {e}')
+            print(
+                f'An exception occurred whilst attempting to rename the files: {e}')
             raise
 
     @staticmethod
-    def rotate_image(origin_file_url:str, rotation_degrees:int=90, copy_tags:bool=True,
-        recreate_thumbs:bool=True, save_path:str='', save_format:str='', thumb_path:str='', thumb_sizes:[tuple]=[]) -> bool:
+    def rotate_image(origin_file_url: str, rotation_degrees: int = 90, copy_tags: bool = True,
+                     recreate_thumbs: bool = True, save_path: str = '', save_format: str = '', thumb_path: str = '', thumb_sizes: [tuple] = []) -> bool:
         """function to rotate an image
         :param origin_file_url: str: url of the image file to rotate
         :param copy_tags: bool: whether to copy IPTC tags from original to rotated image
@@ -337,20 +344,22 @@ class ProcessImages:
         try:
             tags = []
             path, filename = os.path.split(origin_file_url)
-            if copy_tags: # read tags
-                tags = ProcessImages._read_iptc_tags(filename=filename, path=path)
+            if copy_tags:  # read tags
+                tags = ProcessImages._read_iptc_tags(
+                    filename=filename, path=path)
                 print(f'ORGINAL TAGS: {tags}')
             # rotate the image (makes a new copy & overwrites the origial)
             with Image.open(origin_file_url) as img:
                 img.rotate(rotation_degrees, resample=Image.BICUBIC,
                            expand=True).save(origin_file_url)
-            if copy_tags and tags: # write tags to new copy
+            if copy_tags and tags:  # write tags to new copy
                 for tag in tags:
-                    ProcessImages.add_tags(target_file_url=origin_file_url, tags=tag, retain_original=True)
+                    ProcessImages.add_tags(
+                        target_file_url=origin_file_url, tags=tag, retain_original=True)
             # convert to create thumbs
             if recreate_thumbs:
                 ProcessImages.convert_image(orig_filename=filename, path=path, save_path=save_path, thumb_path=thumb_path,
-                conversion_format=save_format, change_filename=False, thumbs_only=True, thumb_sizes=thumb_sizes)
+                                            conversion_format=save_format, change_filename=False, thumbs_only=True, thumb_sizes=thumb_sizes)
             return True
         except IOError as e:
             print(f'Image rotation failed: {e}')
@@ -417,7 +426,7 @@ class ProcessImages:
                     if self.retag or not converted_did_exist:  # if retag is set, or newly converted image
                         # read tag data from original image
                         tag_data = self._read_iptc_tags(filename=processed_data['conversion_data']['orig_filename'],
-                                                       path=processed_data['conversion_data']['orig_path'])
+                                                        path=processed_data['conversion_data']['orig_path'])
                         # any additions or updates to the incoming tag data
                         if tag_data:
                             # only handle IPTC keywords (for now)
