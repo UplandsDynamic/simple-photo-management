@@ -8,7 +8,7 @@ const DataTableAddTags = props => {
     const {handleUpdate, recordItem} = props;
 
     const _validateInput = (value) => {
-        return (/^[a-zA-Z\d\-/: ]*$/.test(value)) ? value : tags;
+        return (/^[a-zA-Z\d\-/(): ]*$/.test(value)) ? value : tags;
     };
 
     const handleChangeTags = e => {
