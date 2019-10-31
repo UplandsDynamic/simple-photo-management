@@ -14,7 +14,7 @@ def validate_alphanumplus(value):
 def validate_tag_list(value: list):
     if isinstance(value, list):
         for v in value:
-            if not re.match(r'^[A-Za-z0-9\-: ]*$', v):
+            if not re.match(r'^[A-Za-z0-9\-(): ]*$', v):
                 raise ValidationError(
                     _(f'{value} contains invalid characters!')
                 )
@@ -22,6 +22,7 @@ def validate_tag_list(value: list):
         raise ValidationError(
             _(f'{value} is not a valid list of tags!')
         )
+
 
 def validate_rotation_degrees(value: int):
     if not isinstance(value, int):
