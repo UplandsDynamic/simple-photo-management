@@ -72,11 +72,7 @@ const DataTable = props => {
   );
 
   return (
-    <div
-      className={`data-table ${
-        process.env.REACT_APP_THEME === "LIGHT" ? "light" : ""
-      }`}
-    >
+    <div className={"data-table"}>
       <DataTableNav
         record={record}
         handleGetRecords={getRecordsHandler}
