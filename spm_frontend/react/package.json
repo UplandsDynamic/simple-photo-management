@@ -37,7 +37,7 @@
   },
   "scripts": {
     "analyze": "source-map-explorer build/static/js/main.*",
-    "start": "HTTPS=false react-scripts start",
+    "start": "HTTPS=false BROWSER=none react-scripts start",
     "build:staging": "env-cmd -f .env.staging react-scripts build",
     "build:production": "env-cmd -f .env.production react-scripts build",
     "build:docker": "env-cmd -f .env.docker react-scripts build",
