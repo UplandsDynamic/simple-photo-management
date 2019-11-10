@@ -31,6 +31,7 @@ and changing the semantic symbol and the version number to simply "*". Then run:
 ### Upgrading
 
 - First: `$ cd /home/dan/dev/SimplePhotoManagement`
+- Ensure in the virtual environment: `. venv/bin/activate.fish` (if using Fish shell)
 - Upgrade all packages to the latest version: `$ pip-compile --upgrade`, or upgrade individual packages, to the latest version: `$ pip-compile -P the_package_name` (upgrades the_package_name to the very latest version), or upgrade individual packages to a specific version: `$ pip-compile -P the_package_name==2.0.1` (upgrades the_package_name to version 2.0.1)
 - Then: `$ pip-sync` to actually do the upgrade now the versions have been set.
 
