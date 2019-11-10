@@ -4,7 +4,7 @@
 #
 #    pip-compile
 #
-arrow==0.15.2
+arrow==0.15.4
 autopep8==1.4.4
 blessed==1.16.1
 certifi==2019.9.11        # via requests
@@ -14,11 +14,11 @@ coreschema==0.0.4         # via coreapi
 django-cors-headers==3.1.1
 django-picklefield==2.0
 django-q==1.0.2
-django==2.2.6             # via django-cors-headers, django-picklefield, django-q
+django==2.2.7             # via django-cors-headers, django-picklefield, django-q
 djangorestframework==3.10.3
 gevent==1.4.0
 greenlet==0.4.15          # via gevent
-gunicorn==19.9.0
+gunicorn==20.0.0
 idna==2.8                 # via requests
 itypes==1.1.0             # via coreapi
 jinja2==2.10.3            # via coreschema
@@ -27,12 +27,15 @@ pillow==6.2.1
 psycopg2==2.8.4
 py3exiv2==0.7.1
 pycodestyle==2.5.0        # via autopep8
-python-dateutil==2.8.0    # via arrow
+python-dateutil==2.8.1    # via arrow
 pytz==2019.3              # via django
 pyyaml==5.1.2
 requests==2.22.0          # via coreapi
-six==1.12.0               # via blessed, python-dateutil
+six==1.13.0               # via blessed, python-dateutil
 sqlparse==0.3.0           # via django
 uritemplate==3.0.0        # via coreapi
 urllib3==1.25.6           # via requests
 wcwidth==0.1.7            # via blessed
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools==41.6.0        # via gunicorn
