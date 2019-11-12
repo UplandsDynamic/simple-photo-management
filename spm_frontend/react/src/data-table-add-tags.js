@@ -8,15 +8,17 @@ const DataTableAddTags = props => {
     handleUpdate,
     handleGetTagSuggestions,
     recordItem,
+    existingTags,
     tagSuggestions
   } = props;
 
   const [tags, setTags] = useState(""); // initial value
 
-  const tagSuggestionBlacklist = ["SPM: TAGS COPIED FROM ORIGINAL"];
+  const staticTagSuggestionBlacklist = ["SPM: TAGS COPIED FROM ORIGINAL"];
+  const tagSuggestionBlacklist = staticTagSuggestionBlacklist.concat(existingTags);
 
   const _validateInput = value => {
-    return /^[a-zA-Z\d\-/():' ]*$/.test(value) ? value : tags;
+    return /^[a-zA-Z\d\-/():'? ]*$/.test(value) ? value : tags;
   };
 
   const handleChangeTags = e => {
@@ -48,9 +50,10 @@ const DataTableAddTags = props => {
       recordItem,
       updateMode: "add_tags"
     });
-    let existingTags = tags.split("/");
-    existingTags.pop();
-    existingTags.length ? setTags(`${existingTags.join("/")}/`) : setTags("");
+    let currentTags = tags.split("/");
+    currentTags.pop();
+    currentTags.length ? setTags(`${currentTags.join("/")}/`) : setTags("");
+    handleGetTagSuggestions({ term: '', itemID: recordItem.id }); // reset suggestions
   };
 
   return (

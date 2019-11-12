@@ -105,6 +105,7 @@ const DataTableData = props => {
             handleUpdate={handleUpdate}
             handleGetTagSuggestions={handleGetTagSuggestions}
             recordItem={item}
+            existingTags={tags}
             tagSuggestions={tagSuggestions}
           />
         </td>

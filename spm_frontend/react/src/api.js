@@ -130,7 +130,7 @@ const _getTags = ({
   csrfToken = null
 } = {}) => {
   if (term) {
-    const url = `${process.env.REACT_APP_API_DATA_ROUTE}/tags/?term=${term}`; // update URL
+    const url = `${process.env.REACT_APP_API_DATA_ROUTE}/tags/?term=${term}&limit=10`; // update URL
     return _makeRequest({ csrfToken, requestMethod, url }); // returns a promise
   }
   return false;
