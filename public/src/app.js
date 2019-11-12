@@ -70,6 +70,11 @@ class App extends React.Component {
         method: "GET",
         desc: "request to get photo data"
       },
+      GET_TAGS: {
+        requestType: "get_tags",
+        method: "GET",
+        desc: "request to get photo tag data"
+      },
       PROCESS_PHOTOS: {
         requestType: "process_photos",
         method: "GET",
@@ -128,6 +133,7 @@ class App extends React.Component {
       greeting: process.env.REACT_APP_GREETING,
       csrfToken: null,
       message: { message: "", messageClass: "" },
+      tagSuggestions: { itemID: null, suggestions: [] }
     };
     this.state = JSON.parse(JSON.stringify(this.initialState));
     // bind methods to 'this' to enable to be passed as props
@@ -139,6 +145,7 @@ class App extends React.Component {
     this.handleProcessPhotos = this.handleProcessPhotos.bind(this);
     this.getRecordsHandler = this.getRecordsHandler.bind(this);
     this.handleUpdate = this.handleUpdate.bind(this);
+    this.tagSuggestionsHandler = this.tagSuggestionsHandler.bind(this);
   }
 
   componentDidMount() {
@@ -255,6 +262,49 @@ class App extends React.Component {
     return false;
   }
 
+  tagSuggestionsHandler({
+    term = null,
+    itemID = null,
+    notifyResponse = false
+  } = {}) {
+    if (this.state.authMeta.authenticated && term) {
+      const apiRequest = processRequest({
+        apiMode: this.apiOptions.GET_TAGS,
+        term
+      });
+      if (apiRequest) {
+        apiRequest
+          .then(response => {
+            if (response) {
+              if (notifyResponse) {
+                this.setMessage({
+                  message: "Tags successfully retrieved!",
+                  messageClass: "alert alert-success"
+                });
+              }
+              // set new state
+              let newSuggestions = [];
+              response.data.results.forEach(result =>
+                newSuggestions.push(result.tag)
+              );
+              this.setState({
+                tagSuggestions: { itemID, suggestions: newSuggestions }
+              });
+            }
+          })
+          .catch(error => {
+            console.log(error);
+            this.setMessage({
+              message: "An API error has occurred",
+              messageClass: "alert alert-danger"
+            });
+          });
+      }
+    }
+    this.setState({ tagSuggestions: {itemID: null, suggestions: []} }); // if no term, clear the state
+    return false;
+  }
+
   handleProcessPhotos({
     record = this.state.record,
     retag = false,
@@ -303,7 +353,7 @@ class App extends React.Component {
     updateParams,
     recordItem,
     updateMode,
-    tags = null,
+    tags = [],
     notifyResponse = true
   } = {}) {
     if (this.state.authMeta.authenticated) {
@@ -311,7 +361,7 @@ class App extends React.Component {
         queryFlags: {},
         requestData: {
           id: recordItem.id,
-          tags: tags ? tags.split("/") : [],
+          tags: tags,
           update_mode: updateMode,
           update_params: updateParams
         },
@@ -358,9 +408,11 @@ class App extends React.Component {
     return (
       <DataTable
         record={this.state.record}
+        tagSuggestions={this.state.tagSuggestions}
         apiOptions={this.apiOptions}
         setMessage={this.setMessage}
         getRecordsHandler={this.getRecordsHandler}
+        handleGetTagSuggestions={this.tagSuggestionsHandler}
         handleProcessPhotos={this.handleProcessPhotos}
         authMeta={this.state.authMeta}
         handleUpdate={this.handleUpdate}
@@ -370,9 +422,11 @@ class App extends React.Component {
 
   render() {
     return (
-      <div className={`app-main ${
-        process.env.REACT_APP_THEME === "LIGHT" ? "light" : ""
-      }`}>
+      <div
+        className={`app-main ${
+          process.env.REACT_APP_THEME === "LIGHT" ? "light" : ""
+        }`}
+      >
         <div className={"container"}>
           <div className={"row"}>
             <div className={"col-12"}>

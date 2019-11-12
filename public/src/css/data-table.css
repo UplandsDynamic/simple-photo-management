@@ -139,7 +139,15 @@ td.tags span {
 }
 
 td.tags span button {
-  margin-left: 2vmin!important;
+  margin-left: 1.5vmin!important;
+}
+
+span.tagSuggestions {
+  display:block;
+  text-align: left;
+  padding: 1.2vmin;
+  margin: 0.5vmin;
+  font-size: 1.5vmin;
 }
 
 /* LIGHT MODE */

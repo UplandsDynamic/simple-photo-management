@@ -5,10 +5,15 @@ import DataTableAddTags from "./data-table-add-tags";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const DataTableData = props => {
-  const { record = {}, handleUpdate } = props;
+  const {
+    record = {},
+    handleUpdate,
+    handleGetTagSuggestions,
+    tagSuggestions
+  } = props;
 
   const handleDeleteTag = (tag, recordItem) => {
-    handleUpdate({ tags: tag, recordItem, updateMode: "remove_tag" }); // pass back through function prop
+    handleUpdate({ tags: [tag], recordItem, updateMode: "remove_tag" }); // pass back through function prop
   };
 
   const handleRotateImage = (recordItem, degrees) => {
@@ -33,7 +38,11 @@ const DataTableData = props => {
     let medium_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-720_720${file_format}`;
     let full_img_url = `${process.env.REACT_APP_ROUTE}${public_img_tn_url}/${file_name}-1080_1080${file_format}`;
     return (
-      <tr key={item.id} data-toggle="modal" className={rowClasses.join(" ")}>
+      <tr
+        key={`data-table-tags-${item.id}`}
+        data-toggle="modal"
+        className={rowClasses.join(" ")}
+      >
         {/*<th scope="row">{item.id}</th>*/}
         <td className={"col-3 photo"}>
           <div className={"card bg-info"}>
@@ -77,7 +86,7 @@ const DataTableData = props => {
         <td className={"col-5 tags"}>
           <ul>
             {tags.map((tag, key) => (
-              <li key={key}>
+              <li key={`data-table-tags-${key}`}>
                 <span className={"badge badge-pill badge-warning text-wrap"}>
                   {tag}
                   <button
@@ -92,7 +101,12 @@ const DataTableData = props => {
           </ul>
         </td>
         <td className={"action-col col-4 text-center"}>
-          <DataTableAddTags handleUpdate={handleUpdate} recordItem={item} />
+          <DataTableAddTags
+            handleUpdate={handleUpdate}
+            handleGetTagSuggestions={handleGetTagSuggestions}
+            recordItem={item}
+            tagSuggestions={tagSuggestions}
+          />
         </td>
       </tr>
     );

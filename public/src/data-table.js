@@ -13,9 +13,11 @@ const DataTable = props => {
   const {
     record = {},
     getRecordsHandler,
+    handleGetTagSuggestions,
     authMeta = {},
     handleProcessPhotos,
-    handleUpdate
+    handleUpdate,
+    tagSuggestions
   } = props;
 
   const _formatUTCDateTime = ({ dateTime = null } = {}) => {
@@ -58,7 +60,12 @@ const DataTable = props => {
   };
 
   const DataTableDataWrapper = () => (
-    <DataTableData record={record} handleUpdate={handleUpdate} />
+    <DataTableData
+      record={record}
+      handleUpdate={handleUpdate}
+      handleGetTagSuggestions={handleGetTagSuggestions}
+      tagSuggestions={tagSuggestions}
+    />
   );
 
   const noDataWrapper = () => (
