@@ -14,7 +14,7 @@ def validate_alphanumplus(value):
 def validate_tag_list(value: list):
     if isinstance(value, list):
         for v in value:
-            if not re.match(r'^[A-Za-z0-9\-(): ]*$', v):
+            if not re.match(r'^[A-Za-z0-9\-():\' ]*$', v):
                 raise ValidationError(
                     _(f'{value} contains invalid characters!')
                 )

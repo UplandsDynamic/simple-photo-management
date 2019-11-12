@@ -6,7 +6,8 @@ const processRequest = ({
   apiMode = null,
   csrfToken = null,
   url = null,
-  queryFlags = {}
+  queryFlags = {},
+  term = null
 } = {}) => {
   const { requestType, method } = apiMode;
   const { retag, scan, clean_db } = queryFlags;
@@ -32,6 +33,13 @@ const processRequest = ({
       return _update_photos({
         csrfToken,
         requestData,
+        apiMode,
+        requestMethod: method
+      });
+    } else if (apiMode.requestType === "get_tags") {
+      return _getTags({
+        csrfToken,
+        term,
         apiMode,
         requestMethod: method
       });
@@ -104,16 +112,26 @@ const _getPhotos = ({
   if (record) {
     if (!url) {
       let { pageOrderBy, pageOrderDir, search, limit, page } = record.meta;
-      if (!url) {
-        // constructs request URL, unless pre-defined in paginate.js through api 'next' or 'previous'.
-        // build url
-        url =
-          `${process.env.REACT_APP_API_DATA_ROUTE}/photos/?limit=${limit}` +
-          `&offset=${page * limit - limit}` +
-          `&order_by=${pageOrderDir}${pageOrderBy}&tag=${search}`; // update URL
-      }
+      // constructs request URL, unless pre-defined in paginate.js through api 'next' or 'previous'.
+      // build url
+      url =
+        `${process.env.REACT_APP_API_DATA_ROUTE}/photos/?limit=${limit}` +
+        `&offset=${page * limit - limit}` +
+        `&order_by=${pageOrderDir}${pageOrderBy}&tag=${search}`; // update URL
     }
     return _makeRequest({ record, csrfToken, requestMethod, url }); // returns a promise
+  }
+  return false;
+};
+
+const _getTags = ({
+  term = null,
+  requestMethod = null,
+  csrfToken = null
+} = {}) => {
+  if (term) {
+    const url = `${process.env.REACT_APP_API_DATA_ROUTE}/tags/?term=${term}`; // update URL
+    return _makeRequest({ csrfToken, requestMethod, url }); // returns a promise
   }
   return false;
 };
@@ -128,9 +146,7 @@ const _processPhotos = ({
 } = {}) => {
   if (!url) {
     // build url unless pre-defined
-    url = `${
-      process.env.REACT_APP_API_DATA_ROUTE
-    }/process_photos?retag=${retag}&scan=${scan}&clean_db=${clean_db}`;
+    url = `${process.env.REACT_APP_API_DATA_ROUTE}/process_photos?retag=${retag}&scan=${scan}&clean_db=${clean_db}`;
   }
   return _makeRequest({ csrfToken, requestMethod, url }); // returns a promise
 };
@@ -141,9 +157,7 @@ const _update_photos = ({
   apiMode,
   requestMethod
 } = {}) => {
-  const url = `${process.env.REACT_APP_API_DATA_ROUTE}/photos/${
-    requestData.id
-  }/`;
+  const url = `${process.env.REACT_APP_API_DATA_ROUTE}/photos/${requestData.id}/`;
   return _makeRequest({ csrfToken, requestData, requestMethod, url }); // returns a promise
 };
 

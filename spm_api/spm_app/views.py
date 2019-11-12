@@ -245,6 +245,10 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         # create tuple of search tags, split by "/" character in search string
         terms = tuple(search_query.split('/'))
         for t in terms:
+            # special search to allow searching for erroneous whitespace tag
+            if t == '-SPACE-':
+                return records.filter(tags__tag='').distinct()
+            # regular search
             records = records.filter(
                 Q(tags__tag__icontains=t)).distinct() if t else records
         return records
@@ -331,7 +335,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                       processed_only: bool = False) -> PhotoData or bool:
         """function to add tags to the PhotoData model
         :param record_id: ID of record to be updated
-        :param tags: List of tags (strings) to add to the exising tags
+        :param tags: List of tags (strings) to add to the existing tags
         :param user: user doing the updating
         :param write_to_iptc: boolean: whether to write the new tags to the image
         :param iptc_key: str: IPTC key. Defaults to keyword (Iptc.Application2.Keywords)
@@ -346,6 +350,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         # set modification lock
         record.mod_lock = True
         record.save()
+        # remove any empty tags
+        tags = list(filter(None, tags))
         # update the tag model with new tags, if necessary
         if write_to_iptc:
             try:
@@ -462,11 +468,10 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
         ))
         # set username of requester to user attr of serializer to allow return admin status in response
         self.serializer_class.user = self.request.user
-        # if searching for a product by description
         try:
-            if 'tag' in self.request.query_params and self.request.query_params.get('tag', None):
+            if 'term' in self.request.query_params and self.request.query_params.get('term', None):
                 records = self.handle_search(
-                    all_records=records, search_term=self.request.query_params.get('tag'))
+                    all_records=records, search_term=self.request.query_params.get('term'))
         except ValidationError as e:
             # if invalid search char, don't return error response, just return empty
             logger.info(f'Returning no results in response because: {e}')
@@ -482,7 +487,7 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
         """
         search_query = validate_search(search_term)
         records = all_records.filter(
-            Q(tags__icontains=search_query) if search_query else None).distinct()
+            Q(tag__icontains=search_query) if search_query else None).distinct()
         return records
 
     def perform_create(self, serializer_class):

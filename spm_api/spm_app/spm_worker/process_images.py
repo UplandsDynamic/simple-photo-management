@@ -295,7 +295,6 @@ class ProcessImages:
             # if not merging with original or there were no original tags to merge, just use new
             tags_to_write = [tags] if not tags_to_write else tags_to_write
             # write tags to images (tags in form: {'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']})
-            print(f'TOTAL TAGS TO WRITE: {tags_to_write}')
             for tag in tags_to_write:
                 ProcessImages._write_iptc_tags(
                     new_file_url=target_file_url, tag_data=tag)
