@@ -21,12 +21,13 @@ http://spm.staging.aninstance.com
 Login credentials are:
 
 - Username: riker
-- Password: z4Xd*7byV$xw
+- Password: z4Xd\*7byV\$xw
 
 ## Key features
 
 - Recursively scan directories for digital image files
 - Add, remove & edit IPTC meta keyword tags from digital images via a web interface
+- Easily select previously used IPTC meta keyword tags and add to digital images
 - Automatically create a range of smaller (optimised) versions of each larger image (e.g. .jpg from a .tiff)
 - Optimised versions named using a hash of the origin image file, to prevent duplication (note, the hash includes metadata, so if an identical looking image has had a change in metadata it is deemed 'different'.)
 - Display & download optimised & resized versions of large images in the web interface
@@ -68,9 +69,9 @@ The associated Docker images for server and client are available on DockerHub:
 
 To use this source code for non-dockerised builds, please amend the settings.py configuration file accordingly.
 
-## Installation & usage (on Linux systems)
+## Installation (on Linux systems)
 
-__Note: These are basic instructions to install and run the app for demonstration purposes only and do not provide for a secure installation, such as would be required if the app was publicly available. Steps should be taken to harden the environment if using in production, such as applying suitable file & directory permissions; serving over a TLS connection; and running the Docker containers as a user other than root.__
+**Note: These are basic instructions to install and run the app for demonstration purposes only and do not provide for a secure installation, such as would be required if the app was publicly available. Steps should be taken to harden the environment if using in production, such as applying suitable file & directory permissions; serving over a TLS connection; and running the Docker containers as a user other than root.**
 
 To use the Docker images orchestrated with docker-compose:
 
@@ -86,7 +87,7 @@ To use the Docker images orchestrated with docker-compose:
   - `config/nginx/spm-example.config` - save as spm.conf
   - `config/.env.docker` - save as .env.docker (this is the frontend client configuration, where you may configure things like the number of items displayed per page)
 
-  __Note: Don't forget to set the URL in both the `docker-compose.yml` (`app`'s `APP_URL` variable) and the `.env.docker` (`REACT_APP_ROUTE`, `REACT_APP_API_ROUTE` & `REACT_APP_API_DATA_ROUTE` variables) files (as above).__
+  **Note: Don't forget to set the URL in both the `docker-compose.yml` (`app`'s `APP_URL` variable) and the `.env.docker` (`REACT_APP_ROUTE`, `REACT_APP_API_ROUTE` & `REACT_APP_API_DATA_ROUTE` variables) files (as above).**
 
 - Create the following directories in the application's root directory. These are for persistent storage (i.e. they persist even after the app server & client containers have been stopped, started, deleted, upgraded):
 
@@ -124,7 +125,9 @@ To use the Docker images orchestrated with docker-compose:
 
 - Copy your original images (or directories of images) into the `photo_directory` directory.
 
-- Navigate to the web client url - e.g. http://your_domain.tld __Note: When starting a newly built or pulled container for the first time, the web client may take several minutes (depending on your server's resources) to create a fresh build. You will get a `502 Bad Gateway` error whilst the NPM build is occurring. Please be patient and try refreshing the page in a few moments.__
+## Usage Instructions
+
+- Navigate to the web client url - e.g. http://your_domain.tld **Note: When starting a newly built or pulled container for the first time, the web client may take several minutes (depending on your server's resources) to create a fresh build. You will get a `502 Bad Gateway` error whilst the NPM build is occurring. Please be patient and try refreshing the page in a few moments.**
 
 - Login to the web client using the superuser credentials you'd previously supplied.
 
@@ -137,18 +140,23 @@ To use the Docker images orchestrated with docker-compose:
 - To search for images that contain multiple tags, separate search phrases with a forward slash `/`
 - Clicking the button with the `tag` icon re-scans all images in photo_directory, adds any newly discovered images and recopies all IPTC keyword tags to the database. To simply add new images without re-copying the tags, use the `+` button instead.
 - Clicking the button with the `broom` icon cleans the database of references to any processed images that no longer exist in the `media` directories or the origin image `photo_directory`.
-- Add new tags to an image by entering them in the input field, in the `Action` column. Separate multiple tags with a `/`. This action both writes the new tag(s) to the metadata of the **ORIGINAL IMAGE** and the database.
-- The above guide is not definitive and is intended for users who know their way around Docker (and know how to troubleshoot!) If there are enough users of this app to warrant it, more thorough documentation would likely be made available. In the meantime, usage or installation questions can be sent to the contact details below.
+- Add new tags to an image in one of two ways. These actions both write the new tag(s) to the metadata of the **ORIGINAL IMAGE** and to the database.:
+  - By entering them in the input field, in the `Action` column. Separate multiple tags with a `/`.
+  - By selecting from the list of previously used tags, that appears below the input field after you've begun to enter your tag. As you continue to type, this list resolves to display tags containing a sequence of characters that match your input.
+
+## Documentation
+
+The above guide is not definitive and is intended for users who know their way around Docker (and know how to troubleshoot!) If there are enough users of this app to warrant it, more thorough documentation would likely be made available. In the meantime, usage or installation questions can be sent to the contact details below.
 
 ## Development Roadmap
 
-- Automated display of tag suggestions (based on real-time character matching & most used) when adding IPTC tags to an image
+- ~~Automated display of tag suggestions (based on real-time character matching & most used) when adding IPTC tags to an image~~ [Complete]
 - Enhancement of `clean` to facilitate deletion of processed image files & thumbnails (rather just database entries) when origin image no longer exists
 - Tag suggestions based on facial recognition
 
 ## Support
 
-- Paid support services (including installation, configuration and development of bespoke features) are available. Please email productions@aninstance.com with "Simple Photo Management Support" in the subject field, or leave a message via the website form at: https://www.aninstance.com/contact
+- Paid support services (including installation, configuration and development of bespoke features) are available. Please email productions@aninstance.com with "Simple Photo Management Support" in the subject field.
 
 ## Authors
 
