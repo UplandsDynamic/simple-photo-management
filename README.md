@@ -136,8 +136,9 @@ To use the Docker images orchestrated with docker-compose:
   - Reads any IPTC keyword tags and adds them to the database.
   - The digital images are processed, with a range of image sizes automatically generated.
 - Give it a few seconds and click the green refresh button (far left of the toolbar, beneath the page numbers). Images with no pre-existing IPTC keyword tags should be displayed (if any).
-- To display images that do have tags, try typing a phrase into the search bar.
-- To search for images that contain multiple tags, separate search phrases with a forward slash `/`
+- To display images that do have tags, try typing a phrase into the search bar:
+  - To search for tags containing a specifically defined phrase, enclose the phrase between quotation marks, e.g. "a phrase tag"
+  - To search for images that contain a combination of multiple tags, separate search words or phrases with either a space, or a forward slash `/`.
 - Clicking the button with the `tag` icon re-scans all images in photo_directory, adds any newly discovered images and recopies all IPTC keyword tags to the database. To simply add new images without re-copying the tags, use the `+` button instead.
 - Clicking the button with the `broom` icon cleans the database of references to any processed images that no longer exist in the `media` directories or the origin image `photo_directory`.
 - Add new tags to an image in one of two ways. These actions both write the new tag(s) to the metadata of the **ORIGINAL IMAGE** and to the database.:
