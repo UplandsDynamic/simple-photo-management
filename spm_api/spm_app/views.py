@@ -237,20 +237,36 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
     @staticmethod
     def handle_search(records: queryset, search_term: str) -> queryset:
         """function to handle search
-        :param all_records: queryset of all records
+        :param records: queryset of all records
         :param search_term: search term string
         :return: queryset of filtered results
         """
-        search_query = validate_search(search_term)
-        # create tuple of search tags, split by "/" character in search string
-        terms = tuple(search_query.split('/'))
+        search_query:str = validate_search(search_term)
+        # create list of quoted search terms
+        quoted_terms:list = list(re.findall('("[^"]*")', search_query))
+        # remove terms from original query (to be used again later minus those terms)
+        for t in quoted_terms:
+            search_query = search_query.replace(t, '')
+        # strip quotation marks
+        quoted_terms:tuple = tuple(t.replace('"', '') for t in quoted_terms)
+        """
+        create tuple of search terms, split by spaces & `/` characters in 
+        search string. Note, changed from simply splitting on `/` to include
+        spaces, but `/` retained for backwards compatability
+        """
+        non_quoted_terms:tuple = tuple(
+            t.strip() for t in search_query.replace('/', ' ').split(' '))
+        # remove blanks & yield a tuple
+        non_quoted_terms:tuple = tuple(filter(None, non_quoted_terms)) 
+        terms:tuple = quoted_terms + non_quoted_terms
         for t in terms:
             # special search to allow searching for erroneous whitespace tag
             if t == '-SPACE-':
                 return records.filter(tags__tag='').distinct()
             # regular search
             records = records.filter(
-                Q(tags__tag__icontains=t)).distinct() if t else records
+                Q(tags__tag__icontains=t)).distinct().order_by(
+                    'tags__tag') if t else records
         return records
 
     def handleMutateImage(self, record_id: int, user: User, mutation: dict) -> dict:
@@ -486,6 +502,8 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
         :return: queryset of filtered results
         """
         search_query = validate_search(search_term)
+        # split search terms on space
+        terms = tuple([t.strip() for t in search_query.split(' ')])
         records = all_records.filter(
             Q(tag__icontains=search_query) if search_query else None).distinct()
         return records
