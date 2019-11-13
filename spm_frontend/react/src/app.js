@@ -230,6 +230,7 @@ class App extends React.Component {
         record: record,
         apiMode: this.apiOptions.GET_PHOTOS
       });
+      console.log(apiRequest)
       if (apiRequest) {
         apiRequest
           .then(response => {

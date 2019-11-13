@@ -161,8 +161,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 raise serializers.ValidationError(
                     detail=f'Validation error: {e}')
         else:
-            records = all_records.filter(tags=None).distinct()
-        return records  # return filtered records, or empty list if no incoming search query
+            records = all_records.filter(tags=None)
+        return records.order_by('file_name')  # return filtered records, or empty list if no incoming search query
 
     def perform_create(self, serializer_class):
         """
@@ -241,33 +241,32 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         :param search_term: search term string
         :return: queryset of filtered results
         """
-        search_query:str = validate_search(search_term)
+        search_query: str = validate_search(search_term)
         # create list of quoted search terms
-        quoted_terms:list = list(re.findall('("[^"]*")', search_query))
+        quoted_terms: list = list(re.findall('("[^"]*")', search_query))
         # remove terms from original query (to be used again later minus those terms)
         for t in quoted_terms:
             search_query = search_query.replace(t, '')
         # strip quotation marks
-        quoted_terms:tuple = tuple(t.replace('"', '') for t in quoted_terms)
+        quoted_terms: tuple = tuple(t.replace('"', '') for t in quoted_terms)
         """
         create tuple of search terms, split by spaces & `/` characters in 
         search string. Note, changed from simply splitting on `/` to include
         spaces, but `/` retained for backwards compatability
         """
-        non_quoted_terms:tuple = tuple(
+        unquoted_terms: tuple = tuple(
             t.strip() for t in search_query.replace('/', ' ').split(' '))
         # remove blanks & yield a tuple
-        non_quoted_terms:tuple = tuple(filter(None, non_quoted_terms)) 
-        terms:tuple = quoted_terms + non_quoted_terms
-        for t in terms:
-            # special search to allow searching for erroneous whitespace tag
-            if t == '-SPACE-':
-                return records.filter(tags__tag='').distinct()
-            # regular search
-            records = records.filter(
-                Q(tags__tag__icontains=t)).distinct().order_by(
-                    'tags__tag') if t else records
-        return records
+        unquoted_terms: tuple = tuple(filter(None, unquoted_terms))
+        # filter with Qfilters
+        for t in quoted_terms:
+            # special search to allow searching for erroneous whitespace tag - return instantly
+            if t == '"-SPACE-"':
+                return records.filter(tags__tag='')
+            records = records.filter(Q(tags__tag__iexact=t))
+        for t in unquoted_terms:
+            records = records.filter(Q(tags__tag__icontains=t))
+        return records.distinct()
 
     def handleMutateImage(self, record_id: int, user: User, mutation: dict) -> dict:
         """function to handle mutating the PROCESSED image.
