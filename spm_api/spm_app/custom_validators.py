@@ -92,7 +92,8 @@ class RequestQueryValidator:
     results = 'validation of results limit param'
     order_by = 'validation of order_by param'
     valid_order_by_values = ['id', 'tags', 'file_name',
-                             'file_type', '-id', '-tags', '-file_name', '-file_type']
+                             'file_type', '-id', '-tags', '-file_name', '-file_type',
+                             'record_updated', '-record_updated']
     bool_or_none = 'validation incoming value is a boolean value or None'
 
     @staticmethod

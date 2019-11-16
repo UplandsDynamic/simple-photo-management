@@ -47,7 +47,8 @@ const DataTable = props => {
   const handleSearch = ({ record = {}, term = null } = {}) => {
     if (record) {
       Object.assign(record.meta, {
-        pageOrderBy: "file_name",
+        pageOrderBy: "record_updated",
+        pageOrderDir: "-",
         page: 1,
         search: term
       });
