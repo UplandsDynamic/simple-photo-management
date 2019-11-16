@@ -50,14 +50,16 @@ class ChangePasswordSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'password', 'old_password', 'new_password')
+        fields = ('id', 'username', 'email', 'password',
+                  'old_password', 'new_password')
 
     """
     field validations (in the form validate_a_custom_field)
     """
 
     def validate_old_password(self, value):
-        validate_password(value, user=self.instance)  # validate it is a real, acceptable pw
+        # validate it is a real, acceptable pw
+        validate_password(value, user=self.instance)
         return value
 
     def validate_new_password(self, value):
@@ -117,13 +119,14 @@ class PhotoDataSerializer(serializers.HyperlinkedModelSerializer):
     """
 
     # return staff status of requester
-    user_is_admin = serializers.SerializerMethodField(method_name='administrators_check')
+    user_is_admin = serializers.SerializerMethodField(
+        method_name='administrators_check')
 
     # add UUID to ensure caches can be cleared for new img
     uuid = serializers.SerializerMethodField(method_name='generate_uuid')
 
     def generate_uuid(self, obj):
-        return uuid.uuid4().hex 
+        return uuid.uuid4().hex
 
     def administrators_check(self, obj):
         return self.context['request'].user.groups.filter(name='administrators').exists()
@@ -135,7 +138,8 @@ class PhotoDataSerializer(serializers.HyperlinkedModelSerializer):
     #     return self.user.is_superuser
 
     # return request datetime
-    datetime_of_request = serializers.SerializerMethodField(method_name='create_request_time')
+    datetime_of_request = serializers.SerializerMethodField(
+        method_name='create_request_time')
 
     def create_request_time(self, obj):
         # return datetime.utcnow().strftime('%d %b %Y, %H:%M:%S UTC')
@@ -144,7 +148,7 @@ class PhotoDataSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = PhotoData
         fields = ('id', 'owner', 'file_name', 'file_format', 'tags', 'user_is_admin',
-                  'datetime_of_request', 'public_img_url', 'public_img_tn_url', 'original_url', 'uuid')
+                  'datetime_of_request', 'record_updated', 'public_img_url', 'public_img_tn_url', 'original_url', 'uuid')
 
     """
     Additional validations. 
@@ -181,7 +185,8 @@ class PhotoDataSerializer(serializers.HyperlinkedModelSerializer):
         Only superusers are allowed to create new objects
         """
         if not self.administrators_check(self):
-            raise serializers.ValidationError(detail=f'Record creation denied for this user level')
+            raise serializers.ValidationError(
+                detail=f'Record creation denied for this user level')
         # remove units_to_transfer write_only (non-model) field for the create() method (only for updates)
         if 'units_to_transfer' in validated_data:
             del validated_data['units_to_transfer']
@@ -198,9 +203,6 @@ class PhotoDataSerializer(serializers.HyperlinkedModelSerializer):
         # call parent method to do the update
         return super().update(instance, validated_data)
         # return the updated instance
-
-    
-    
 
 
 class PhotoTagSerializer(serializers.HyperlinkedModelSerializer):
@@ -221,7 +223,8 @@ class PhotoTagSerializer(serializers.HyperlinkedModelSerializer):
     """
 
     # return staff status of requester
-    user_is_admin = serializers.SerializerMethodField(method_name='administrators_check')
+    user_is_admin = serializers.SerializerMethodField(
+        method_name='administrators_check')
 
     def administrators_check(self, obj):
         return self.context['request'].user.groups.filter(name='administrators').exists()
@@ -233,7 +236,8 @@ class PhotoTagSerializer(serializers.HyperlinkedModelSerializer):
     #     return self.user.is_superuser
 
     # return request datetime
-    datetime_of_request = serializers.SerializerMethodField(method_name='create_request_time')
+    datetime_of_request = serializers.SerializerMethodField(
+        method_name='create_request_time')
 
     def create_request_time(self, obj):
         # return datetime.utcnow().strftime('%d %b %Y, %H:%M:%S UTC')
@@ -242,7 +246,6 @@ class PhotoTagSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = PhotoTag
         fields = ('id', 'tag', 'datetime_of_request', 'user_is_admin', 'owner')
-
 
     """
     Additional validations. 
@@ -279,7 +282,8 @@ class PhotoTagSerializer(serializers.HyperlinkedModelSerializer):
         Only superusers are allowed to create new objects
         """
         if not self.administrators_check(self):
-            raise serializers.ValidationError(detail=f'Record creation denied for this user level')
+            raise serializers.ValidationError(
+                detail=f'Record creation denied for this user level')
         # remove units_to_transfer write_only (non-model) field for the create() method (only for updates)
         if 'units_to_transfer' in validated_data:
             del validated_data['units_to_transfer']
