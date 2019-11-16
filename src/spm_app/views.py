@@ -162,7 +162,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                     detail=f'Validation error: {e}')
         else:
             records = all_records.filter(tags=None)
-        return records.order_by('file_name')  # return filtered records, or empty list if no incoming search query
+        return records  # return filtered records, or empty list if no incoming search query
 
     def perform_create(self, serializer_class):
         """
