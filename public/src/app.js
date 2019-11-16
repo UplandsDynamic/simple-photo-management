@@ -115,8 +115,8 @@ class App extends React.Component {
           limit: process.env.REACT_APP_ROWS_PER_TABLE,
           pagerMainSize: process.env.REACT_APP_PAGER_MAIN_SIZE,
           pagerEndSize: process.env.REACT_APP_PAGER_END_SIZE,
-          pageOrderBy: "file_name",
-          pageOrderDir: "",
+          pageOrderBy: "record_updated",
+          pageOrderDir: "-",
           previous: null,
           next: null,
           cacheControl: "no-cache", // no caching by default, so always returns fresh data
