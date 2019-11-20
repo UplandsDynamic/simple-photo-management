@@ -60,19 +60,19 @@ caption {
   color: orange;
 }
 
-input.search {
+input.search,
+input.replace {
+  margin: 0.5vmax;
   background-color: darkorange;
   color: #001e00 !important;
   font-weight: bold;
+  border: 2px solid darkgoldenrod !important;
 }
 
-input.search::placeholder {
+input.search::placeholder,
+input.replace::placeholder {
   color: #001e00 !important;
   font-weight: bold;
-}
-
-input.search {
-  border: 2px solid darkgoldenrod !important;
 }
 
 ul {
@@ -139,11 +139,11 @@ td.tags span {
 }
 
 td.tags span button {
-  margin-left: 1.5vmin!important;
+  margin-left: 1.5vmin !important;
 }
 
 span.tagSuggestions {
-  display:block;
+  display: block;
   text-align: left;
   padding: 1.2vmin;
   margin: 0.5vmin;
@@ -215,14 +215,17 @@ div.light caption {
   color: orange;
 }
 
-div.light input.search {
+div.light input.search,
+div.light input.replace {
+  margin: 0.5vmax;
   border: 2px orange !important;
   background-color: #d4e0ff;
   color: black !important;
   font-weight: bold;
 }
 
-div.light input.search::placeholder {
+div.light input.search::placeholder,
+div.light input.replace::placeholder {
   color: darkslategray !important;
   font-weight: bold;
 }

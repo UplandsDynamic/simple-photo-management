@@ -7,7 +7,9 @@ const processRequest = ({
   csrfToken = null,
   url = null,
   queryFlags = {},
-  term = null
+  term = null,
+  searchTerm = null,
+  replaceTerm = null
 } = {}) => {
   const { requestType, method } = apiMode;
   const { retag, scan, clean_db } = queryFlags;
@@ -40,6 +42,14 @@ const processRequest = ({
       return _getTags({
         csrfToken,
         term,
+        apiMode,
+        requestMethod: method
+      });
+    } else if (apiMode.requestType === "search_and_replace") {
+      return _searchAndReplace({
+        csrfToken,
+        searchTerm,
+        replaceTerm,
         apiMode,
         requestMethod: method
       });
@@ -131,6 +141,19 @@ const _getTags = ({
 } = {}) => {
   if (term) {
     const url = `${process.env.REACT_APP_API_DATA_ROUTE}/tags/?term=${term}&limit=10`; // update URL
+    return _makeRequest({ csrfToken, requestMethod, url }); // returns a promise
+  }
+  return false;
+};
+
+const _searchAndReplace = ({
+  csrfToken,
+  searchTerm = "",
+  replaceTerm = "",
+  requestMethod = null
+} = {}) => {
+  if (searchTerm && replaceTerm) {
+    const url = `${process.env.REACT_APP_API_DATA_ROUTE}/photos/?term_to_replace=${searchTerm}&replacement_term=${replaceTerm}`; // update URL
     return _makeRequest({ csrfToken, requestMethod, url }); // returns a promise
   }
   return false;

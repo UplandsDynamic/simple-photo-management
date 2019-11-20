@@ -26,8 +26,8 @@ Note: Mapping for actions (used in as_view), are:
     'post': 'create'
     'put': 'update',
     'patch': 'partial_update',
-    'patch': 'custom_update', # CUSTM ACTION
-    'patch': 'perform_single_update', # CUSTM ACTION
+    'patch': 'custom_update', # CUSTOM ACTION
+    'patch': 'perform_single_update', # CUSTOM ACTION
     'patch': 'perform_bulk_partial_update',  # CUSTOM ACTION
     'delete': 'destroy',
     }

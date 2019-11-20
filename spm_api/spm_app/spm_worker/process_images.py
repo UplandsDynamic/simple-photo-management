@@ -346,7 +346,7 @@ class ProcessImages:
             if copy_tags:  # read tags
                 tags = ProcessImages._read_iptc_tags(
                     filename=filename, path=path)
-                print(f'ORGINAL TAGS: {tags}')
+                print(f'original TAGS: {tags}')
             # rotate the image (makes a new copy & overwrites the origial)
             with Image.open(origin_file_url) as img:
                 img.rotate(rotation_degrees, resample=Image.BICUBIC,
