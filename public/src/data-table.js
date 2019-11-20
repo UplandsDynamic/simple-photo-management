@@ -17,7 +17,8 @@ const DataTable = props => {
     authMeta = {},
     handleProcessPhotos,
     handleUpdate,
-    tagSuggestions
+    handleSearchAndReplace,
+    tagSuggestions,
   } = props;
 
   const _formatUTCDateTime = ({ dateTime = null } = {}) => {
@@ -86,6 +87,7 @@ const DataTable = props => {
         handleGetRecords={getRecordsHandler}
         handleProcessPhotos={handleProcessPhotos}
         handleSearch={handleSearch}
+        handleSearchAndReplace={handleSearchAndReplace}
         authMeta={authMeta}
       />
       <div className={"container"}>

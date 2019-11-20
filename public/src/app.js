@@ -32,7 +32,9 @@ import {
   faTags,
   faBroom,
   faUndo,
-  faRedo
+  faRedo,
+  faSearch,
+  faExchangeAlt
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -48,7 +50,9 @@ library.add(
   faTags,
   faBroom,
   faUndo,
-  faRedo
+  faRedo,
+  faSearch,
+  faExchangeAlt
 );
 
 axios.defaults.withCredentials = true;
@@ -74,6 +78,11 @@ class App extends React.Component {
         requestType: "get_tags",
         method: "GET",
         desc: "request to get photo tag data"
+      },
+      SEARCH_AND_REPLACE: {
+        requestType: "search_and_replace",
+        method: "GET",
+        desc: "request to search & replace tags"
       },
       PROCESS_PHOTOS: {
         requestType: "process_photos",
@@ -146,6 +155,7 @@ class App extends React.Component {
     this.getRecordsHandler = this.getRecordsHandler.bind(this);
     this.handleUpdate = this.handleUpdate.bind(this);
     this.tagSuggestionsHandler = this.tagSuggestionsHandler.bind(this);
+    this.searchAndReplaceHandler = this.searchAndReplaceHandler.bind(this);
   }
 
   componentDidMount() {
@@ -230,7 +240,6 @@ class App extends React.Component {
         record: record,
         apiMode: this.apiOptions.GET_PHOTOS
       });
-      console.log(apiRequest)
       if (apiRequest) {
         apiRequest
           .then(response => {
@@ -302,8 +311,42 @@ class App extends React.Component {
           });
       }
     }
-    this.setState({ tagSuggestions: {itemID: null, suggestions: []} }); // if no term, clear the state
+    this.setState({ tagSuggestions: { itemID: null, suggestions: [] } }); // if no term, clear the state
     return false;
+  }
+
+  searchAndReplaceHandler({
+    searchTerm = "",
+    replaceTerm = "",
+    notifyResponse = true
+  }) {
+    if (this.state.authMeta.authenticated && searchTerm && replaceTerm) {
+      const apiRequest = processRequest({
+        apiMode: this.apiOptions.SEARCH_AND_REPLACE,
+        searchTerm,
+        replaceTerm
+      });
+      if (apiRequest) {
+        apiRequest
+          .then(response => {
+            if (response) {
+              if (notifyResponse) {
+                this.setMessage({
+                  message: "Tag replacement task successfully initiated! Please refresh the dataset in a few moments to view the changes.",
+                  messageClass: "alert alert-success"
+                });
+              }
+            }
+          })
+          .catch(error => {
+            console.log(error);
+            this.setMessage({
+              message: "An API error has occurred",
+              messageClass: "alert alert-danger"
+            });
+          });
+      }
+    }
   }
 
   handleProcessPhotos({
@@ -417,6 +460,7 @@ class App extends React.Component {
         handleProcessPhotos={this.handleProcessPhotos}
         authMeta={this.state.authMeta}
         handleUpdate={this.handleUpdate}
+        handleSearchAndReplace={this.searchAndReplaceHandler}
       />
     );
   }
