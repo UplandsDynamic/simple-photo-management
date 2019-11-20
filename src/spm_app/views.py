@@ -130,15 +130,15 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
     Note on permissions:
     Access control is dealt with in 2 places: here (views.py) and serializers.py.
 
-        - views.py: basic 1st hurdle checks, performed before input validation, 
-        including whether requester user level has access to models, and whether has ability to 
-        preform actions on model objects. This is via permission_classes 
-        (may call access permissions classes from ./custom_permissions.py or default access permission 
+        - views.py: basic 1st hurdle checks, performed before input validation,
+        including whether requester user level has access to models, and whether has ability to
+        preform actions on model objects. This is via permission_classes
+        (may call access permissions classes from ./custom_permissions.py or default access permission
         classes from DRF.
 
-        - serializers.py: 2nd hurdle checks - more complicated checks performed after input validation 
-        but before changes committed to the model. E.g. ensuring only certain user levels are able 
-        to update specific fields in certain ways.    
+        - serializers.py: 2nd hurdle checks - more complicated checks performed after input validation
+        but before changes committed to the model. E.g. ensuring only certain user levels are able
+        to update specific fields in certain ways.
     """
 
     def get_queryset(self):
@@ -152,10 +152,14 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         self.serializer_class.user = self.request.user
         # handle search queries, if any
         search_query = self.request.query_params.get('tag', None)
-        if search_query:
+        term_to_replace = self.request.query_params.get(
+            'term_to_replace', None)
+        replacement_term = self.request.query_params.get(
+            'replacement_term', None)
+        if search_query or (replacement_term and term_to_replace):
             try:
-                records = self.handle_search(
-                    records=all_records, search_term=search_query)
+                records = self.handle_search(user=self.request.user, records=all_records, search_term=search_query,
+                                             term_to_replace=term_to_replace, replacement_term=replacement_term)
             except ValidationError as e:
                 # if invalid search char, don't return error response, just return empty
                 raise serializers.ValidationError(
@@ -190,19 +194,19 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
             validate_update_mode(request.data.get('update_mode', None))
             update_mode = request.data['update_mode']
             if update_mode == 'add_tags':
-                updated_instance = self.handleAddTags(
+                updated_instance = self.handle_add_tags(
                     record_id=kwargs['pk'], tags=tags_to_update, user=request.user)
             elif update_mode == 'remove_tag':
-                updated_instance = self.handleRemoveTags(record_id=kwargs['pk'], tags=tags_to_update,
-                                                         user=request.user)
+                updated_instance = self.handle_remove_tags(record_id=kwargs['pk'], tags=tags_to_update,
+                                                           user=request.user)
             elif update_mode == 'rotate_image':
                 # validate rotation degree
                 validate_rotation_degrees(
                     request.data['update_params']['rotation_degrees'])
                 degrees = request.data['update_params']['rotation_degrees']
                 # rotate the image
-                updated_instance = self.handleMutateImage(record_id=kwargs['pk'], user=request.user,
-                                                          mutation={'rotation': {'degrees': degrees}})
+                updated_instance = self.handle_mutate_image(record_id=kwargs['pk'], user=request.user,
+                                                            mutation={'rotation': {'degrees': degrees}})
             if updated_instance['success']:
                 new_data = updated_instance['data']
                 updated_record = {
@@ -235,45 +239,65 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 detail='You are not authorized to delete photo data!')
 
     @staticmethod
-    def handle_search(records: queryset, search_term: str) -> queryset:
+    def handle_search(user: User, records: queryset, search_term: str, term_to_replace: str,
+                      replacement_term: str) -> queryset:
         """function to handle search
         :param records: queryset of all records
         :param search_term: search term string
+        :param term_to_replace: term to replace if `search & replace`
+        :param replacement_term: term to replace with, if `search & replace`
         :return: queryset of filtered results
         """
-        search_query: str = validate_search(search_term)
-        # create list of quoted search terms
-        quoted_terms: list = list(re.findall('("[^"]*")', search_query))
-        # remove terms from original query (to be used again later minus those terms)
-        for t in quoted_terms:
-            search_query = search_query.replace(t, '')
-        # strip quotation marks
-        quoted_terms: tuple = tuple(t.replace('"', '') for t in quoted_terms)
-        """
-        create tuple of search terms, split by spaces & `/` characters in 
-        search string. Note, changed from simply splitting on `/` to include
-        spaces, but `/` retained for backwards compatability
-        """
-        unquoted_terms: tuple = tuple(
-            t.strip() for t in search_query.replace('/', ' ').split(' '))
-        # remove blanks & yield a tuple
-        unquoted_terms: tuple = tuple(filter(None, unquoted_terms))
-        # filter with Qfilters
-        for t in quoted_terms:
-            # special search to allow searching for erroneous whitespace tag - return instantly
-            if t == '"-SPACE-"':
-                return records.filter(tags__tag='')
-            records = records.filter(Q(tags__tag__iexact=t))
-        for t in unquoted_terms:
-            records = records.filter(Q(tags__tag__icontains=t))
+        if replacement_term:
+            # validate query strings
+            replacement_tag: str = validate_search(replacement_term)
+            tag_to_replace: str = validate_search(term_to_replace)
+            # get records with tags to replace
+            records_containing_tag = records.filter(
+                Q(tags__tag__iexact=tag_to_replace)).distinct()
+            # run the tag replacement method (this will be async) if records containing tag found, or log error
+            if records_containing_tag:
+                PhotoDataViewSet.handle_replace_tags(records=records_containing_tag, user=user,
+                                                     tag_to_replace=tag_to_replace, replacement_tag=replacement_tag
+                                                     )
+            else:
+                logger.info(
+                    'No records containing the tag to replace were identified!')
+        else:
+            search_query: str = validate_search(search_term)
+            # create list of quoted search terms
+            quoted_terms: list = list(re.findall('("[^"]*")', search_query))
+            # remove terms from original query (to be used again later minus those terms)
+            for t in quoted_terms:
+                search_query = search_query.replace(t, '')
+            # strip quotation marks
+            quoted_terms: tuple = tuple(t.replace('"', '')
+                                        for t in quoted_terms)
+            """
+            create tuple of search terms, split by spaces & `/` characters in
+            search string. Note, changed from simply splitting on `/` to include
+            spaces, but `/` retained for backwards compatability
+            """
+            unquoted_terms: tuple = tuple(
+                t.strip() for t in search_query.replace('/', ' ').split(' '))
+            # remove blanks & yield a tuple
+            unquoted_terms: tuple = tuple(filter(None, unquoted_terms))
+            # filter with Qfilters
+            for t in quoted_terms:
+                # special search to allow searching for erroneous whitespace tag - return instantly
+                if t == '"-SPACE-"':
+                    return records.filter(tags__tag='')
+                records = records.filter(Q(tags__tag__iexact=t))
+            for t in unquoted_terms:
+                records = records.filter(Q(tags__tag__icontains=t))
         return records.distinct()
 
-    def handleMutateImage(self, record_id: int, user: User, mutation: dict) -> dict:
+    def handle_mutate_image(self, record_id: int, user: User, mutation: dict) -> dict:
         """function to handle mutating the PROCESSED image.
         - Tags are copied from the original version to the newly mutated image.
         - Once image mutated, new thumbnails are recreated.
         :param origin_file_url: str: url of the image file to rotate
-        :param mutation: dict: dict of mutation actions, in form {'the_mutation':{'mutation_param': 'param_value'}} 
+        :param mutation: dict: dict of mutation actions, in form {'the_mutation':{'mutation_param': 'param_value'}}
             e.g.: {'rotation':{'degrees': 90}}
         :return: dict: {'success': True|False, 'data': Modified PhotoData instance | str: fail message}
         """
@@ -319,18 +343,18 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
             'success': True if mutated and conversion_generated else False,
             'data': record if mutated and conversion_generated else error_message}
 
-    def handleRemoveTags(self, record_id: int, tags: [str], user: User, write_to_iptc: bool = True,
-                         iptc_key: str = 'Iptc.Application2.Keywords') -> bool:
+    def handle_remove_tags(self, record_id: int, tags: [str], user: User, write_to_iptc: bool = True,
+                           iptc_key: str = 'Iptc.Application2.Keywords') -> dict:
         """function to delete tags from origin images.
-        - Compiles ammended tag list (orginal tags minus removed) to origin image
-        - Calls handleAddTags to write updated tags to origin image & generate new 
+        - Compiles amended tag list (original tags minus removed) to origin image
+        - Calls handle_add_tags to write updated tags to origin image & generate new
             converted images (database then updated via the calling perform_update method)
         :param record_id: ID of record to be updated
         :param tags: List of tags (strings) to remove from the image
         :param user: user doing the updating
         :param write_to_iptc: boolean: whether to delete the tags from image (not only db record)
         :param iptc_key: str: IPTC key. Defaults to keyword (Iptc.Application2.Keywords)
-        :return: return of handleAddTags function, in form: 
+        :return: return of handle_add_tags function, in form:
             dict: {'success': True|False, 'data': Modified PhotoData instance | str: fail message}
         """
         # get model instance to update
@@ -341,13 +365,33 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         # create new converted images with the requested tags removed
         updated_tags = set(t.tag for t in record.tags.all()) - set(tags)
         # write new tag list to origin image
-        return self.handleAddTags(record_id=record_id, tags=list(updated_tags), user=user, write_to_iptc=write_to_iptc,
-                                  iptc_key=iptc_key, retain_original=False)
+        return self.handle_add_tags(record_id=record_id, tags=list(updated_tags), user=user, write_to_iptc=write_to_iptc,
+                                    iptc_key=iptc_key, retain_original=False)
+
+    def handle_replace_tags(records: queryset, tag_to_replace: str, replacement_tag: str, user: User, write_to_iptc: bool = True,
+                            iptc_key: str = 'Iptc.Application2.Keywords') -> dict:
+        """function to replace tags in origin images.
+        - Compiles amended tag list to origin image
+        - Calls handle_add_tags to write updated tags to origin image & generate new
+            converted images (database then updated via the calling perform_update method)
+        :param records: Queryset of records containing the tag to replace
+        :param tag_to_replace: Tag to be replaced (string)
+        :param replacement_tag: New tag to replace tag_to_replace with (string)
+        :param user: user doing the updating
+        :param write_to_iptc: boolean: whether to delete the tags from image (not only db record)
+        :param iptc_key: str: IPTC key. Defaults to keyword (Iptc.Application2.Keywords)
+        :return: return of handle_add_tags function, in form:
+            dict: {'success': True|False, 'data': Modified PhotoData instance | str: fail message}
+        """
+        # run as async task
+        async_task(PhotoDataViewSet.tag_replacement_task, records=records, tag_to_replace=tag_to_replace,
+                   replacement_tag=replacement_tag, user=user, write_to_iptc=True, iptc_key=iptc_key,
+                   hook=PhotoDataViewSet.replacement_task_hook)
 
     @staticmethod
-    def handleAddTags(record_id: int, tags: [str], user: User, write_to_iptc: bool = True,
-                      iptc_key: str = 'Iptc.Application2.Keywords', retain_original: bool = True,
-                      processed_only: bool = False) -> PhotoData or bool:
+    def handle_add_tags(record_id: int, tags: [str], user: User, write_to_iptc: bool = True,
+                        iptc_key: str = 'Iptc.Application2.Keywords', retain_original: bool = True,
+                        processed_only: bool = False) -> PhotoData or bool:
         """function to add tags to the PhotoData model
         :param record_id: ID of record to be updated
         :param tags: List of tags (strings) to add to the existing tags
@@ -446,6 +490,43 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         record.save()
         return {'success': False, 'data': error_message}
 
+    """
+    async tasks
+    """
+    def tag_replacement_task(records=None, tag_to_replace='', replacement_tag='', user=None, write_to_iptc=True,
+                             retain_original=False, iptc_key=''):
+        success = False  # flag to prompt error to be logged if no changes were successful
+        # for each record, replace the old tag with the new
+        for r in records:
+            # get model instance to update
+            record = PhotoData.objects.get(id=r.id)
+            # set modification lock
+            record.mod_lock = True
+            record.save()
+            # create existing tag set
+            tag_set = set(t.tag for t in record.tags.all())
+            # remove tag to be replaced
+            tag_set.remove(tag_to_replace)
+            # update tag_set with replacement tag
+            tag_set.add(replacement_tag)
+            # write new tags to origin image & add returned PhotoData instance to updated_records set to return
+            result = PhotoDataViewSet.handle_add_tags(record_id=record.id, tags=list(tag_set),
+                                                      user=user, write_to_iptc=True, retain_original=False)
+            if not result['success']:
+                    # if unsuccessful attempt to change tags, exclude this record from queryset to be returned in return dict's data field
+                records.exclude(id=r.id)
+                logger.error('Replacing tags failed for {r.original_url}')
+            else:
+                success = True  # set flag as true - there was at least 1 successful change
+        return {'success': True, 'data': records} if success else {
+            'success': False, 'data': 'No records were updated - please inform an administrator!'}
+
+    """
+    async task hooks
+    """
+    def replacement_task_hook(task):
+        return task.result
+
 
 class PhotoTagViewSet(viewsets.ModelViewSet):
     """
@@ -464,15 +545,15 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
     Note on permissions:
     Access control is dealt with in 2 places: here (views.py) and serializers.py.
 
-        - views.py: basic 1st hurdle checks, performed before input validation, 
-        including whether requester user level has access to models, and whether has ability to 
-        preform actions on model objects. This is via permission_classes 
-        (may call access permissions classes from ./custom_permissions.py or default access permission 
+        - views.py: basic 1st hurdle checks, performed before input validation,
+        including whether requester user level has access to models, and whether has ability to
+        preform actions on model objects. This is via permission_classes
+        (may call access permissions classes from ./custom_permissions.py or default access permission
         classes from DRF.
 
-        - serializers.py: 2nd hurdle checks - more complicated checks performed after input validation 
-        but before changes committed to the model. E.g. ensuring only certain user levels are able 
-        to update specific fields in certain ways.    
+        - serializers.py: 2nd hurdle checks - more complicated checks performed after input validation
+        but before changes committed to the model. E.g. ensuring only certain user levels are able
+        to update specific fields in certain ways.
     """
 
     def get_queryset(self):
@@ -577,7 +658,7 @@ class ProcessPhotos(APIView):
             """
             if new image data was created - or resync_tags=True - , create PhotoTag objects
             (creating in the model if necessary with update_or_create), then populate saved
-            PhotoData model's M2M tags field with that list (& save again the now newly tagged model). 
+            PhotoData model's M2M tags field with that list (& save again the now newly tagged model).
             Then, add image data to a list for return
             """
             if photo_data_record and (new_record_created or resync_tags):
@@ -616,7 +697,7 @@ class ProcessPhotos(APIView):
     @staticmethod
     def clean_database(owner, origin_directories=False, processed_directories=False):
         """
-        function to purge database of records referring to files that 
+        function to purge database of records referring to files that
         no longer exist in the image directories
         """
         orphaned_processed_set = set()
