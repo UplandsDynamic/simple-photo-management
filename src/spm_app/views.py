@@ -118,7 +118,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
     API endpoints for PhotoData
     """
 
-    """
+    """f
     Includes by default the ListCreateAPIView & RetrieveUpdateDestroyAPIView
     i.e. provides photodata-list and photodata-detail views, accessed by path, & path/<id>)
     """
@@ -166,7 +166,20 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                     detail=f'Validation error: {e}')
         else:
             records = all_records.filter(tags=None)
-        return records  # return filtered records, or empty list if no incoming search query
+        return records.distinct()  # return records
+
+    def list(self, request, *args, **kwargs):
+        """
+        override list (default GET request) in order to
+        return custom JSON response containing the userIsAdmin 
+        status in the event there is not a record queryset to return
+        as a list from get_queryset.
+        """
+        userIsAdmin = self.request.user.groups.filter(
+            name='administrators').exists()
+        if not self.get_queryset():
+            return JsonResponse({"userIsAdmin": userIsAdmin}, status=status.HTTP_200_OK)
+        return super().list(request, *args, **kwargs)
 
     def perform_create(self, serializer_class):
         """
