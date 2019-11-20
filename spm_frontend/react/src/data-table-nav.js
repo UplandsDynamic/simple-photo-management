@@ -126,7 +126,7 @@ const DataTableNav = props => {
             </button>
           </div>
         </div>
-        <div className={`${userIsAdmin ? "col-8" : "col-10"}`}>
+        <div className={`col-8`}>
           <nav className={"search-navigation w-100 d-block ml-1"}>
             <input
               value={term}
