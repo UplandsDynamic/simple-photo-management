@@ -62,7 +62,7 @@ caption {
 
 input.search,
 input.replace {
-  margin: 0.5vmax;
+  margin: 0.5vmin;
   background-color: darkorange;
   color: #001e00 !important;
   font-weight: bold;
@@ -217,11 +217,9 @@ div.light caption {
 
 div.light input.search,
 div.light input.replace {
-  margin: 0.5vmax;
   border: 2px orange !important;
   background-color: #d4e0ff;
   color: black !important;
-  font-weight: bold;
 }
 
 div.light input.search::placeholder,
