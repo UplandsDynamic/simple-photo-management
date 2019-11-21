@@ -178,7 +178,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         userIsAdmin = self.request.user.groups.filter(
             name='administrators').exists()
         if not self.get_queryset():
-            return JsonResponse({"userIsAdmin": userIsAdmin}, status=status.HTTP_200_OK)
+            return JsonResponse({"user_is_admin": userIsAdmin}, status=status.HTTP_200_OK)
         return super().list(request, *args, **kwargs)
 
     def perform_create(self, serializer_class):

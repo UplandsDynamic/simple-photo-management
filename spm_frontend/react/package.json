@@ -2,7 +2,7 @@
   "author": "Dan Bright, productions@aninstance.com",
   "license": "GPLv3",
   "name": "simple-photo-management-react-frontend",
-  "version": "0.9.3.1-beta",
+  "version": "0.9.4-beta",
   "private": true,
   "description": "React frontend for Django REST Simple Photo Management application",
   "main": "index.js",

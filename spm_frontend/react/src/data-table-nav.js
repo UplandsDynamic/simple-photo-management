@@ -19,7 +19,7 @@ const DataTableNav = props => {
   const userIsAdmin = authMeta.userIsAdmin;
 
   const validateTerm = value => {
-    return /^[a-zA-Z\d./+\-'?:" ]*$/.test(value) ? value : term;
+    return /^[a-zA-Z\d./+\-'?:"| ]*$/.test(value) ? value : term;
   };
 
   const handleProcessClick = ({
