@@ -171,7 +171,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         """
         override list (default GET request) in order to
-        return custom JSON response containing the userIsAdmin 
+        return custom JSON response containing the userIsAdmin
         status in the event there is not a record queryset to return
         as a list from get_queryset.
         """
@@ -511,26 +511,35 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         success = False  # flag to prompt error to be logged if no changes were successful
         # for each record, replace the old tag with the new
         for r in records:
-            # get model instance to update
-            record = PhotoData.objects.get(id=r.id)
-            # set modification lock
-            record.mod_lock = True
-            record.save()
-            # create existing tag set
-            tag_set = set(t.tag for t in record.tags.all())
-            # remove tag to be replaced
-            tag_set.remove(tag_to_replace)
-            # update tag_set with replacement tag
-            tag_set.add(replacement_tag)
-            # write new tags to origin image & add returned PhotoData instance to updated_records set to return
-            result = PhotoDataViewSet.handle_add_tags(record_id=record.id, tags=list(tag_set),
-                                                      user=user, write_to_iptc=True, retain_original=False)
-            if not result['success']:
-                    # if unsuccessful attempt to change tags, exclude this record from queryset to be returned in return dict's data field
-                records.exclude(id=r.id)
-                logger.error('Replacing tags failed for {r.original_url}')
-            else:
-                success = True  # set flag as true - there was at least 1 successful change
+            try:
+                # get model instance to update
+                record = PhotoData.objects.get(id=r.id)
+                # set modification lock
+                record.mod_lock = True
+                record.save()
+                # create existing tag set
+                tag_set = set(t.tag for t in record.tags.all())
+                try:
+                    # remove tag to be replaced
+                    tag_set.remove(tag_to_replace)
+                except KeyError as e:
+                    logger.error(
+                        f'ERROR: Removal of tag `{tag_to_replace}` for record at `{r.original_url}` failed!`')
+                # update tag_set with replacement tag
+                tag_set.add(replacement_tag)
+                # write new tags to origin image & add returned PhotoData instance to updated_records set to return
+                result = PhotoDataViewSet.handle_add_tags(record_id=record.id, tags=list(tag_set),
+                                                          user=user, write_to_iptc=True, retain_original=False)
+                if not result['success']:
+                        # if unsuccessful attempt to change tags, exclude this record from queryset to be returned in return dict's data field
+                    records.exclude(id=r.id)
+                    logger.error(
+                        'Replacing tags failed for {r.original_url}')
+                else:
+                    success = True  # set flag as true - there was at least 1 successful change
+            except Exception as e:
+                logger.error(
+                    f'ERROR: Tag replacement for `{tag_to_replace}` for record at `{r.original_url}` failed!`')
         return {'success': True, 'data': records} if success else {
             'success': False, 'data': 'No records were updated - please inform an administrator!'}
 
