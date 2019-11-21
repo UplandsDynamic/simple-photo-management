@@ -217,13 +217,17 @@ class App extends React.Component {
       let updatedPage = page < 1 ? 1 : page;
       Object.assign(newRecord.meta, { page: updatedPage });
       // set user admin status to what was returned from api in record data
-      const admin =
+      let adminStatus = false;
+      if (
         newRecord.data.results.length &&
         newRecord.data.results[0].hasOwnProperty("user_is_admin")
-          ? newRecord.data.results[0].user_is_admin
-          : false;
-      if (admin !== this.state.authMeta.userIsAdmin) {
-        this.setAuthorized({ role: "admin", state: admin });
+      ) {
+        adminStatus = newRecord.data.results[0].user_is_admin;
+      } else if (newRecord.data.hasOwnProperty("user_is_admin")) {
+        adminStatus = newRecord.data.user_is_admin;
+      }
+      if (adminStatus !== this.state.authMeta.userIsAdmin) {
+        this.setAuthorized({ role: "admin", state: adminStatus });
       }
       this.setState({ record: newRecord });
     }
@@ -252,7 +256,12 @@ class App extends React.Component {
               }
               // set new state
               let recordCopy = JSON.parse(JSON.stringify(this.state.record));
-              Object.assign(recordCopy.data, { ...response.data });
+              if (response.data.results) {
+                Object.assign(recordCopy.data, { ...response.data });
+              } else {
+                recordCopy.data.results = [];
+                recordCopy.data.user_is_admin = response.data.user_is_admin;
+              }
               Object.assign(recordCopy.meta, { ...record.meta });
               this._setRecordState({ newRecord: recordCopy });
             }
@@ -332,7 +341,8 @@ class App extends React.Component {
             if (response) {
               if (notifyResponse) {
                 this.setMessage({
-                  message: "Tag replacement task successfully initiated! Please refresh the dataset in a few moments to view the changes.",
+                  message:
+                    "Tag replacement task successfully initiated! Please refresh the dataset in a few moments to view the changes.",
                   messageClass: "alert alert-success"
                 });
               }
