@@ -2,7 +2,11 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 import re
+import logging
 
+
+# Get an instance of a logger
+logger = logging.getLogger('django')
 
 def validate_alphanumplus(value):
     if not re.match(r'^[A-Za-z0-9_.\- ]*$', value):
@@ -14,9 +18,10 @@ def validate_alphanumplus(value):
 def validate_tag_list(value: list):
     if isinstance(value, list):
         for v in value:
-            if not re.match(r'^[A-Za-z0-9\-():\'\?]*$', v):
+            if not re.match(r'^[A-Za-z0-9\-():\'\?\ ]*$', v):
+                logger.warning(f'RAISING VALIDATION ERROR FOR: {v}')
                 raise ValidationError(
-                    _(f'{value} contains invalid characters!')
+                    _(f'{value} contains invalid characters: !')
                 )
     else:
         raise ValidationError(
