@@ -27,7 +27,7 @@ class ProcessImages:
     ALLOWED_IMAGE_FORMATS = ['jpeg', 'jpg', 'tiff', 'tif', 'png']
 
     def __init__(self, origin_image_paths=None, origin_file_url=None, processed_image_path=None, thumb_path=None, conversion_format=None,
-                 retag=False, process_single=False, thumb_sizes: [tuple] = [], tags=None):
+                 retag=False, process_single=False, reprocess=False, thumb_sizes: [tuple] = [], tags=None):
         """
         initiate the class
         :param origin_image_paths: set of paths of dirs of photos to be converted and/or tagged
@@ -51,6 +51,7 @@ class ProcessImages:
         self.retag = retag if isinstance(retag, bool) else False
         self.process_single = process_single
         self.origin_file_url = origin_file_url
+        self.reprocess = reprocess
         self.tags = tags
 
     @staticmethod
@@ -410,8 +411,10 @@ class ProcessImages:
                         }}
                     print(
                         f'Already exists in processed directory? : {converted_did_exist}')
+                    if self.reprocess:
+                        print('Reprocessing existing record ...')
                     # if filename does not already exist (not already converted)
-                    if not converted_did_exist:
+                    if not converted_did_exist or self.reprocess:
                         # save copy of the image with converted format & generate thumbs
                         self.convert_image(orig_filename=processed_data['conversion_data']['orig_filename'],
                                            path=processed_data['conversion_data']['orig_path'],
@@ -420,9 +423,12 @@ class ProcessImages:
                                            thumb_path=self.THUMB_PATH,
                                            thumb_sizes=self.THUMB_SIZES)
                     """
-                    write tags to file
+                    write tags to file if any of:
+                      - retag is True
+                      - it's a newly converted file
+                      - reprocess is True
                     """
-                    if self.retag or not converted_did_exist:  # if retag is set, or newly converted image
+                    if self.retag or self.reprocess or not converted_did_exist:
                         # read tag data from original image
                         tag_data = self._read_iptc_tags(filename=processed_data['conversion_data']['orig_filename'],
                                                         path=processed_data['conversion_data']['orig_path'])
@@ -456,5 +462,6 @@ if __name__ == '__main__':
                   thumb_path=THUMB_PATH,
                   conversion_format=CONVERSION_FORMAT,
                   process_single=False,
+                  reprocess=False,
                   retag=False,
                   thumb_sizes=THUMB_SIZES).process_images()

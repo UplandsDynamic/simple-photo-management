@@ -84,6 +84,11 @@ class App extends React.Component {
         method: "GET",
         desc: "request to search & replace tags"
       },
+      REPROCESS_RECORD: {
+        requestType: "reprocess",
+        method: "GET",
+        desc: "request to reprocess an image record"
+      },
       PROCESS_PHOTOS: {
         requestType: "process_photos",
         method: "GET",
@@ -156,6 +161,7 @@ class App extends React.Component {
     this.handleUpdate = this.handleUpdate.bind(this);
     this.tagSuggestionsHandler = this.tagSuggestionsHandler.bind(this);
     this.searchAndReplaceHandler = this.searchAndReplaceHandler.bind(this);
+    this.reprocessRecordHandler = this.reprocessRecordHandler.bind(this);
   }
 
   componentDidMount() {
@@ -278,6 +284,38 @@ class App extends React.Component {
           });
       }
     }
+    return false;
+  }
+
+  reprocessRecordHandler({ record = null, notifyResponse = false } = {}) {
+    if (this.state.authMeta.authenticated && record) {
+      const apiRequest = processRequest({
+        apiMode: this.apiOptions.REPROCESS_RECORD,
+        record
+      });
+      if (apiRequest) {
+        apiRequest
+          .then(response => {
+            if (response) {
+              if (notifyResponse) {
+                this.setMessage({
+                  message: "Reprocessing task initiated!",
+                  messageClass: "alert alert-success"
+                });
+              }
+              this.getRecordsHandler();
+            }
+          })
+          .catch(error => {
+            console.log(error);
+            this.setMessage({
+              message: "An API error has occurred",
+              messageClass: "alert alert-danger"
+            });
+          });
+      }
+    }
+    this.setState({ tagSuggestions: { itemID: null, suggestions: [] } }); // if no term, clear the state
     return false;
   }
 
@@ -471,6 +509,7 @@ class App extends React.Component {
         authMeta={this.state.authMeta}
         handleUpdate={this.handleUpdate}
         handleSearchAndReplace={this.searchAndReplaceHandler}
+        reprocessRecordHandler={this.reprocessRecordHandler}
       />
     );
   }

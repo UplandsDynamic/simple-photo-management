@@ -53,10 +53,17 @@ const processRequest = ({
         apiMode,
         requestMethod: method
       });
+    } else if (apiMode.requestType === "reprocess") {
+      return _reprocessRecord({
+        csrfToken,
+        record_id: record.id,
+        apiMode,
+        requestMethod: method
+      });
     }
   }
   console.log(`
-    No API mode, or stock record configuration set. API requested failed.
+    No API mode, or API requested failed.
     Pertinent variable values: requestType=${requestType}; method=${method}`);
   return false;
 };
@@ -154,6 +161,20 @@ const _searchAndReplace = ({
 } = {}) => {
   if (searchTerm && replaceTerm) {
     const url = `${process.env.REACT_APP_API_DATA_ROUTE}/photos/?term_to_replace=${searchTerm}&replacement_term=${replaceTerm}`; // update URL
+    return _makeRequest({ csrfToken, requestMethod, url }); // returns a promise
+  }
+  return false;
+};
+
+const _reprocessRecord = ({
+  csrfToken,
+  record_id,
+  requestMethod = null
+} = {}) => {
+  if (record_id) {
+    const url = `${
+      process.env.REACT_APP_API_DATA_ROUTE
+    }/process_photos/?record_id=${record_id}&reprocess=${true}`; // update URL
     return _makeRequest({ csrfToken, requestMethod, url }); // returns a promise
   }
   return false;

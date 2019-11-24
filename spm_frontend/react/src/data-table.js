@@ -19,6 +19,7 @@ const DataTable = props => {
     handleUpdate,
     handleSearchAndReplace,
     tagSuggestions,
+    reprocessRecordHandler
   } = props;
 
   const _formatUTCDateTime = ({ dateTime = null } = {}) => {
@@ -66,6 +67,7 @@ const DataTable = props => {
       record={record}
       handleUpdate={handleUpdate}
       handleGetTagSuggestions={handleGetTagSuggestions}
+      handleReprocessRecord={reprocessRecordHandler}
       tagSuggestions={tagSuggestions}
     />
   );
