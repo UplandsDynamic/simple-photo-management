@@ -9,7 +9,8 @@ const DataTableData = props => {
     record = {},
     handleUpdate,
     handleGetTagSuggestions,
-    tagSuggestions
+    tagSuggestions,
+    handleReprocessRecord
   } = props;
 
   const handleDeleteTag = (tag, recordItem) => {
@@ -22,6 +23,10 @@ const DataTableData = props => {
       updateMode: "rotate_image",
       updateParams: { rotation_degrees: degrees }
     }); // pass back through function prop
+  };
+
+  const handleReprocess = ({ record = null } = {}) => {
+    handleReprocessRecord({ record });
   };
 
   return record.data.results.map((item, index) => {
@@ -67,16 +72,23 @@ const DataTableData = props => {
                   <button
                     disabled={!item.user_is_admin}
                     onClick={() => handleRotateImage(item, 90)}
-                    className={"btn btn-sm btn-warning mr-1"}
+                    className={"btn btn-sm btn-warning"}
                   >
                     <FontAwesomeIcon icon={"undo"} />
                   </button>
                   <button
                     disabled={!item.user_is_admin}
                     onClick={() => handleRotateImage(item, -90)}
-                    className={"btn btn-sm btn-warning"}
+                    className={"btn btn-sm btn-warning ml-1"}
                   >
                     <FontAwesomeIcon icon={"redo"} />
+                  </button>
+                  <button
+                    disabled={!item.user_is_admin}
+                    onClick={() => handleReprocess({record: item})}
+                    className={"btn btn-sm btn-warning ml-1"}
+                  >
+                    <FontAwesomeIcon icon={"sync-alt"} />
                   </button>
                 </div>
               </div>
