@@ -8,6 +8,7 @@ import logging
 # Get an instance of a logger
 logger = logging.getLogger('django')
 
+
 def validate_alphanumplus(value):
     if not re.match(r'^[A-Za-z0-9_.\- ]*$', value):
         raise ValidationError(
@@ -100,6 +101,7 @@ class RequestQueryValidator:
                              'file_type', '-id', '-tags', '-file_name', '-file_type',
                              'record_updated', '-record_updated']
     bool_or_none = 'validation incoming value is a boolean value or None'
+    record_id = 'validation query string is a valid record ID (digits)'
 
     @staticmethod
     def validate(query_type, value):
@@ -130,4 +132,10 @@ class RequestQueryValidator:
                 else:
                     raise ValidationError(
                         _(f'This value needs to be True or False!'))
+            return value
+        elif query_type == 'record_id':
+            if value and not re.match(r'^[0-9]*$', value):
+                raise ValidationError(
+                    _(f'{value} is not a valid record ID!')
+                )
             return value

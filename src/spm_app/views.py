@@ -643,7 +643,7 @@ class ProcessPhotos(APIView):
         super().__init__()
 
     @staticmethod
-    def add_record_to_db(record, owner, resync_tags=False):
+    def add_record_to_db(record, owner, resync_tags=False, reprocess=False):
         """
         method to add images to the database model
         :param record: dict of saved conversion data and tags: e.g.:
@@ -678,12 +678,12 @@ class ProcessPhotos(APIView):
                 logger.info(
                     f'Did not save image data to the database: {e}')
             """
-            if new image data was created - or resync_tags=True - , create PhotoTag objects
+            if new image data was created - or resync_tags=True - or reprocess=True -, create PhotoTag objects
             (creating in the model if necessary with update_or_create), then populate saved
             PhotoData model's M2M tags field with that list (& save again the now newly tagged model).
             Then, add image data to a list for return
             """
-            if photo_data_record and (new_record_created or resync_tags):
+            if photo_data_record and (new_record_created or resync_tags or reprocess):
                 if record['tag_data']['tags']:
                     for tag in record['tag_data']['tags']:
                         try:
@@ -753,7 +753,8 @@ class ProcessPhotos(APIView):
         return True
 
     @staticmethod
-    def process_images(retag=False, clean_db=False, scan=False, user=None):
+    def process_images(retag=False, clean_db=False, scan=False, user=None,
+                       origin_file_url=None, process_single=False, reprocess=False):
         """
         method to process images (make resized copy (i.e. a 'processed' copy) & copy tags from original to resized)
         :param retag: whether to re-copy over tags from original to processed image, if filename already exists
@@ -766,14 +767,17 @@ class ProcessPhotos(APIView):
         thumb_path = settings.SPM['PROCESSED_THUMBNAIL_PATH']
         conversion_format = settings.SPM['CONVERSION_FORMAT']
         try:
-            # if action is to scan origin dirs for new files or retag existing processed files
-            if scan or retag:
+            # if action is to scan origin dirs for new files, retag existing processed files or reprocess records:
+            if scan or retag or reprocess:
                 # initiate a ProcessImages object
                 image_processor = ProcessImages(origin_image_paths=origin_image_paths,
                                                 processed_image_path=processed_image_path,
+                                                origin_file_url=origin_file_url,
                                                 thumb_path=thumb_path,
                                                 conversion_format=conversion_format,
                                                 retag=retag,
+                                                process_single=process_single,
+                                                reprocess=reprocess,
                                                 thumb_sizes=settings.SPM['THUMB_SIZES'])
                 # get reference to the generator that processes images
                 process_images_generator = image_processor.process_images()
@@ -792,7 +796,7 @@ class ProcessPhotos(APIView):
                                 time.sleep(.300)
                         # kick off async task to add records to database model
                         async_task(ProcessPhotos.add_record_to_db, record=processed_record,
-                                   owner=user, resync_tags=retag)
+                                   owner=user, resync_tags=retag, reprocess=reprocess)
                 else:
                     logger.error(
                         f'An error occurred during image processing. Operation cancelled.')
@@ -816,7 +820,8 @@ class ProcessPhotos(APIView):
         action_queries = {
             'scan': 'Scan the origin directories for new files, create web copies & copy tags from origin to processed images.',
             'retag': 'Retag copied (processed) image files with tags on the origin image.',
-            'clear_db': 'Remove database records relating to images that have been removed from origin directories.'
+            'clear_db': 'Remove database records relating to images that have been removed from origin directories.',
+            'reprocess': 'Reprocess existing record - for example, in the case processed image has been lost/corrupted for some reason'
         }
         try:
             # check for request queries - & validate - that indicate required action on data
@@ -826,13 +831,33 @@ class ProcessPhotos(APIView):
                 'bool_or_none', self.request.query_params.get('retag', None))
             clean_db = RequestQueryValidator.validate(
                 'bool_or_none', self.request.query_params.get('clean_db', None))
+            reprocess = RequestQueryValidator.validate(
+                'bool_or_none', self.request.query_params.get('reprocess', None))
+            record_id = RequestQueryValidator.validate('record_id',
+                                                       self.request.query_params.get('record_id', None))
+            # if record ID, set process_single variable to True
+            process_single = record_id is not None
+            """
+            If reprocess in request query, get the origin_url from the model instance.
+            """
+            origin_file_url = None
+            if reprocess and record_id:
+                try:
+                    origin_file_url = PhotoData.objects.get(
+                        id=record_id).original_url
+                except PhotoData.DoesNotExist:
+                    logger.warning(
+                        f'An image with an ID of `{record_id}` does not exist!`')
+                    return JsonResponse({'Status': f'Image with ID of `{record_id}` does not exist!'},
+                                        status=status.HTTP_400_BAD_REQUEST)
             """if at least 1 request query (query_params dict key) exists as a valid action query (action_queries dict key)
             kick off the main async task to process next step.
             """
             if set(action_queries.keys()).intersection(self.request.query_params.keys()):
                 async_task(ProcessPhotos.process_images, retag=retag,
-                           user=self.request.user, clean_db=clean_db, scan=scan)
-                return JsonResponse({'Status': 'Processing .......'}, status=202)
-            return JsonResponse({'Status': 'Query invalid .......'}, status=400)
+                           user=self.request.user, clean_db=clean_db, scan=scan,
+                           origin_file_url=origin_file_url, process_single=process_single, reprocess=reprocess)
+                return JsonResponse({'Status': 'Processing .......'}, status=status.HTTP_202_ACCEPTED)
+            return JsonResponse({'Status': 'Query invalid .......'}, status=status.HTTP_400_BAD_REQUEST)
         except ValidationError as e:
-            return JsonResponse({'Status': f'Error: {e}'}, status=400)
+            return JsonResponse({'Status': f'Error: {e}'}, status=status.HTTP_400_BAD_REQUEST)
