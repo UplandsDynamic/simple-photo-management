@@ -132,7 +132,6 @@ To use the Docker images orchestrated with docker-compose:
 - Navigate to the web client url - e.g. http://your_domain.tld **Note: When starting a newly built or pulled container for the first time, the web client may take several minutes (depending on your server's resources) to create a fresh build. You will get a `502 Bad Gateway` error whilst the NPM build is occurring. Please be patient and try refreshing the page in a few moments.**
 
 - Login to the web client using the superuser credentials you'd previously supplied.
-
 - Click on the `+` button to scan the photo_directory for new original photos. By default, this action:
   - Recursively scans for digital images (.jpg, .tiff, .png)
   - Reads any IPTC keyword tags and adds them to the database.
@@ -148,7 +147,13 @@ To use the Docker images orchestrated with docker-compose:
 - Add new tags to an image in one of two ways. These actions both write the new tag(s) to the metadata of the **ORIGINAL IMAGE** and to the database.:
   - By entering them in the input field, in the `Action` column. Separate multiple tags with a `/`.
   - By selecting from the list of previously used tags, that appears below the input field after you've begun to enter your tag. As you continue to type, this list resolves to display tags containing a sequence of characters that match your input.
-
+- Processed images may be operated on in the following ways:
+  - Clicking on a thumbnail image opens a larger resolution copy of that processed image. This may then be downloaded, via the toolbar appearing at the top of the image viewer. Note, this is __not__ the *original* image, but rather a higher resolution version of the processed image.
+  - The thumbnail images themselves have a mini-toolbar of buttons beneath them:
+    - `Anticlockwise arrow` rotates the processed images (thumbnail and the generated larger versions up to 1080px wide) anticlockwise.
+    - `Clockwise arrow` rotates the processed images (thumbnail and the generated larger versions up to 1080px wide) clockwise.
+    - `Refresh symbol` reprocesses that image record. Processed images (thumbnail and larger versions up to 1089px wide) are generated and tags coped to them from the original image. This is useful if, for example, a processed image has been accidentally deleted, or corrupted for some reason.
+  
 ## Documentation
 
 The above guide is not definitive and is intended for users who know their way around Docker (and know how to troubleshoot!) If there are enough users of this app to warrant it, more thorough documentation would likely be made available. In the meantime, usage or installation questions can be sent to the contact details below.
