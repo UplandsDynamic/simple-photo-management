@@ -152,7 +152,7 @@ To use the Docker images orchestrated with docker-compose:
   - The thumbnail images themselves have a mini-toolbar of buttons beneath them:
     - `Anticlockwise arrow` rotates the processed images (thumbnail and the generated larger versions up to 1080px wide) anticlockwise.
     - `Clockwise arrow` rotates the processed images (thumbnail and the generated larger versions up to 1080px wide) clockwise.
-    - `Refresh symbol` reprocesses that image record. Processed images (thumbnail and larger versions up to 1089px wide) are generated and tags coped to them from the original image. This is useful if, for example, a processed image has been accidentally deleted, or corrupted for some reason.
+    - `Refresh symbol` reprocesses that image record. Processed images (thumbnail and larger versions up to 1080px wide) are generated and tags coped to them from the original image. This is useful if, for example, a processed image has been accidentally deleted, or corrupted for some reason.
   
 ## Documentation
 
