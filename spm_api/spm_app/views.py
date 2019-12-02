@@ -562,6 +562,7 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
     queryset = PhotoTag.objects.all()
     serializer_class = PhotoTagSerializer
     permission_classes = (AccessPermissions,)
+    http_method_names = ['get', 'post', 'delete', 'patch']
 
     """
     Note on permissions:
@@ -629,6 +630,56 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
         else:
             raise serializers.ValidationError(
                 detail='You are not authorized to delete photo data!')
+
+    def prune_tags(self, request):
+        # only allow admins to prune tags
+        if self.request.user.groups.filter(name='administrators').exists():
+            async_task(PhotoTagViewSet.prune_tags_task,
+                       records=self.queryset, user=self.request.user, hook=PhotoTagViewSet.prune_tags_task_hook)
+            return JsonResponse({'Status': f'OK'}, status=status.HTTP_202_ACCEPTED)
+        else:
+            raise serializers.ValidationError(
+                detail='You are not authorized to prune tags!')
+
+    """
+    async tasks
+    """
+    @staticmethod
+    def prune_tags_task(records: queryset, user: User = None, iptc_key: str = '') -> dict:
+        """
+        Task to remove tags which are no longer attached to any photo in PhotoData database from the Tag database
+        """
+        success = False  # flag to prompt error to be logged if no changes were successful
+        deleted_tags = set()  # set of deleted tags to be returned in response
+        # get qs of all PhotoData records
+        photo_data = PhotoData.objects.all()
+        # for each tag (record), check it's in use - if not, delete
+        try:
+            for r in PhotoTag.objects.all():
+                # get model instance to update
+                photos_with_tag = PhotoData.objects.filter(
+                    Q(tags__tag__iexact=r))
+                if not photos_with_tag:
+                    # delete tag
+                    try:
+                        PhotoTag.objects.get(id=r.id).delete()
+                        # add deleted tag to list to be returned in response
+                        deleted_tags.add(r)
+                    except Exception as e:
+                        logger.error(
+                            f'An error occurred whilst deleting the tag: {e}')
+            success = True
+        except Exception as e:
+            logger.error(f'An error occurred whilst pruning tags: {e}')
+        return {'success': True, 'data': deleted_tags} if success else {
+            'success': False, 'data': 'An error occurred during tag pruning operation - please inform an administrator!'}
+
+    """
+    async task hooks
+    """
+    @staticmethod
+    def prune_tags_task_hook(task):
+        return task.result
 
 
 class ProcessPhotos(APIView):

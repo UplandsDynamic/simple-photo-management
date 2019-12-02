@@ -13,7 +13,6 @@ set up the routers for the viewset class based views
 # router = routers.DefaultRouter()
 # router.register(r'users', views.UserViewSet)
 # router.register(r'groups', views.GroupViewSet)
-# router.register(r'stock', views.StockDataViewSet)  # define manually to allow DRF unit testing (router testing buggy)
 # router.register(r'change-password', views.PasswordUpdateViewSet)  # define manually below to allow dots in usernames
 
 """
@@ -22,6 +21,7 @@ Note: Mapping for actions (used in as_view), are:
     {
     'get': 'retrieve'  # to retrieve one object, as spec by pk passed in url param, e.g. /stock/1
     'get': 'list' # to list all objects, e.g. /stock/
+    'get': 'prune' # to run pune function (PhotoTags)
     'get': 'latest' # CUSTOM action (defined in views.StockDataViewSet.latest(), routed /api/v1/stock/latest/ (below)).
     'post': 'create'
     'put': 'update',
@@ -37,6 +37,8 @@ functional_view_urlpatterns = [
         views.PasswordUpdateViewSet.as_view(
             {'patch': 'partial_update'})),
     url(r'^v2/logout/$', views.Logout.as_view()),
+    url('^v2/tags/prune/$', views.PhotoTagViewSet.as_view(
+        {'delete': 'prune_tags'}), name='photo_tag_prune'),
     url('^v2/tags/$', views.PhotoTagViewSet.as_view(
         {'get': 'list', 'post': 'create', 'patch': 'partial_update'}), name='photo_tag'),
     url('^v2/tags/(?P<pk>\d+)/$', views.PhotoTagViewSet.as_view(

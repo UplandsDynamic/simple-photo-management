@@ -11,7 +11,8 @@ const DataTableNav = props => {
     handleGetRecords,
     handleProcessPhotos,
     handleSearch,
-    handleSearchAndReplace
+    handleSearchAndReplace,
+    handlePruneTags,
   } = props;
   const [term, setTerm] = useState(""); // initial value
   const [replaceTerm, setReplaceTerm] = useState("");
@@ -30,7 +31,7 @@ const DataTableNav = props => {
     handleProcessPhotos({ scan, retag, clean_db });
   };
 
-  const searchAndReplaceSwitch = e => {
+  const searchAndReplaceSwitch = () => {
     setSar(!sar);
     resetTerms();
   };
@@ -58,6 +59,10 @@ const DataTableNav = props => {
       replaceTerm: replaceTerm
     });
     resetTerms(); // reset both search & replace terms
+  };
+
+  const pruneTags = () => {
+    handlePruneTags();
   };
 
   const getRecords = () => {
@@ -117,7 +122,15 @@ const DataTableNav = props => {
               <FontAwesomeIcon icon={"broom"} />
             </button>
             <button
-              onClick={userIsAdmin ? () => searchAndReplaceSwitch() : null}
+              onClick={userIsAdmin ? pruneTags : null}
+              className={`btn btn-md btn-warning mr-1 ${
+                !userIsAdmin ? "disabled" : ""
+              }`}
+            >
+              <FontAwesomeIcon icon={"remove-format"} />
+            </button>
+            <button
+              onClick={userIsAdmin ? searchAndReplaceSwitch : null}
               className={`btn btn-md btn-warning mr-1 ${
                 !userIsAdmin ? "disabled" : ""
               }`}

@@ -34,7 +34,8 @@ import {
   faUndo,
   faRedo,
   faSearch,
-  faExchangeAlt
+  faExchangeAlt,
+  faRemoveFormat
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -52,7 +53,8 @@ library.add(
   faUndo,
   faRedo,
   faSearch,
-  faExchangeAlt
+  faExchangeAlt,
+  faRemoveFormat
 );
 
 axios.defaults.withCredentials = true;
@@ -78,6 +80,11 @@ class App extends React.Component {
         requestType: "get_tags",
         method: "GET",
         desc: "request to get photo tag data"
+      },
+      PRUNE_TAGS: {
+        requestType: "prune_tags",
+        method: "DELETE",
+        desc: "request to delete un-used tags"
       },
       SEARCH_AND_REPLACE: {
         requestType: "search_and_replace",
@@ -162,6 +169,7 @@ class App extends React.Component {
     this.tagSuggestionsHandler = this.tagSuggestionsHandler.bind(this);
     this.searchAndReplaceHandler = this.searchAndReplaceHandler.bind(this);
     this.reprocessRecordHandler = this.reprocessRecordHandler.bind(this);
+    this.handlePruneTags = this.handlePruneTags.bind(this);
   }
 
   componentDidMount() {
@@ -397,6 +405,35 @@ class App extends React.Component {
     }
   }
 
+  handlePruneTags({ notifyResponse = true } = {}) {
+    if (this.state.authMeta.authenticated) {
+      const apiRequest = processRequest({
+        apiMode: this.apiOptions.PRUNE_TAGS
+      });
+      if (apiRequest) {
+        apiRequest
+          .then(response => {
+            if (response) {
+              if (notifyResponse) {
+                this.setMessage({
+                  message:
+                    "Tag pruning initiated!",
+                  messageClass: "alert alert-success"
+                });
+              }
+            }
+          })
+          .catch(error => {
+            console.log(error);
+            this.setMessage({
+              message: "An API error has occurred",
+              messageClass: "alert alert-danger"
+            });
+          });
+      }
+    }
+  }
+
   handleProcessPhotos({
     record = this.state.record,
     retag = false,
@@ -510,6 +547,7 @@ class App extends React.Component {
         handleUpdate={this.handleUpdate}
         handleSearchAndReplace={this.searchAndReplaceHandler}
         reprocessRecordHandler={this.reprocessRecordHandler}
+        handlePruneTags={this.handlePruneTags}
       />
     );
   }
