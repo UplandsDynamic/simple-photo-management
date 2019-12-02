@@ -45,6 +45,12 @@ const processRequest = ({
         apiMode,
         requestMethod: method
       });
+    } else if (apiMode.requestType === "prune_tags") {
+      return _pruneTags({
+        csrfToken,
+        apiMode,
+        requestMethod: method
+      });
     } else if (apiMode.requestType === "search_and_replace") {
       return _searchAndReplace({
         csrfToken,
@@ -151,6 +157,11 @@ const _getTags = ({
     return _makeRequest({ csrfToken, requestMethod, url }); // returns a promise
   }
   return false;
+};
+
+const _pruneTags = ({ requestMethod = null, csrfToken = null } = {}) => {
+  const url = `${process.env.REACT_APP_API_DATA_ROUTE}/tags/prune/`; // prune tags URL
+  return _makeRequest({ csrfToken, requestMethod, url }); // returns a promise
 };
 
 const _searchAndReplace = ({
