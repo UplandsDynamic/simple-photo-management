@@ -30,10 +30,10 @@ import re
 import uuid
 
 """
-Note about data object (database record):
+# Note about data object (database record):
 Record referenced by URL param can be accessed in create & update methods through: self.get_object()
 
-Note about permissions:
+# Note about permissions:
 If viewset passed into class is ModelViewSet rather than a permission restricted one such as
 ReadOnlyModelViewset, then permission classes can be set within the class,
 via the 'permission_classes' class attribute.
@@ -127,7 +127,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
     permission_classes = (AccessPermissions,)
 
     """
-    Note on permissions:
+    # Note on permissions:
     Access control is dealt with in 2 places: here (views.py) and serializers.py.
 
         - views.py: basic 1st hurdle checks, performed before input validation,
@@ -139,6 +139,12 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         - serializers.py: 2nd hurdle checks - more complicated checks performed after input validation
         but before changes committed to the model. E.g. ensuring only certain user levels are able
         to update specific fields in certain ways.
+
+    # Note about mod_lock: 
+    Modifications on the PhotoData model (database) are locked within the handle_add_tags & handle_mutate_image 
+    methods. Other methods, such  as handle_remove_tags do not lock by themselves, as the query to the database is always 
+    eventually routed through handle_add_tags (e.g. when removing tags, the remaining tags are re-written, 
+    so the change happens as an overwrite - hence passing through handle_add_tags.)
     """
 
     def get_queryset(self):
@@ -195,6 +201,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         eligible_update_fields = {'tags'}
         updated_record = None
         updated_instance = dict()
+        record_id = kwargs.get('pk', None)
         try:  # first validate incoming data for fields eligible for update
             if 'tags' in eligible_update_fields:  # tags
                 try:
@@ -208,9 +215,9 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
             update_mode = request.data['update_mode']
             if update_mode == 'add_tags':
                 updated_instance = self.handle_add_tags(
-                    record_id=kwargs['pk'], tags=tags_to_update, user=request.user)
+                    record_id=record_id, tags=tags_to_update, user=request.user)
             elif update_mode == 'remove_tag':
-                updated_instance = self.handle_remove_tags(record_id=kwargs['pk'], tags=tags_to_update,
+                updated_instance = self.handle_remove_tags(record_id=record_id, tags=tags_to_update,
                                                            user=request.user)
             elif update_mode == 'rotate_image':
                 # validate rotation degree
@@ -218,7 +225,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                     request.data['update_params']['rotation_degrees'])
                 degrees = request.data['update_params']['rotation_degrees']
                 # rotate the image
-                updated_instance = self.handle_mutate_image(record_id=kwargs['pk'], user=request.user,
+                updated_instance = self.handle_mutate_image(record_id=record_id, user=request.user,
                                                             mutation={'rotation': {'degrees': degrees}})
             if updated_instance['success']:
                 new_data = updated_instance['data']
@@ -344,7 +351,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                     record.save()
                     conversion_generated = True
             else:
-                error_message = 'MUTATION FAILED: Modification locked for this image!'
+                error_message = f'MUTATION FAILED: Modification locked for record ID {record.id}'
                 logger.info(error_message)
         except PhotoData.DoesNotExist:
             error_message = 'The requested photo record does not exist in the database!'
@@ -372,9 +379,12 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         """
         # get model instance to update
         record = PhotoData.objects.get(id=record_id)
-        # set modification lock
-        record.mod_lock = True
-        record.save()
+        # check record is not locked first
+        if record.mod_lock:
+            error_message = (
+                f'Record ID {record.id} is locked! Not proceeding to remove tags!')
+            logger.warning(error_message)
+            return {'success': False, 'data': error_message}
         # create new converted images with the requested tags removed
         updated_tags = set(t.tag for t in record.tags.all()) - set(tags)
         # write new tag list to origin image
@@ -417,6 +427,12 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         """
         # get model instance to update
         record = PhotoData.objects.get(id=record_id)
+        # check record is not locked first
+        if record.mod_lock:
+            error_message = (
+                f'Record ID {record.id} is locked! Not proceeding to add tags!')
+            logger.warning(error_message)
+            return {'success': False, 'data': error_message}
         error_message = ''
         renamed_main = False
         # set modification lock
@@ -424,7 +440,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         record.save()
         # remove any empty tags
         tags = list(filter(None, tags))
-        # update the tag model with new tags, if necessary
+        # update tags
         if write_to_iptc:
             try:
                 origin_file_url = record.original_url
@@ -464,43 +480,42 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                             except Exception:
                                 logger.error(
                                     'Renaming the thumbnail file failed!', exc_info=True)
+                # write tags to db only if successfully written to image (if required)
+                try:
+                    successfully_added_tags = []
+                    for tag in tags:
+                        try:
+                            tag, tag_created = PhotoTag.objects.get_or_create(
+                                tag=tag, defaults={'owner': user})
+                            successfully_added_tags.append(tag)
+                        except Exception as e:
+                            error_message = 'An exception occurred whilst attempting to save tags to database!'
+                            logger.warning(error_message, exc_info=True)
+                    # save tags & updated image data to PhotoData model
+                    if retain_original:
+                        [record.tags.add(t) for t in successfully_added_tags]
+                    else:
+                        record.tags.set(successfully_added_tags)
+                    record.record_updated = datetime.utcnow()
+                    # update db with new processed image filenames
+                    if renamed_main:
+                        record.file_name = new_filename
+                        record.file_foramt = new_format
+                        record.processed_url = os.path.join(
+                            processed_image_path, new_filename + new_format)
+                    # release modification lock
+                    record.mod_lock = False
+                    # save the model
+                    record.save()
+                    logger.info(
+                        f'Tags successfully added: {successfully_added_tags}')
+                    return {'success': True, 'data': record}
+                except Exception as e:
+                    error_message = e
+                    logger.error(error_message)
             except Exception:
                 error_message = 'An error occurred whilst attempting to add tags'
                 logger.error(error_message, exc_info=True)
-        # write tags to db only if successfully written to image (if required)
-        try:
-            successfully_added_tags = []
-            for tag in tags:
-                try:
-                    tag, tag_created = PhotoTag.objects.get_or_create(
-                        tag=tag, defaults={'owner': user})
-                    successfully_added_tags.append(tag)
-                except Exception as e:
-                    error_message = 'An exception occurred whilst attempting to save tags to database!'
-                    logger.warning(error_message, exc_info=True)
-            # save tags & updated image data to PhotoData model
-            if retain_original:
-                [record.tags.add(t) for t in successfully_added_tags]
-            else:
-                record.tags.set(successfully_added_tags)
-            record.record_updated = datetime.utcnow()
-            # update db with new processed image filenames
-            if renamed_main:
-                record.file_name = new_filename
-                record.file_foramt = new_format
-                record.processed_url = os.path.join(
-                    processed_image_path, new_filename + new_format)
-            # release modification lock
-            record.mod_lock = False
-            # save the model
-            record.save()
-            return {'success': True, 'data': record}
-        except Exception as e:
-            error_message = e
-            logger.error(error_message)
-        # release modification lock
-        record.mod_lock = False
-        record.save()
         return {'success': False, 'data': error_message}
 
     """
@@ -514,34 +529,38 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
             try:
                 # get model instance to update
                 record = PhotoData.objects.get(id=r.id)
-                # set modification lock
-                record.mod_lock = True
-                record.save()
-                # create existing tag set
-                tag_set = set(t.tag for t in record.tags.all())
-                try:
-                    # remove tag to be replaced
-                    tag_set.remove(tag_to_replace)
-                except KeyError as e:
-                    logger.error(
-                        f'ERROR: Removal of tag `{tag_to_replace}` for record at `{r.original_url}` failed!`')
-                    logger.error(e)
-                # update tag_set with replacement tag
-                if replacement_tag.lower() != '-':
-                    tag_set.add(replacement_tag)
-                # write new tags to origin image & add returned PhotoData instance to updated_records set to return
-                result = PhotoDataViewSet.handle_add_tags(record_id=record.id, tags=list(tag_set),
-                                                          user=user, write_to_iptc=True, retain_original=False)
-                if not result['success']:
-                        # if unsuccessful attempt to change tags, exclude this record from queryset to be returned in return dict's data field
-                    records.exclude(id=r.id)
-                    logger.error(
-                        'Replacing tags failed for {r.original_url}')
+                # check record is not locked first
+                if not record.mod_lock:
+                    # create existing tag set
+                    tag_set = set(t.tag for t in record.tags.all())
+                    try:
+                        # remove tag to be replaced
+                        tag_set.remove(tag_to_replace)
+                    except KeyError as e:
+                        logger.error(
+                            f'ERROR: Removal of tag `{tag_to_replace}` for record at `{r.original_url}` failed!`')
+                        logger.error(e)
+                    # update tag_set with replacement tag
+                    if replacement_tag.lower() != '-':
+                        tag_set.add(replacement_tag)
+                    # write new tags to origin image & add returned PhotoData instance to updated_records set to return
+                    result = PhotoDataViewSet.handle_add_tags(record_id=record.id, tags=list(tag_set),
+                                                              user=user, write_to_iptc=True, retain_original=False)
+                    if not result['success']:
+                            # if unsuccessful attempt to change tags, exclude this record from queryset to be returned in return dict's data field
+                        records.exclude(id=r.id)
+                        logger.error(
+                            'Replacing tags failed for {r.original_url}')
+                    else:
+                        success = True  # set flag as true - there was at least 1 successful change
                 else:
-                    success = True  # set flag as true - there was at least 1 successful change
+                    error_message = (
+                        f'Record ID {record.id} is locked! Not proceeding to replace tags for this record!')
+                    logger.warning(error_message)
             except Exception as e:
                 logger.error(
                     f'ERROR: Tag replacement for `{tag_to_replace}` for record at `{r.original_url}` failed!`')
+            return {'success': False, 'data': error_message}
         return {'success': True, 'data': records} if success else {
             'success': False, 'data': 'No records were updated - please inform an administrator!'}
 
@@ -788,7 +807,6 @@ class ProcessPhotos(APIView):
         if origin_directories:
             url_list_generator = ProcessImages.file_url_list_generator(
                 directories=settings.SPM['ORIGIN_IMAGE_PATHS'], recursive=True)
-            # combine sets using the "|" set union operator
             origin_url_set = {f for f in url_list_generator}
         if origin_url_set:
             orphaned_no_origin_set = set(PhotoData.objects.values_list(
@@ -872,9 +890,9 @@ class ProcessPhotos(APIView):
         hand off the image processing and tagging task to django_q multiprocessing (async)
         """
         action_queries = {
-            'scan': 'Scan the origin directories for new files, create web copies & copy tags from origin to processed images.',
-            'retag': 'Retag copied (processed) image files with tags on the origin image.',
-            'clear_db': 'Remove database records relating to images that have been removed from origin directories.',
+            'scan': 'Scan the origin directories for *only new files*, create web copies & copy tags from origin to processed images.',
+            'retag': 'Retag *already copied* (processed) image files + new files, with tags from the origin images.',
+            'clean_db': 'Remove database records relating to images that have been removed from origin directories.',
             'reprocess': 'Reprocess existing record - for example, in the case processed image has been lost/corrupted for some reason'
         }
         try:
