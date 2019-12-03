@@ -658,7 +658,7 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
             for r in PhotoTag.objects.all():
                 # get model instance to update
                 photos_with_tag = PhotoData.objects.filter(
-                    Q(tags__tag__iexact=r))
+                    Q(tags__tag__iexact=r.tag))
                 if not photos_with_tag:
                     # delete tag
                     try:
