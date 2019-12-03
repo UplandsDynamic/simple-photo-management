@@ -31,7 +31,6 @@ def clean_on_update(sender, instance=None, created=False, **kwargs):
         logger.info('About to clean on update ...')
         instance.full_clean()
 
-
 class PhotoData(models.Model):
     record_created = models.DateTimeField(auto_now_add=True)
     record_updated = models.DateTimeField(auto_now=True)
@@ -41,7 +40,8 @@ class PhotoData(models.Model):
                                  validators=[custom_validators.validate_alphanumplus])
     file_format = models.CharField(max_length=100, blank=True, null=False,
                                    validators=[custom_validators.validate_alphanumplus])
-    tags = models.ManyToManyField('PhotoTag', related_name='photo_data', blank=True)
+    tags = models.ManyToManyField(
+        'PhotoTag', related_name='photo_data', blank=True)
     original_url = models.CharField(max_length=255, blank=False, null=True, unique=True,
                                     validators=[custom_validators.validate_url])
     processed_url = models.CharField(max_length=255, blank=False, null=True, unique=True,
@@ -53,13 +53,14 @@ class PhotoData(models.Model):
     mod_lock = models.BooleanField(null=False, default=False)
 
     class Meta:
-        ordering = ('id','original_url')
+        ordering = ('id', 'original_url')
         # indexes = [
         #     models.Index(fields=['file_name']),
         # ]
 
     def __str__(self):
-        return f'{self.file_name}{self.file_format}'
+        #return f'{self.file_name}{self.file_format}'
+        return str(self.id)
 
     def clean(self):
         logger.info('Running clean on model')
