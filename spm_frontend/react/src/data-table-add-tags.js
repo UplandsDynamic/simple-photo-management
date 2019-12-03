@@ -18,7 +18,7 @@ const DataTableAddTags = props => {
   const tagSuggestionBlacklist = staticTagSuggestionBlacklist.concat(existingTags);
 
   const _validateInput = value => {
-    return /^[a-zA-Z\d\-/():'? ]*$/.test(value) ? value : tags;
+    return /^[a-zA-Z\d\-/():'?| ]*$/.test(value) ? value : tags;
   };
 
   const handleChangeTags = e => {
