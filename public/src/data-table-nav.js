@@ -12,7 +12,7 @@ const DataTableNav = props => {
     handleProcessPhotos,
     handleSearch,
     handleSearchAndReplace,
-    handlePruneTags,
+    handlePruneTags
   } = props;
   const [term, setTerm] = useState(""); // initial value
   const [replaceTerm, setReplaceTerm] = useState("");
@@ -165,8 +165,10 @@ const DataTableNav = props => {
                     }`}
                   >
                     <FontAwesomeIcon icon={"exchange-alt"} className={"mr-2"} />
-                    {term && replaceTerm
+                    {term && replaceTerm && replaceTerm !== "-"
                       ? `Replace all "${term}" tags with "${replaceTerm}" ?`
+                      : term && replaceTerm && replaceTerm == "-"
+                      ? `Remove "${term}" from all records?`
                       : ""}
                   </button>
                 ) : (
