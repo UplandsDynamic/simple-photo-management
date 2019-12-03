@@ -525,6 +525,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 except KeyError as e:
                     logger.error(
                         f'ERROR: Removal of tag `{tag_to_replace}` for record at `{r.original_url}` failed!`')
+                    logger.error(e)
                 # update tag_set with replacement tag
                 if replacement_tag.lower() != '-':
                     tag_set.add(replacement_tag)

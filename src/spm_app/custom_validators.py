@@ -12,14 +12,14 @@ logger = logging.getLogger('django')
 def validate_alphanumplus(value):
     if not re.match(r'^[A-Za-z0-9_.\- ]*$', value):
         raise ValidationError(
-            _(f'{value} contains invalid characters!')
+            _(f'{value} contains invalid alphanumeric characters!')
         )
 
 
 def validate_tag_list(value: list):
     if isinstance(value, list):
         for v in value:
-            if not re.match(r'^[A-Za-z0-9\-():\'\?\ ]*$', v):
+            if not re.match(r'^[A-Za-z0-9\-\(\):\'\?\|\ ]*$', v):
                 logger.warning(f'RAISING VALIDATION ERROR FOR: {v}')
                 raise ValidationError(
                     _(f'{value} contains invalid characters: !')
@@ -58,7 +58,7 @@ def validate_url(value):
 
 
 def validate_search(value):
-    if not re.match(r'^[A-Za-z0-9_.:+\/\-\;\?\'\"\| ]*$', value):
+    if not re.match(r'^[A-Za-z0-9_.:+\/\-\;\?\'\"\|\(\) ]*$', value):
         raise ValidationError(
             _(f'{value} contains invalid characters!')
         )
