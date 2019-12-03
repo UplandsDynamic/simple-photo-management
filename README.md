@@ -142,6 +142,7 @@ To use the Docker images orchestrated with docker-compose:
   - To search for images that contain a combination of multiple tags, separate search words or phrases with either a space, or a forward slash `/`.
 - Clicking the button with the `tag` icon re-scans all images in photo_directory, adds any newly discovered images and recopies all IPTC keyword tags to the database. To simply add new images without re-copying the tags, use the `+` button instead.
 - Clicking the button with the `broom` icon cleans the database of references to any processed images that no longer exist in the `media` directories or the origin image `photo_directory`.
+- Clicking the button with the `slashed 'T'` icon removes all tags from the database which are not currently attached to any image (tag pruning). Note, this *does not* remove tags from an image, but simply cleans database records of unused tags.
 - Clicking the button with the `swap` icon (left & right arrows) switches to `search & replace` mode, which allows replacement of an IPTC tag in all images with another:
   -Simply enter the term to search for in the upper `Search` field, the replacement tag in the `Replace` field, then click on the red button to `search & replace`.
 - Add new tags to an image in one of two ways. These actions both write the new tag(s) to the metadata of the **ORIGINAL IMAGE** and to the database.:
@@ -164,7 +165,8 @@ The above guide is not definitive and is intended for users who know their way a
 - Enhancement of `clean` to facilitate deletion of processed image files & thumbnails (rather just database entries) when origin image no longer exists
 - Tag suggestions based on facial recognition
 - Expose switching between `light` and `dark` modes on the UI rather than requiring setting of environment variable
-- Remove tags from the used-tag list if no longer used for any images
+- ~~Remove tags from the used-tag list if no longer used for any images~~ [Complete]
+- Add ability to delete tags after search (currently limited to replace with an alternative tag)
 
 ## Support
 
