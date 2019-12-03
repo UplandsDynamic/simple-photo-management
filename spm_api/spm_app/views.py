@@ -526,7 +526,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                     logger.error(
                         f'ERROR: Removal of tag `{tag_to_replace}` for record at `{r.original_url}` failed!`')
                 # update tag_set with replacement tag
-                tag_set.add(replacement_tag)
+                if replacement_tag.lower() != '-':
+                    tag_set.add(replacement_tag)
                 # write new tags to origin image & add returned PhotoData instance to updated_records set to return
                 result = PhotoDataViewSet.handle_add_tags(record_id=record.id, tags=list(tag_set),
                                                           user=user, write_to_iptc=True, retain_original=False)
@@ -652,19 +653,20 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
         success = False  # flag to prompt error to be logged if no changes were successful
         deleted_tags = set()  # set of deleted tags to be returned in response
         # get qs of all PhotoData records
-        photo_data = PhotoData.objects.all()
+        photo_data = PhotoData.objects.all().only('tags')
         # for each tag (record), check it's in use - if not, delete
         try:
-            for r in PhotoTag.objects.all():
+            for r in PhotoTag.objects.all().only('tag'):
                 # get model instance to update
-                photos_with_tag = PhotoData.objects.filter(
+                photos_with_tag = photo_data.filter(
                     Q(tags__tag__iexact=r.tag))
                 if not photos_with_tag:
                     # delete tag
                     try:
                         PhotoTag.objects.get(id=r.id).delete()
                         # add deleted tag to list to be returned in response
-                        deleted_tags.add(r)
+                        deleted_tags.add(r.tag)
+                        logger.info(f'Deleted tag: {r.tag}')
                     except Exception as e:
                         logger.error(
                             f'An error occurred whilst deleting the tag: {e}')
