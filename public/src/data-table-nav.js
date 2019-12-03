@@ -20,7 +20,7 @@ const DataTableNav = props => {
   const userIsAdmin = authMeta.userIsAdmin;
 
   const validateTerm = value => {
-    return /^[a-zA-Z\d./+\-'?:"| ]*$/.test(value) ? value : term;
+    return /^[a-zA-Z\d./+\-'?:"|() ]*$/.test(value) ? value : term;
   };
 
   const handleProcessClick = ({
@@ -167,7 +167,7 @@ const DataTableNav = props => {
                     <FontAwesomeIcon icon={"exchange-alt"} className={"mr-2"} />
                     {term && replaceTerm && replaceTerm !== "-"
                       ? `Replace all "${term}" tags with "${replaceTerm}" ?`
-                      : term && replaceTerm && replaceTerm == "-"
+                      : term && replaceTerm && replaceTerm === "-"
                       ? `Remove "${term}" from all records?`
                       : ""}
                   </button>
