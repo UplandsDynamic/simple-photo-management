@@ -174,18 +174,17 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
             records = all_records.filter(tags=None)
         return records.distinct()  # return records
 
-    def list(self, request, *args, **kwargs):
+    def dispatch(self, request, *args, **kwargs):
         """
-        override list (default GET request) in order to
-        return custom JSON response containing the userIsAdmin
-        status in the event there is not a record queryset to return
-        as a list from get_queryset.
+        override dispatch in order to return custom JSON response containing the userIsAdmin
+        status in the event there is not a record queryset to return.
         """
+        response = super().dispatch(request, *args, **kwargs)
         userIsAdmin = self.request.user.groups.filter(
             name='administrators').exists()
-        if not self.queryset:
+        if self.request.method == 'GET' and not response.data['results']:
             return JsonResponse({"user_is_admin": userIsAdmin}, status=status.HTTP_200_OK)
-        return super().list(request, *args, **kwargs)
+        return response
 
     def perform_create(self, serializer_class):
         """
@@ -268,7 +267,6 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         :param replacement_term: term to replace with, if `search & replace`
         :return: queryset of filtered results
         """
-        logger.info('HERHERHERHERHERHERHERHERHERHERHERHERHE')
         if replacement_term:
             # validate query strings
             replacement_tag: str = validate_search(replacement_term)
