@@ -149,6 +149,7 @@ Q_CLUSTER = {
     'bulk': 1,
     'orm': 'default',
     'sync': RUN_TYPE == RUN_TYPE_OPTIONS[0],  # Set True to debug in sync mode.
+    #'sync': False,
     'guard_cycle': 5,
     'cpu_affinity': 1,
     'catch_up': True

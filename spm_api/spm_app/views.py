@@ -183,7 +183,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         """
         userIsAdmin = self.request.user.groups.filter(
             name='administrators').exists()
-        if not self.get_queryset():
+        if not self.queryset:
             return JsonResponse({"user_is_admin": userIsAdmin}, status=status.HTTP_200_OK)
         return super().list(request, *args, **kwargs)
 
@@ -268,6 +268,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         :param replacement_term: term to replace with, if `search & replace`
         :return: queryset of filtered results
         """
+        logger.info('HERHERHERHERHERHERHERHERHERHERHERHERHE')
         if replacement_term:
             # validate query strings
             replacement_tag: str = validate_search(replacement_term)
@@ -449,17 +450,18 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 conversion_format = settings.SPM['CONVERSION_FORMAT']
                 tags_to_add = {'iptc_key': iptc_key, 'tags': tags}
                 logger.info(f'TAGS TO REPLACE WITH: {tags}')
-                # write tags to the origin image
-                if not processed_only:
-                    ProcessImages.add_tags(target_file_url=origin_file_url, tags=tags_to_add,
-                                           retain_original=retain_original)
-                # write to processed image
-                ProcessImages.add_tags(target_file_url=record.processed_url, tags=tags_to_add,
-                                       retain_original=retain_original)
-                # rename processed file so name matches new hash of origin image
                 try:
-                    renamed_main = ProcessImages.rename_image(url_file_to_hash=origin_file_url,
-                                                              url_file_to_rename=record.processed_url, with_hash=True)
+                    # write to processed image
+                    tags_were_written = ProcessImages.add_tags(target_file_url=record.processed_url, tags=tags_to_add,
+                                                               retain_original=retain_original)
+                    # write tags to the origin image if not processed_only
+                    if not processed_only and tags_were_written:
+                        ProcessImages.add_tags(target_file_url=origin_file_url, tags=tags_to_add,
+                                               retain_original=retain_original)
+                    # rename processed file so name matches new hash of origin image
+                    if tags_were_written:
+                        renamed_main = ProcessImages.rename_image(url_file_to_hash=origin_file_url,
+                                                                  url_file_to_rename=record.processed_url, with_hash=True)
                 except Exception:
                     logger.error(
                         'Renaming the processed file failed!', exc_info=True)
@@ -531,6 +533,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 record = PhotoData.objects.get(id=r.id)
                 # check record is not locked first
                 if not record.mod_lock:
+                    logger.info(f'Initiating tag replacement task ...')
                     # create existing tag set
                     tag_set = set(t.tag for t in record.tags.all())
                     try:
@@ -550,7 +553,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                             # if unsuccessful attempt to change tags, exclude this record from queryset to be returned in return dict's data field
                         records.exclude(id=r.id)
                         logger.error(
-                            'Replacing tags failed for {r.original_url}')
+                            f'Replacing tags failed for {r.original_url}')
                     else:
                         success = True  # set flag as true - there was at least 1 successful change
                 else:
@@ -558,9 +561,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                         f'Record ID {record.id} is locked! Not proceeding to replace tags for this record!')
                     logger.warning(error_message)
             except Exception as e:
-                logger.error(
-                    f'ERROR: Tag replacement for `{tag_to_replace}` for record at `{r.original_url}` failed!`')
-            return {'success': False, 'data': error_message}
+                error_message = f'ERROR: Tag replacement for `{tag_to_replace}` for record at `{r.original_url}` failed!`'
+                logger.error(error_message)
         return {'success': True, 'data': records} if success else {
             'success': False, 'data': 'No records were updated - please inform an administrator!'}
 
