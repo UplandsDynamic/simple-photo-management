@@ -144,7 +144,8 @@ To use the Docker images orchestrated with docker-compose:
 - Clicking the button with the `broom` icon cleans the database of references to any processed images that no longer exist in the `media` directories or the origin image `photo_directory`.
 - Clicking the button with the `slashed 'T'` icon removes all tags from the database which are not currently attached to any image (tag pruning). Note, this *does not* remove tags from an image, but simply cleans database records of unused tags.
 - Clicking the button with the `swap` icon (left & right arrows) switches to `search & replace` mode, which allows replacement of an IPTC tag in all images with another:
-  -Simply enter the term to search for in the upper `Search` field, the replacement tag in the `Replace` field, then click on the red button to `search & replace`.
+  - Simply enter the term to search for in the upper `Search` field, the replacement tag in the `Replace` field, then click on the red button to `search & replace`.
+  - To remove a tag from all images *without replacing it with an alternative*, type a dash character (also known as minus or tack) "`-`" into the `Replace` field. Then click on the red button to delete that tag from every image in the database.
 - Add new tags to an image in one of two ways. These actions both write the new tag(s) to the metadata of the **ORIGINAL IMAGE** and to the database.:
   - By entering them in the input field, in the `Action` column. Separate multiple tags with a `/`.
   - By selecting from the list of previously used tags, that appears below the input field after you've begun to enter your tag. As you continue to type, this list resolves to display tags containing a sequence of characters that match your input.
