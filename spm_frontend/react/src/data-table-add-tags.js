@@ -15,7 +15,9 @@ const DataTableAddTags = props => {
   const [tags, setTags] = useState(""); // initial value
 
   const staticTagSuggestionBlacklist = ["SPM: TAGS COPIED FROM ORIGINAL"];
-  const tagSuggestionBlacklist = staticTagSuggestionBlacklist.concat(existingTags);
+  const tagSuggestionBlacklist = staticTagSuggestionBlacklist.concat(
+    existingTags
+  );
 
   const _validateInput = value => {
     return /^[a-zA-Z\d\-/():'?| ]*$/.test(value) ? value : tags;
@@ -53,7 +55,7 @@ const DataTableAddTags = props => {
     let currentTags = tags.split("/");
     currentTags.pop();
     currentTags.length ? setTags(`${currentTags.join("/")}/`) : setTags("");
-    handleGetTagSuggestions({ term: '', itemID: recordItem.id }); // reset suggestions
+    handleGetTagSuggestions({ term: "", itemID: recordItem.id }); // reset suggestions
   };
 
   return (
@@ -65,6 +67,7 @@ const DataTableAddTags = props => {
             value={tags}
             onChange={handleChangeTags}
             className={"form-control"}
+            disabled={!recordItem.user_is_admin}
             placeholder={"new tag 1/new tag 2"}
           />
           <div className={"searchSuggestions"}>

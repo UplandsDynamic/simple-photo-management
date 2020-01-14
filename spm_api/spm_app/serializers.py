@@ -85,7 +85,7 @@ class ChangePasswordSerializer(serializers.HyperlinkedModelSerializer):
 
             custom_validators.validate_password_correct(user=instance,  # check old is valid
                                                         value=validated_data['old_password'])
-        except ValidationError as e:
+        except (ValidationError, KeyError) as e:
             raise serializers.ValidationError(f'Error: {e}')
 
         instance.set_password(validated_data['new_password'])

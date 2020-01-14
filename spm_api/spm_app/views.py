@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 import os
 from .custom_validators import (RequestQueryValidator, validate_search, validate_tag_list,
                                 validate_update_mode, validate_rotation_degrees)
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from rest_framework import (viewsets, permissions, serializers, status)
 from .serializers import (
     UserSerializer,
@@ -15,7 +15,7 @@ from .serializers import (
     PhotoDataSerializer,
     PhotoTagSerializer
 )
-from .custom_permissions import AccessPermissions
+from .custom_permissions import AccessPermissions, AdminGroupOnlyPermissions, CustomPermissionsCheck
 from .models import PhotoData, PhotoTag
 from django.db.models import Q
 from rest_framework.decorators import action
@@ -118,14 +118,13 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
     API endpoints for PhotoData
     """
 
-    """f
+    """
     Includes by default the ListCreateAPIView & RetrieveUpdateDestroyAPIView
     i.e. provides photodata-list and photodata-detail views, accessed by path, & path/<id>)
     """
     queryset = PhotoData.objects.all()
     serializer_class = PhotoDataSerializer
     permission_classes = (AccessPermissions,)
-
     """
     # Note on permissions:
     Access control is dealt with in 2 places: here (views.py) and serializers.py.
@@ -149,11 +148,22 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         records = []
+        user = self.request.user
+        groups = user.groups.all()
+        staff_or_administrator = user.is_staff or CustomPermissionsCheck.is_administrator(
+            user=user)
         # order queryset using request query (or 'id' by default if no order_by query)
         all_records = self.queryset.order_by(RequestQueryValidator.validate(
             RequestQueryValidator.order_by, self.request.query_params.get(
                 'order_by', None)
         ))
+        """
+        Extra permissions on objects: if not staff or not in administrators group, only 
+        return records that have a tag which includes the user in its 'user_access' field.
+        """
+        if not staff_or_administrator:
+            all_records = all_records.filter(
+                Q(tags__user_access__username__icontains=user.username))
         # set username of requester to user attr of serializer to allow return admin status in response
         self.serializer_class.user = self.request.user
         # handle search queries, if any
@@ -167,22 +177,22 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 records = self.handle_search(user=self.request.user, records=all_records, search_term=search_query,
                                              term_to_replace=term_to_replace, replacement_term=replacement_term)
             except ValidationError as e:
-                # if invalid search char, don't return error response, just return empty
-                raise serializers.ValidationError(
-                    detail=f'Validation error: {e}')
+                logger.warning(f'Validation error: {e}')
         else:
-            records = all_records.filter(tags=None)
-        return records.distinct()  # return records
+            records = all_records.filter(
+                tags=None) if staff_or_administrator else all_records
+        return records.distinct() if records else []  # return records
 
     def dispatch(self, request, *args, **kwargs):
         """
-        override dispatch in order to return custom JSON response containing the userIsAdmin
-        status in the event there is not a record queryset to return.
+        override dispatch in order to:
+            - return custom JSON response containing the userIsAdmin
+            status in the event there is not a record queryset to return.
         """
         response = super().dispatch(request, *args, **kwargs)
-        userIsAdmin = self.request.user.groups.filter(
-            name='administrators').exists()
-        if self.request.method == 'GET' and not response.data['results']:
+        userIsAdmin = CustomPermissionsCheck.is_administrator(
+            user=request.user)
+        if self.request.method == 'GET' and ('results' not in response.data or not response.data['results']):
             return JsonResponse({"user_is_admin": userIsAdmin}, status=status.HTTP_200_OK)
         return response
 
@@ -190,68 +200,76 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         """
         override perform_create to save the user as the owner of the record
         """
-        serializer_class.save(owner=self.request.user)
+        if CustomPermissionsCheck.is_administrator(user=request.user):
+            serializer_class.save(owner=self.request.user)
+        else:
+            raise serializers.ValidationError(
+                detail='You are not authorized to add photo data!')
 
     def perform_update(self, request, *args, **kwargs):
         """
         override perform_update to perform any additional filtering, modification, etc
         """
-        # define eligible update fields (useful to quickly disable updating of fields if required)
-        eligible_update_fields = {'tags'}
-        updated_record = None
-        updated_instance = dict()
-        record_id = kwargs.get('pk', None)
-        try:  # first validate incoming data for fields eligible for update
-            if 'tags' in eligible_update_fields:  # tags
-                try:
-                    validate_tag_list(request.data['tags'])
-                    tags_to_update = request.data['tags']
-                except ValidationError as e:
-                    raise serializers.ValidationError(
-                        detail=f'Validation error: {e.message}')
-            # validate update mode param
-            validate_update_mode(request.data.get('update_mode', None))
-            update_mode = request.data['update_mode']
-            if update_mode == 'add_tags':
-                updated_instance = self.handle_add_tags(
-                    record_id=record_id, tags=tags_to_update, user=request.user)
-            elif update_mode == 'remove_tag':
-                updated_instance = self.handle_remove_tags(record_id=record_id, tags=tags_to_update,
-                                                           user=request.user)
-            elif update_mode == 'rotate_image':
-                # validate rotation degree
-                validate_rotation_degrees(
-                    request.data['update_params']['rotation_degrees'])
-                degrees = request.data['update_params']['rotation_degrees']
-                # rotate the image
-                updated_instance = self.handle_mutate_image(record_id=record_id, user=request.user,
-                                                            mutation={'rotation': {'degrees': degrees}})
-            if updated_instance['success']:
-                new_data = updated_instance['data']
-                updated_record = {
-                    'id': new_data.id,
-                    'owner': request.user.username,
-                    'file_name': new_data.file_name,
-                    'file_format': new_data.file_format,
-                    'processed_url': new_data.processed_url,
-                    'original_url': new_data.original_url,
-                    'public_img_url': new_data.public_img_url,
-                    'public_img_tn_url': new_data.public_img_tn_url,
-                    'tags': [t for t in new_data.tags.all().values_list('tag', flat=True)],
-                    'record_updated': new_data.record_updated,
-                    'user_is_admin': request.user.groups.filter(name='administrators').exists(),
-                    'uuid': uuid.uuid4().hex  # add UUID to ensure caches can be cleared for new img
-                }
-            return JsonResponse(data=updated_record, status=status.HTTP_202_ACCEPTED) if updated_instance['success'] else JsonResponse(
-                {"status": f"Nothing was updated: {updated_instance['data']}"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
-        except Exception as e:
-            return JsonResponse({"status": f"Error: {e}"}, status=422)
+        if CustomPermissionsCheck.is_administrator(user=request.user):
+            # define eligible update fields (useful to quickly disable updating of fields if required)
+            eligible_update_fields = {'tags'}
+            updated_record = None
+            updated_instance = dict()
+            record_id = kwargs.get('pk', None)
+            try:  # first validate incoming data for fields eligible for update
+                if 'tags' in eligible_update_fields:  # tags
+                    try:
+                        validate_tag_list(request.data['tags'])
+                        tags_to_update = request.data['tags']
+                    except ValidationError as e:
+                        raise serializers.ValidationError(
+                            detail=f'Validation error: {e.message}')
+                # validate update mode param
+                validate_update_mode(request.data.get('update_mode', None))
+                update_mode = request.data['update_mode']
+                if update_mode == 'add_tags':
+                    updated_instance = self.handle_add_tags(
+                        record_id=record_id, tags=tags_to_update, user=request.user)
+                elif update_mode == 'remove_tag':
+                    updated_instance = self.handle_remove_tags(record_id=record_id, tags=tags_to_update,
+                                                               user=request.user)
+                elif update_mode == 'rotate_image':
+                    # validate rotation degree
+                    validate_rotation_degrees(
+                        request.data['update_params']['rotation_degrees'])
+                    degrees = request.data['update_params']['rotation_degrees']
+                    # rotate the image
+                    updated_instance = self.handle_mutate_image(record_id=record_id, user=request.user,
+                                                                mutation={'rotation': {'degrees': degrees}})
+                if updated_instance['success']:
+                    new_data = updated_instance['data']
+                    updated_record = {
+                        'id': new_data.id,
+                        'owner': request.user.username,
+                        'file_name': new_data.file_name,
+                        'file_format': new_data.file_format,
+                        'processed_url': new_data.processed_url,
+                        'original_url': new_data.original_url,
+                        'public_img_url': new_data.public_img_url,
+                        'public_img_tn_url': new_data.public_img_tn_url,
+                        'tags': [t for t in new_data.tags.all().values_list('tag', flat=True)],
+                        'record_updated': new_data.record_updated,
+                        'user_is_admin': request.user.groups.filter(name='administrators').exists(),
+                        'uuid': uuid.uuid4().hex  # add UUID to ensure caches can be cleared for new img
+                    }
+                return JsonResponse(data=updated_record, status=status.HTTP_202_ACCEPTED) if updated_instance['success'] else JsonResponse(
+                    {"status": f"Nothing was updated: {updated_instance['data']}"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            except Exception as e:
+                return JsonResponse({"status": f"Error: {e}"}, status=422)
+        else:
+            raise serializers.ValidationError(
+                detail='You are not authorized to modify photo data!')
         # return JsonResponse(JSONRenderer().render(serializer.data), status=202) if added else JsonResponse(
         #     {'Status': 'Error whilst adding tags!'}, status=500)
 
     def perform_destroy(self, instance):
-        # only allow admins to delete objects
-        if self.request.user.groups.filter(name='administrators').exists():
+        if CustomPermissionsCheck.is_administrator(user=self.request.user):
+            serializer_class.save(owner=self.request.user)
             super().perform_destroy(instance)
         else:
             raise serializers.ValidationError(
@@ -268,6 +286,10 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         :return: queryset of filtered results
         """
         if replacement_term:
+            # only allow administrators to replace or delete tags
+            if not CustomPermissionsCheck.is_administrator(user=user):
+                raise serializers.ValidationError(
+                    detail='You are not authorized to modify photo data!')
             # validate query strings
             replacement_tag: str = validate_search(replacement_term)
             tag_to_replace: str = validate_search(term_to_replace)
@@ -582,7 +604,7 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
     """
     queryset = PhotoTag.objects.all()
     serializer_class = PhotoTagSerializer
-    permission_classes = (AccessPermissions,)
+    permission_classes = (AdminGroupOnlyPermissions,)
     http_method_names = ['get', 'post', 'delete', 'patch']
 
     """
@@ -710,7 +732,7 @@ class ProcessPhotos(APIView):
     and added to the database
      """
 
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (AdminGroupOnlyPermissions,)
 
     def __init__(self):
         super().__init__()

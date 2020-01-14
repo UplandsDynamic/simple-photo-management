@@ -85,7 +85,7 @@ const DataTableNav = props => {
         </div>
       </div>
       <div className={"row nav-row"}>
-        <div className={`${userIsAdmin ? "col-4" : "col-2"}`}>
+        <div className={`col-4`}>
           <div className={"btn-group"}>
             <button
               onClick={getRecords}
@@ -94,8 +94,11 @@ const DataTableNav = props => {
               <FontAwesomeIcon icon={"sync-alt"} />
             </button>
             <button
-              onClick={() => handleProcessClick({ scan: true })}
+              onClick={
+                userIsAdmin ? () => handleProcessClick({ scan: true }) : null
+              }
               className={`btn btn-md btn-warning mr-1`}
+              disabled={!userIsAdmin}
             >
               <FontAwesomeIcon icon={"plus"} />
             </button>
@@ -103,9 +106,8 @@ const DataTableNav = props => {
               onClick={
                 userIsAdmin ? () => handleProcessClick({ retag: true }) : null
               }
-              className={`btn btn-md btn-warning mr-1 ${
-                !userIsAdmin ? "disabled" : ""
-              }`}
+              disabled={!userIsAdmin}
+              className={"btn btn-md btn-warning mr-1"}
             >
               <FontAwesomeIcon icon={"tags"} />
             </button>
@@ -115,25 +117,22 @@ const DataTableNav = props => {
                   ? () => handleProcessClick({ clean_db: true })
                   : null
               }
-              className={`btn btn-md btn-warning mr-1 ${
-                !userIsAdmin ? "disabled" : ""
-              }`}
+              disabled={!userIsAdmin}
+              className={"btn btn-md btn-warning mr-1"}
             >
               <FontAwesomeIcon icon={"broom"} />
             </button>
             <button
               onClick={userIsAdmin ? pruneTags : null}
-              className={`btn btn-md btn-warning mr-1 ${
-                !userIsAdmin ? "disabled" : ""
-              }`}
+              disabled={!userIsAdmin}
+              className={"btn btn-md btn-warning mr-1"}
             >
               <FontAwesomeIcon icon={"remove-format"} />
             </button>
             <button
               onClick={userIsAdmin ? searchAndReplaceSwitch : null}
-              className={`btn btn-md btn-warning mr-1 ${
-                !userIsAdmin ? "disabled" : ""
-              }`}
+              disabled={!userIsAdmin}
+              className={"btn btn-md btn-warning mr-1"}
             >
               <FontAwesomeIcon icon={"exchange-alt"} />
             </button>
@@ -160,9 +159,8 @@ const DataTableNav = props => {
                 {term && replaceTerm ? (
                   <button
                     onClick={userIsAdmin ? handleReplace : null}
-                    className={`btn btn-lg btn-danger float-right ${
-                      !userIsAdmin ? "disabled" : ""
-                    }`}
+                    disabled={!userIsAdmin}
+                    className={"btn btn-lg btn-danger float-right"}
                   >
                     <FontAwesomeIcon icon={"exchange-alt"} className={"mr-2"} />
                     {term && replaceTerm && replaceTerm !== "-"
