@@ -84,6 +84,7 @@ class PhotoTag(models.Model):
                            validators=[custom_validators.validate_alphanumplus])
     owner = models.ForeignKey(
         'auth.User', related_name='photo_tag', on_delete=models.SET_NULL, null=True)
+    user_access = models.ManyToManyField('auth.User', related_name='user_access', blank=True)
     record_created = models.DateTimeField(auto_now_add=True)
     record_updated = models.DateTimeField(auto_now=True)
 

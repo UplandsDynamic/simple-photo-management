@@ -167,7 +167,7 @@ The above guide is not definitive and is intended for users who know their way a
 - Tag suggestions based on facial recognition
 - Expose switching between `light` and `dark` modes on the UI rather than requiring setting of environment variable
 - ~~Remove tags from the used-tag list if no longer used for any images~~ [Complete]
-- Add ability to delete tags after search (currently limited to replace with an alternative tag)
+- ~~Add ability to delete tags after search (currently limited to replace with an alternative tag)~~ [Complete]
 
 ## Support
 
