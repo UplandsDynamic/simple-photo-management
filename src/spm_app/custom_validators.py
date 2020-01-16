@@ -10,7 +10,7 @@ logger = logging.getLogger('django')
 
 
 def validate_alphanumplus(value):
-    if not re.match(r'^[A-Za-z0-9_.\- ]*$', value):
+    if not re.match(r'^[A-Za-z0-9_.\-\(\): ]*$', value):
         raise ValidationError(
             _(f'{value} contains invalid alphanumeric characters!')
         )
