@@ -474,10 +474,25 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                     # write to processed image
                     tags_were_written = ProcessImages.add_tags(target_file_url=record.processed_url, tags=tags_to_add,
                                                                retain_original=retain_original)
+                    logger.info(f'TAGS WRITTEN: {tags_were_written}')
                     # write tags to the origin image if not processed_only
                     if not processed_only and tags_were_written:
-                        ProcessImages.add_tags(target_file_url=origin_file_url, tags=tags_to_add,
-                                               retain_original=retain_original)
+                        tags_were_written_to_origin = ProcessImages.add_tags(target_file_url=origin_file_url, tags=tags_to_add,
+                                                                             retain_original=retain_original)
+                        if not tags_were_written_to_origin:
+                            """
+                            If write to origin image unsuccessful, exit (record will now remain 
+                            mod locked to prevent further carnage!)
+                            Note: the *processed* image will still contain the newly added tag that was 
+                            not applied to the origin - however this does not matter, as it will not 
+                            have been added to the database for reflection in the UI. Being that *at present* tags on 
+                            the processed images are never *read back* for any purpose, this is not an issue. The 
+                            processed images are 'disposable' and may be re-created at any time.
+                            If this becomes an issue in future due to feature enhancements, the tags that failed to be 
+                            added to the origin image will also need to be removed from the processed image here, before 
+                            returning this method.
+                            """
+                            return {'success': False, 'data': error_message}
                     # rename processed file so name matches new hash of origin image
                     if tags_were_written:
                         renamed_main = ProcessImages.rename_image(url_file_to_hash=origin_file_url,
@@ -582,7 +597,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                     logger.warning(error_message)
             except Exception as e:
                 error_message = f'ERROR: Tag replacement for `{tag_to_replace}` for record at `{r.original_url}` failed!`'
-                logger.error(error_message)
+                logger.error(f'{error_message}. Further details: {e}')
         return {'success': True, 'data': records} if success else {
             'success': False, 'data': 'No records were updated - please inform an administrator!'}
 

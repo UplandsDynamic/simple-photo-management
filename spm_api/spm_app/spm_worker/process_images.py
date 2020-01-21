@@ -127,7 +127,7 @@ class ProcessImages:
             # else:
             #     image_data.append({'iptc_key': '', 'tags': []})
             return image_data
-        except (IOError, Exception) as e:
+        except (IOError, KeyError, Exception) as e:
             print(f'An error occurred in read_iptc_tags: {e}')
             return False
 
@@ -143,12 +143,11 @@ class ProcessImages:
             iptc_key = tag_data['iptc_key']
             if iptc_key:
                 tags = tag_data['tags']
+                print(f'Tags to write: {tags}')
                 meta = pyexiv2.ImageMetadata(new_file_url)
                 meta.read()
                 meta[iptc_key] = pyexiv2.IptcTag(iptc_key, tags)
                 meta.write()
-                print('Tags successfully written!')
-                return True
             print('No tag to write!')
         except (TypeError, Exception) as e:
             print(f'An error occurred in write_iptc_tags: {e}')
@@ -273,10 +272,13 @@ class ProcessImages:
         method that adds IPTC tags to a target file, retaining existing tags
         :param target_file_url: url of the file to which to add tags
         :param tags: tags to add to the file, in form e.g.:
-            {'iptc_key': 'Iptc.Application2.Keywords', 'tags': ['new tag 1', 'new tag 2']}
+            {'iptc_key': 'Iptc.Application2.Keywords',
+                'tags': ['new tag 1', 'new tag 2']}
         :param retain_original: bool: whether to retain original tags or simply replace with new
         :return: True (if Excpetion not raised)
         """
+        print(
+            f'ADDING TAGS: [target: {target_file_url}, tags: {tags}, retain_original: {retain_original}]')
         try:
             # get existing tags, if any, Expects: [{'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']}] | False
             path, target_filename = os.path.split(target_file_url)
@@ -287,7 +289,7 @@ class ProcessImages:
                     filename=target_filename, path=path)
                 print(f'ORIGINAL TAGS TO COPY: {tags_to_write}')
                 print(f'COPIED FROM FILENAME: {target_filename}')
-                print(f'COPED FROM PATH: {path}')
+                print(f'COPIED FROM PATH: {path}')
                 if tags_to_write:
                     for existing_tag in tags_to_write:
                         if existing_tag['iptc_key'] == tags['iptc_key']:
@@ -299,10 +301,31 @@ class ProcessImages:
             for tag in tags_to_write:
                 ProcessImages._write_iptc_tags(
                     new_file_url=target_file_url, tag_data=tag)
-            return True
+            # check successful write
+            if not ProcessImages.tag_write_error_check(intended_tags=tags, origin_image_path=path, origin_image_filename=target_filename):
+                return False
         except Exception as e:
             print(f'An exception occurred whilst attempting to add tags : {e}')
             raise
+        return True
+
+    @staticmethod
+    def tag_write_error_check(intended_tags: dict = {}, origin_image_path: str = '', origin_image_filename: str = '') -> bool:
+        image_data = ProcessImages._read_iptc_tags(
+            origin_image_filename, origin_image_path)
+        key_found = False
+        for t in intended_tags['tags']:
+            for d in image_data:
+                if d['iptc_key'] == intended_tags['iptc_key']:
+                    key_found = True
+                    if t not in d['tags']:
+                        print(
+                            'Error: The key WAS found - but the tag was NOT written!')
+                        return False
+        if intended_tags['tags'] and not key_found:
+            print('Error: The key was NOT found and the tag was NOT written!')
+            return False
+        return True
 
     @staticmethod
     def rename_image(url_file_to_hash: str = '', url_file_to_rename: str = '', with_hash: bool = False,
