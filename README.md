@@ -34,6 +34,7 @@ Login credentials are:
 - Database IPTC tags associated with each image
 - Search for & display digital images containing single IPTC tags or a combination of multiple tags
 - Search and replace IPTC tags over all scanned image directories
+- Restrict access to specific tags for specific usernames
 - Switch between `light` and `dark` modes (by setting an environment variable)
 
 ## Key technologies
@@ -129,7 +130,7 @@ To use the Docker images orchestrated with docker-compose:
 
 ## Usage Instructions
 
-- Navigate to the web client url - e.g. http://your_domain.tld **Note: When starting a newly built or pulled container for the first time, the web client may take several minutes (depending on your server's resources) to create a fresh build. You will get a `502 Bad Gateway` error whilst the NPM build is occurring. Please be patient and try refreshing the page in a few moments.**
+- Navigate to the web client url - e.g. `http://your_domain.tld` **Note: When starting a newly built or pulled container for the first time, the web client may take several minutes (depending on your server's resources) to create a fresh build. You will get a `502 Bad Gateway` error whilst the NPM build is occurring. Please be patient and try refreshing the page in a few moments.**
 
 - Login to the web client using the superuser credentials you'd previously supplied.
 - Click on the `+` button to scan the photo_directory for new original photos. By default, this action:
@@ -155,6 +156,8 @@ To use the Docker images orchestrated with docker-compose:
     - `Anticlockwise arrow` rotates the processed images (thumbnail and the generated larger versions up to 1080px wide) anticlockwise.
     - `Clockwise arrow` rotates the processed images (thumbnail and the generated larger versions up to 1080px wide) clockwise.
     - `Refresh symbol` reprocesses that image record. Processed images (thumbnail and larger versions up to 1080px wide) are generated and tags coped to them from the original image. This is useful if, for example, a processed image has been accidentally deleted, or corrupted for some reason.
+- To restrict access to specific tags for specific usernames, log in to the Django admin dashboard (typically found at `http://your_api_domain.tld/admin`). After logging in, navigate to the `SPM_APP > Photo Tag` page. Once there, you may select tags and assign them to specific usernames.
+Note: the users would need to have already been created - however they should have *no* administrative privileges, nor be assigned to the `administrators` group, since there would otherwise be no point in providing access to specific tags, because users in the `administrators` group have read/write permissions on all records in any case. Non-administrator usernames have access to *only those tags which have been assigned to those usernames*.
   
 ## Documentation
 
