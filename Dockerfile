@@ -24,6 +24,7 @@ RUN cmake .. -DCMAKE_BUILD_TYPE=Release
 RUN cmake --build .
 #RUN make tests
 RUN make install
+ENV LD_LIBRARY_PATH='/usr/local/lib:$:LD_LIBRARY_PATH'
 WORKDIR /src
 EXPOSE 8000
 VOLUME ["/photo_directory"]
