@@ -331,7 +331,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 records = records.filter(Q(tags__tag__iexact=t))
             for t in unquoted_terms:
                 records = records.filter(Q(tags__tag__icontains=t))
-        return records.distinct()
+        return records.distinct().order_by('-record_updated')
 
     def handle_mutate_image(self, record_id: int, user: User, mutation: dict) -> dict:
         """function to handle mutating the PROCESSED image.
