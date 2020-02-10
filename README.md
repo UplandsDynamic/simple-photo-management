@@ -16,7 +16,7 @@ The web client is built with React.js and the server backend is written in Pytho
 
 There is a live demo available here:
 
-http://spm.staging.aninstance.com
+http://staging-spm.aninstance.com
 
 Login credentials are:
 
