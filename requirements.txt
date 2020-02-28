@@ -15,7 +15,7 @@ coreschema==0.0.4         # via coreapi
 django-cors-headers==3.2.1
 django-picklefield==2.1.1
 django-q==1.1.0
-django==3.0.3             # via django-cors-headers, django-picklefield, django-q, djangorestframework
+django==3.0.3
 djangorestframework==3.11.0
 gevent==1.4.0
 greenlet==0.4.15          # via gevent
