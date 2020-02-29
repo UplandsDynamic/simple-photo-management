@@ -555,6 +555,19 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 logger.error(error_message, exc_info=True)
         return {'success': False, 'data': error_message}
 
+    @staticmethod
+    def bulk_delete_meta_and_unlock() -> bool:
+        """function to delete metadata from orginal photos of locked models and 
+        then to remove the mod_lock from the database record of those photos
+        :return: bool: True|False
+        """
+        locked = PhotoData.objects.filter(mod_lock=True)
+        
+        for record in locked:
+            record.mod_lock = False
+            record.save()
+        return True
+
     """
     async tasks
     """

@@ -154,6 +154,21 @@ class ProcessImages:
         return False
 
     @staticmethod
+    def delete_iptc_tags(file_url: str) -> bool:
+        """
+        method to delete all IPTC tags from image
+        :param file_url: filename of target image
+        :return: True | False
+        """
+        try:
+            meta = pyexiv2.ImageMetadata(file_url)
+            meta.read()
+            return True
+        except (TypeError, Exception) as e:
+            print(f'An error occurred in delete_iptc_tags: {e}')
+        return False
+
+    @staticmethod
     def convert_image(orig_filename: str, path: str, save_path: str, conversion_format: str,
                       thumb_path: str = '', change_filename: bool = True, thumbs_only: bool = False,
                       thumb_sizes: [tuple] = [(75, 75)]) -> dict or bool:
