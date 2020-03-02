@@ -12,7 +12,8 @@ const DataTableNav = props => {
     handleProcessPhotos,
     handleSearch,
     handleSearchAndReplace,
-    handlePruneTags
+    handlePruneTags,
+    handleBulkRemoveTags
   } = props;
   const [term, setTerm] = useState(""); // initial value
   const [replaceTerm, setReplaceTerm] = useState("");
@@ -70,6 +71,10 @@ const DataTableNav = props => {
     handleGetRecords({ record });
   };
 
+  const bulk_remove_tags_unlock = () => {
+    handleBulkRemoveTags();
+  };
+
   return (
     <div className={"container"}>
       <div className={"row nav-row"}>
@@ -85,7 +90,7 @@ const DataTableNav = props => {
         </div>
       </div>
       <div className={"row nav-row"}>
-        <div className={`col-4`}>
+        <div className={`col-5`}>
           <div className={"btn-group"}>
             <button
               onClick={getRecords}
@@ -130,6 +135,13 @@ const DataTableNav = props => {
               <FontAwesomeIcon icon={"remove-format"} />
             </button>
             <button
+              onClick={userIsAdmin ? bulk_remove_tags_unlock : null}
+              disabled={!userIsAdmin}
+              className={"btn btn-md btn-danger mr-1"}
+            >
+              <FontAwesomeIcon icon={"remove-format"} /> <FontAwesomeIcon icon={"lock"} />
+            </button>
+            <button
               onClick={userIsAdmin ? searchAndReplaceSwitch : null}
               disabled={!userIsAdmin}
               className={"btn btn-md btn-warning mr-1"}
@@ -138,7 +150,7 @@ const DataTableNav = props => {
             </button>
           </div>
         </div>
-        <div className={`col-8`}>
+        <div className={`col-7`}>
           <nav className={"search-navigation w-100 d-block ml-1"}>
             <input
               value={term}

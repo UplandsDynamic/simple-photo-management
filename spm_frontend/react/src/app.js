@@ -35,7 +35,9 @@ import {
   faRedo,
   faSearch,
   faExchangeAlt,
-  faRemoveFormat
+  faRemoveFormat,
+  faTrash,
+  faLock
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -54,7 +56,9 @@ library.add(
   faRedo,
   faSearch,
   faExchangeAlt,
-  faRemoveFormat
+  faRemoveFormat,
+  faTrash,
+  faLock
 );
 
 axios.defaults.withCredentials = true;
@@ -85,6 +89,11 @@ class App extends React.Component {
         requestType: "prune_tags",
         method: "DELETE",
         desc: "request to delete un-used tags"
+      },
+      BULK_REMOVE_TAGS: {
+        requestType: "bulk_remove_tags",
+        method: "DELETE",
+        desc: "request to bulk remove all tags from all mod_lock images & remove mod_lock"
       },
       SEARCH_AND_REPLACE: {
         requestType: "search_and_replace",
@@ -170,6 +179,7 @@ class App extends React.Component {
     this.searchAndReplaceHandler = this.searchAndReplaceHandler.bind(this);
     this.reprocessRecordHandler = this.reprocessRecordHandler.bind(this);
     this.handlePruneTags = this.handlePruneTags.bind(this);
+    this.handleBulkRemoveTags = this.handleBulkRemoveTags.bind(this);
   }
 
   componentDidMount() {
@@ -434,6 +444,35 @@ class App extends React.Component {
     }
   }
 
+  handleBulkRemoveTags({ notifyResponse = true } = {}) {
+    if (this.state.authMeta.authenticated) {
+      const apiRequest = processRequest({
+        apiMode: this.apiOptions.BULK_REMOVE_TAGS
+      });
+      if (apiRequest) {
+        apiRequest
+          .then(response => {
+            if (response) {
+              if (notifyResponse) {
+                this.setMessage({
+                  message:
+                    "Tag removal initiated!",
+                  messageClass: "alert alert-success"
+                });
+              }
+            }
+          })
+          .catch(error => {
+            console.log(error);
+            this.setMessage({
+              message: "An API error has occurred",
+              messageClass: "alert alert-danger"
+            });
+          });
+      }
+    }
+  }
+
   handleProcessPhotos({
     record = this.state.record,
     retag = false,
@@ -548,6 +587,7 @@ class App extends React.Component {
         handleSearchAndReplace={this.searchAndReplaceHandler}
         reprocessRecordHandler={this.reprocessRecordHandler}
         handlePruneTags={this.handlePruneTags}
+        handleBulkRemoveTags={this.handleBulkRemoveTags}
       />
     );
   }

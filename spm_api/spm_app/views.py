@@ -951,7 +951,7 @@ class ProcessPhotos(APIView):
             'retag': 'Retag *already copied* (processed) image files + new files, with tags from the origin images.',
             'clean_db': 'Remove database records relating to images that have been removed from origin directories.',
             'reprocess': 'Reprocess existing record - for example, in the case processed image has been lost/corrupted for some reason',
-            'del_meta': 'Delete all IPTC meta from all original images marked as `mod_lock` True in DB & mark mod_lock False'
+            #'del_meta': 'Delete all IPTC meta from all original images marked as `mod_lock` True in DB & mark mod_lock False'
         }
         try:
             # check for request queries - & validate - that indicate required action on data
@@ -963,9 +963,9 @@ class ProcessPhotos(APIView):
                 'bool_or_none', self.request.query_params.get('clean_db', None))
             reprocess = RequestQueryValidator.validate(
                 'bool_or_none', self.request.query_params.get('reprocess', None))
-            del_meta = RequestQueryValidator.validate(
-                'bool_or_none', self.request.query_params.get('del_meta', None)
-            )
+            #del_meta = RequestQueryValidator.validate(
+            #    'bool_or_none', self.request.query_params.get('del_meta', None)
+            #)
             record_id = RequestQueryValidator.validate('record_id',
                                                        self.request.query_params.get('record_id', None))
             # if record ID, set process_single variable to True
@@ -990,6 +990,25 @@ class ProcessPhotos(APIView):
                 async_task(ProcessPhotos.process_images, retag=retag,
                            user=self.request.user, clean_db=clean_db, scan=scan,
                            origin_file_url=origin_file_url, process_single=process_single, reprocess=reprocess, del_meta=del_meta)
+                return JsonResponse({'Status': 'Processing .......'}, status=status.HTTP_202_ACCEPTED)
+            return JsonResponse({'Status': 'Query invalid .......'}, status=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as e:
+            return JsonResponse({'Status': f'Error: {e}'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request):
+        """
+        hand off the image processing and tagging task to django_q multiprocessing(async)
+        """
+        action_queries = {
+            'del_meta': 'Delete all IPTC meta from all original images marked as `mod_lock` True in DB & mark mod_lock False'
+        }
+        try:
+            # check for request queries - & validate - that indicate required action on data
+            del_meta = RequestQueryValidator.validate(
+                'bool_or_none', self.request.query_params.get('del_meta', None)
+            )
+            if set(action_queries.keys()).intersection(self.request.query_params.keys()):
+                async_task(ProcessPhotos.process_images, user=self.request.user, del_meta=del_meta)
                 return JsonResponse({'Status': 'Processing .......'}, status=status.HTTP_202_ACCEPTED)
             return JsonResponse({'Status': 'Query invalid .......'}, status=status.HTTP_400_BAD_REQUEST)
         except ValidationError as e:
