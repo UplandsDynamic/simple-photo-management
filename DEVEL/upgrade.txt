@@ -1,7 +1,0 @@
-E.g.
-
-$ pip-compile --upgrade-package flask  # only update the flask package
-$ pip-compile --upgrade-package flask --upgrade-package requests  # update both the flask and requests packages
-$ pip-compile -P flask -P requests==2.0.0  # update the flask package to the latest, and requests to v2.0.0
-
-# see: https://github.com/jazzband/pip-tools/tree/b050a7f470e9a6d154be90e40b034f46fa144067
