@@ -51,6 +51,13 @@ const processRequest = ({
         apiMode,
         requestMethod: method
       });
+    }
+      else if (apiMode.requestType === "bulk_remove_tags") {
+        return _bulk_remove_tags({
+          csrfToken,
+          apiMode,
+          requestMethod: method
+        });
     } else if (apiMode.requestType === "search_and_replace") {
       return _searchAndReplace({
         csrfToken,
@@ -161,6 +168,11 @@ const _getTags = ({
 
 const _pruneTags = ({ requestMethod = null, csrfToken = null } = {}) => {
   const url = `${process.env.REACT_APP_API_DATA_ROUTE}/tags/prune/`; // prune tags URL
+  return _makeRequest({ csrfToken, requestMethod, url }); // returns a promise
+};
+
+const _bulk_remove_tags = ({ requestMethod = null, csrfToken = null } = {}) => {
+  const url = `${process.env.REACT_APP_API_DATA_ROUTE}/process_photos/?del_meta=true`; // prune tags URL
   return _makeRequest({ csrfToken, requestMethod, url }); // returns a promise
 };
 

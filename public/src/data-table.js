@@ -20,7 +20,8 @@ const DataTable = props => {
     handleSearchAndReplace,
     tagSuggestions,
     reprocessRecordHandler,
-    handlePruneTags
+    handlePruneTags,
+    handleBulkRemoveTags
   } = props;
 
   const _formatUTCDateTime = ({ dateTime = null } = {}) => {
@@ -93,6 +94,7 @@ const DataTable = props => {
         handleSearchAndReplace={handleSearchAndReplace}
         authMeta={authMeta}
         handlePruneTags={handlePruneTags}
+        handleBulkRemoveTags={handleBulkRemoveTags}
       />
       <div className={"container"}>
         <div className={"row"}>
