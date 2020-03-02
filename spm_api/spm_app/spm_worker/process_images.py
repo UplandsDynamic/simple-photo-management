@@ -162,11 +162,13 @@ class ProcessImages:
         """
         try:
             meta = pyexiv2.ImageMetadata(file_url)
-            meta.read()
+            meta.read()  # read the meta
+            for key in meta.iptc_keys:  # delete every iptc key
+                del meta[key]
+            meta.write()  # save the meta
             return True
         except (TypeError, Exception) as e:
             print(f'An error occurred in delete_iptc_tags: {e}')
-        return False
 
     @staticmethod
     def convert_image(orig_filename: str, path: str, save_path: str, conversion_format: str,
