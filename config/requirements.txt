@@ -14,13 +14,13 @@ coreapi==2.3.3
 coreschema==0.0.4         # via coreapi
 django-cors-headers==3.2.1
 django-picklefield==2.1.1
-django-q==1.1.0
+django-q==1.2.1
 django==3.0.3
 djangorestframework==3.11.0
 gevent==1.4.0
 greenlet==0.4.15          # via gevent
 gunicorn==20.0.4
-idna==2.8                 # via requests
+idna==2.9                 # via requests
 itypes==1.1.0             # via coreapi
 jinja2==2.11.1            # via coreschema
 markupsafe==1.1.1         # via jinja2
@@ -31,9 +31,9 @@ pycodestyle==2.5.0        # via autopep8
 python-dateutil==2.8.1    # via arrow
 pytz==2019.3              # via django
 pyyaml==5.3
-requests==2.22.0          # via coreapi
+requests==2.23.0          # via coreapi
 six==1.14.0               # via blessed, python-dateutil
-sqlparse==0.3.0           # via django
+sqlparse==0.3.1           # via django
 uritemplate==3.0.1        # via coreapi
 urllib3==1.25.8           # via requests
 wcwidth==0.1.8            # via blessed

@@ -139,10 +139,10 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         but before changes committed to the model. E.g. ensuring only certain user levels are able
         to update specific fields in certain ways.
 
-    # Note about mod_lock: 
-    Modifications on the PhotoData model (database) are locked within the handle_add_tags & handle_mutate_image 
-    methods. Other methods, such  as handle_remove_tags do not lock by themselves, as the query to the database is always 
-    eventually routed through handle_add_tags (e.g. when removing tags, the remaining tags are re-written, 
+    # Note about mod_lock:
+    Modifications on the PhotoData model (database) are locked within the handle_add_tags & handle_mutate_image
+    methods. Other methods, such  as handle_remove_tags do not lock by themselves, as the query to the database is always
+    eventually routed through handle_add_tags (e.g. when removing tags, the remaining tags are re-written,
     so the change happens as an overwrite - hence passing through handle_add_tags.)
     """
 
@@ -158,7 +158,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                 'order_by', None)
         ))
         """
-        Extra permissions on objects: if not staff or not in administrators group, only 
+        Extra permissions on objects: if not staff or not in administrators group, only
         return records that have a tag which includes the user in its 'user_access' field.
         """
         if not staff_or_administrator:
@@ -481,15 +481,15 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                                                                              retain_original=retain_original)
                         if not tags_were_written_to_origin:
                             """
-                            If write to origin image unsuccessful, exit (record will now remain 
+                            If write to origin image unsuccessful, exit (record will now remain
                             mod locked to prevent further carnage!)
-                            Note: the *processed* image will still contain the newly added tag that was 
-                            not applied to the origin - however this does not matter, as it will not 
-                            have been added to the database for reflection in the UI. Being that *at present* tags on 
-                            the processed images are never *read back* for any purpose, this is not an issue. The 
+                            Note: the *processed* image will still contain the newly added tag that was
+                            not applied to the origin - however this does not matter, as it will not
+                            have been added to the database for reflection in the UI. Being that *at present* tags on
+                            the processed images are never *read back* for any purpose, this is not an issue. The
                             processed images are 'disposable' and may be re-created at any time.
-                            If this becomes an issue in future due to feature enhancements, the tags that failed to be 
-                            added to the origin image will also need to be removed from the processed image here, before 
+                            If this becomes an issue in future due to feature enhancements, the tags that failed to be
+                            added to the origin image will also need to be removed from the processed image here, before
                             returning this method.
                             """
                             return {'success': False, 'data': error_message}
@@ -558,6 +558,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
     """
     async tasks
     """
+
     def tag_replacement_task(records=None, tag_to_replace='', replacement_tag='', user=None, write_to_iptc=True,
                              retain_original=False, iptc_key=''):
         success = False  # flag to prompt error to be logged if no changes were successful
@@ -585,7 +586,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                     result = PhotoDataViewSet.handle_add_tags(record_id=record.id, tags=list(tag_set),
                                                               user=user, write_to_iptc=True, retain_original=False)
                     if not result['success']:
-                            # if unsuccessful attempt to change tags, exclude this record from queryset to be returned in return dict's data field
+                        # if unsuccessful attempt to change tags, exclude this record from queryset to be returned in return dict's data field
                         records.exclude(id=r.id)
                         logger.error(
                             f'Replacing tags failed for {r.original_url}')
@@ -615,7 +616,7 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
 
     """
     Includes by default the ListCreateAPIView & RetrieveUpdateDestroyAPIView
-    i.e. provides phototag-list and phototag-detail views, accessed by path, & path/<id>)
+    i.e. provides phototag-list and phototag-detail views, accessed by path, & path/<id >)
     """
     queryset = PhotoTag.objects.all()
     serializer_class = PhotoTagSerializer
@@ -624,7 +625,7 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
 
     """
     Note on permissions:
-    Access control is dealt with in 2 places: here (views.py) and serializers.py.
+    Access control is dealt with in 2 places: here(views.py) and serializers.py.
 
         - views.py: basic 1st hurdle checks, performed before input validation,
         including whether requester user level has access to models, and whether has ability to
@@ -658,9 +659,9 @@ class PhotoTagViewSet(viewsets.ModelViewSet):
     @staticmethod
     def handle_search(all_records: queryset, search_term: str) -> queryset:
         """method to handle search
-        :param all_records: queryset of all records
-        :param search_term: search term string
-        :return: queryset of filtered results
+        : param all_records: queryset of all records
+        : param search_term: search term string
+        : return: queryset of filtered results
         """
         search_query = validate_search(search_term)
         # split search terms on space
@@ -756,13 +757,10 @@ class ProcessPhotos(APIView):
     def add_record_to_db(record, owner, resync_tags=False, reprocess=False):
         """
         method to add images to the database model
-        :param record: dict of saved conversion data and tags: e.g.:
-            {conversion_data: {'orig_path': '/path/to/orig/image', 'processed_path':'/path/to/processed_image',
+        : param record: dict of saved conversion data and tags: e.g.:
+            {conversion_data: {'orig_path': '/path/to/orig/image', 'processed_path': '/path/to/processed_image',
             'filename': '4058.jpeg'}, tag_data: {'iptc_key': 'Iptc.Application2.Keywords', 'tags':
-            ['DATE: 1974', 'PLACE: The Moon']}
-        :param owner: current user
-        :param resync_tags: whether embedded IPTC tags were re-copied from image file to the PhotoData model
-        :return: saved record | False
+            ['DATE: 1974', 'PLACE: The Moon']}: param owner: current user: param resync_tags: whether embedded IPTC tags were re-copied from image file to the PhotoData model: return: saved record | False
         """
         try:
             updated_tags = []
@@ -788,9 +786,9 @@ class ProcessPhotos(APIView):
                 logger.info(
                     f'Did not save image data to the database: {e}')
             """
-            if new image data was created - or resync_tags=True - or reprocess=True -, create PhotoTag objects
+            if new image data was created - or resync_tags = True - or reprocess = True - , create PhotoTag objects
             (creating in the model if necessary with update_or_create), then populate saved
-            PhotoData model's M2M tags field with that list (& save again the now newly tagged model).
+            PhotoData model's M2M tags field with that list ( & save again the now newly tagged model).
             Then, add image data to a list for return
             """
             if photo_data_record and (new_record_created or resync_tags or reprocess):
@@ -819,11 +817,30 @@ class ProcessPhotos(APIView):
 
     @staticmethod
     def delete_record(record_id):
-        """method to delete record from database
-        :param record_id: id of record to be deleted
-        :return: True|False
+        """method to delete record from database: param record_id: id of record to be deleted: return: True | False
         """
         PhotoData.objects.get(id=record_id).delete()
+        return True
+
+    def delete_meta_and_unlock(user: User = None) -> bool:
+        """function to delete metadata from orginal photos of locked models and
+        then to remove the mod_lock from the database record of those photos
+        : return: bool: True | False
+        """
+        locked = PhotoData.objects.filter(mod_lock=True)
+        for record in locked:
+            try:
+                # remove tags from original image
+                ProcessImages.delete_iptc_tags(file_url=record.original_url)
+                # reprocess the image, which generates new opitimzed & thumbs etc with no tags
+                ProcessPhotos.process_images(
+                    user=user, origin_file_url=record.original_url, process_single=True, reprocess=True)
+                # update datebase to unlock the file
+                record.mod_lock = False
+                record.save()
+            except Exception as e:
+                logger.error(
+                    f'An error occurred deleting meta data for {record.id}: {e}')
         return True
 
     @staticmethod
@@ -863,13 +880,13 @@ class ProcessPhotos(APIView):
 
     @staticmethod
     def process_images(retag=False, clean_db=False, scan=False, user=None,
-                       origin_file_url=None, process_single=False, reprocess=False):
+                       origin_file_url=None, process_single=False, reprocess=False, del_meta=False):
         """
-        method to process images (make resized copy (i.e. a 'processed' copy) & copy tags from original to resized)
-        :param retag: whether to re-copy over tags from original to processed image, if filename already exists
-        :param user: current user
-        :param add_record_to_db: function, that submits records to DB model
-        :return: True | False
+        method to process images(make resized copy(i.e. a 'processed' copy) & copy tags from original to resized) 
+        param retag: whether to re-copy over tags from original to processed image, if filename already exists
+        param user: current user 
+        param add_record_to_db: function, that submits records to DB model: 
+        return: True | False
         """
         origin_image_paths = settings.SPM['ORIGIN_IMAGE_PATHS']
         processed_image_path = settings.SPM['PROCESSED_IMAGE_PATH']
@@ -915,6 +932,9 @@ class ProcessPhotos(APIView):
             if clean_db:
                 async_task(ProcessPhotos.clean_database, owner=user,
                            origin_directories=True, processed_directories=True)
+            # if action is to delete meta & remove modlocks for all image data
+            if del_meta:
+                return ProcessPhotos.delete_meta_and_unlock(user=user)
         except (ValidationError, Exception) as e:
             if isinstance(e, ValidationError):
                 logger.error(f'Validation error: {e.message}')
@@ -924,13 +944,14 @@ class ProcessPhotos(APIView):
 
     def get(self, request):
         """
-        hand off the image processing and tagging task to django_q multiprocessing (async)
+        hand off the image processing and tagging task to django_q multiprocessing(async)
         """
         action_queries = {
             'scan': 'Scan the origin directories for *only new files*, create web copies & copy tags from origin to processed images.',
             'retag': 'Retag *already copied* (processed) image files + new files, with tags from the origin images.',
             'clean_db': 'Remove database records relating to images that have been removed from origin directories.',
-            'reprocess': 'Reprocess existing record - for example, in the case processed image has been lost/corrupted for some reason'
+            'reprocess': 'Reprocess existing record - for example, in the case processed image has been lost/corrupted for some reason',
+            #'del_meta': 'Delete all IPTC meta from all original images marked as `mod_lock` True in DB & mark mod_lock False'
         }
         try:
             # check for request queries - & validate - that indicate required action on data
@@ -942,6 +963,9 @@ class ProcessPhotos(APIView):
                 'bool_or_none', self.request.query_params.get('clean_db', None))
             reprocess = RequestQueryValidator.validate(
                 'bool_or_none', self.request.query_params.get('reprocess', None))
+            #del_meta = RequestQueryValidator.validate(
+            #    'bool_or_none', self.request.query_params.get('del_meta', None)
+            #)
             record_id = RequestQueryValidator.validate('record_id',
                                                        self.request.query_params.get('record_id', None))
             # if record ID, set process_single variable to True
@@ -959,13 +983,32 @@ class ProcessPhotos(APIView):
                         f'An image with an ID of `{record_id}` does not exist!`')
                     return JsonResponse({'Status': f'Image with ID of `{record_id}` does not exist!'},
                                         status=status.HTTP_400_BAD_REQUEST)
-            """if at least 1 request query (query_params dict key) exists as a valid action query (action_queries dict key)
+            """if at least 1 request query(query_params dict key) exists as a valid action query(action_queries dict key)
             kick off the main async task to process next step.
             """
             if set(action_queries.keys()).intersection(self.request.query_params.keys()):
                 async_task(ProcessPhotos.process_images, retag=retag,
                            user=self.request.user, clean_db=clean_db, scan=scan,
-                           origin_file_url=origin_file_url, process_single=process_single, reprocess=reprocess)
+                           origin_file_url=origin_file_url, process_single=process_single, reprocess=reprocess, del_meta=del_meta)
+                return JsonResponse({'Status': 'Processing .......'}, status=status.HTTP_202_ACCEPTED)
+            return JsonResponse({'Status': 'Query invalid .......'}, status=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as e:
+            return JsonResponse({'Status': f'Error: {e}'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request):
+        """
+        hand off the image processing and tagging task to django_q multiprocessing(async)
+        """
+        action_queries = {
+            'del_meta': 'Delete all IPTC meta from all original images marked as `mod_lock` True in DB & mark mod_lock False'
+        }
+        try:
+            # check for request queries - & validate - that indicate required action on data
+            del_meta = RequestQueryValidator.validate(
+                'bool_or_none', self.request.query_params.get('del_meta', None)
+            )
+            if set(action_queries.keys()).intersection(self.request.query_params.keys()):
+                async_task(ProcessPhotos.process_images, user=self.request.user, del_meta=del_meta)
                 return JsonResponse({'Status': 'Processing .......'}, status=status.HTTP_202_ACCEPTED)
             return JsonResponse({'Status': 'Query invalid .......'}, status=status.HTTP_400_BAD_REQUEST)
         except ValidationError as e:
