@@ -830,14 +830,19 @@ class ProcessPhotos(APIView):
         locked = PhotoData.objects.filter(mod_lock=True)
         for record in locked:
             try:
-                # remove tags from original image
-                ProcessImages.delete_iptc_tags(file_url=record.original_url)
+                # remove tags from original image (tags_deleted set to func returned boolean)
+                tags_deleted = ProcessImages.delete_iptc_tags(
+                    file_url=record.original_url)
                 # reprocess the image, which generates new opitimzed & thumbs etc with no tags
-                ProcessPhotos.process_images(
-                    user=user, origin_file_url=record.original_url, process_single=True, reprocess=True)
-                # update datebase to unlock the file
-                record.mod_lock = False
-                record.save()
+                if tags_deleted:
+                    ProcessPhotos.process_images(
+                        user=user, origin_file_url=record.original_url, process_single=True, reprocess=True)
+                    # update datebase to unlock the file
+                    record.mod_lock = False
+                    record.save()
+                else:
+                    logger.error(
+                        'An error occurred during the tag deletion process!')
             except Exception as e:
                 logger.error(
                     f'An error occurred deleting meta data for {record.id}: {e}')
@@ -951,7 +956,6 @@ class ProcessPhotos(APIView):
             'retag': 'Retag *already copied* (processed) image files + new files, with tags from the origin images.',
             'clean_db': 'Remove database records relating to images that have been removed from origin directories.',
             'reprocess': 'Reprocess existing record - for example, in the case processed image has been lost/corrupted for some reason',
-            #'del_meta': 'Delete all IPTC meta from all original images marked as `mod_lock` True in DB & mark mod_lock False'
         }
         try:
             # check for request queries - & validate - that indicate required action on data
@@ -963,9 +967,6 @@ class ProcessPhotos(APIView):
                 'bool_or_none', self.request.query_params.get('clean_db', None))
             reprocess = RequestQueryValidator.validate(
                 'bool_or_none', self.request.query_params.get('reprocess', None))
-            #del_meta = RequestQueryValidator.validate(
-            #    'bool_or_none', self.request.query_params.get('del_meta', None)
-            #)
             record_id = RequestQueryValidator.validate('record_id',
                                                        self.request.query_params.get('record_id', None))
             # if record ID, set process_single variable to True
@@ -989,7 +990,7 @@ class ProcessPhotos(APIView):
             if set(action_queries.keys()).intersection(self.request.query_params.keys()):
                 async_task(ProcessPhotos.process_images, retag=retag,
                            user=self.request.user, clean_db=clean_db, scan=scan,
-                           origin_file_url=origin_file_url, process_single=process_single, reprocess=reprocess, del_meta=del_meta)
+                           origin_file_url=origin_file_url, process_single=process_single, reprocess=reprocess)
                 return JsonResponse({'Status': 'Processing .......'}, status=status.HTTP_202_ACCEPTED)
             return JsonResponse({'Status': 'Query invalid .......'}, status=status.HTTP_400_BAD_REQUEST)
         except ValidationError as e:
@@ -1008,7 +1009,8 @@ class ProcessPhotos(APIView):
                 'bool_or_none', self.request.query_params.get('del_meta', None)
             )
             if set(action_queries.keys()).intersection(self.request.query_params.keys()):
-                async_task(ProcessPhotos.process_images, user=self.request.user, del_meta=del_meta)
+                async_task(ProcessPhotos.process_images,
+                           user=self.request.user, del_meta=del_meta)
                 return JsonResponse({'Status': 'Processing .......'}, status=status.HTTP_202_ACCEPTED)
             return JsonResponse({'Status': 'Query invalid .......'}, status=status.HTTP_400_BAD_REQUEST)
         except ValidationError as e:
