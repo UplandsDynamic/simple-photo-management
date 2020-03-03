@@ -37,7 +37,7 @@ import {
   faExchangeAlt,
   faRemoveFormat,
   faTrash,
-  faLock
+  faUnlock
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -58,7 +58,7 @@ library.add(
   faExchangeAlt,
   faRemoveFormat,
   faTrash,
-  faLock
+  faUnlock
 );
 
 axios.defaults.withCredentials = true;
