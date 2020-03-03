@@ -161,12 +161,20 @@ class ProcessImages:
         :return: True | False
         """
         try:
+            loop_count = 0
             meta = pyexiv2.ImageMetadata(file_url)
             meta.read()  # read the meta
-            for key in meta.iptc_keys:  # delete every iptc key
-                del meta[key]
-            meta.write()  # save the meta
-            return True
+            while loop_count < 10:
+                for key in meta.iptc_keys:  # delete every iptc key
+                    del meta[key]
+                meta.write()  # save the meta
+                loop_count += 1
+                # check all tags successfully cleared
+                meta = pyexiv2.ImageMetadata(file_url)
+                meta.read()
+                if not meta.iptc_keys:
+                    break
+            return loop_count < 10  # return True if successfully ended loop, else False
         except (TypeError, Exception) as e:
             print(f'An error occurred in delete_iptc_tags: {e}')
 

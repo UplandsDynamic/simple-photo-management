@@ -1,2 +1,2 @@
-const APP_VERSION = "[Client 1.0.0-beta | Server 1.0.0-beta]";
+const APP_VERSION = "[Client 1.0.1-beta | Server 1.0.1-beta]";
 export default APP_VERSION;
