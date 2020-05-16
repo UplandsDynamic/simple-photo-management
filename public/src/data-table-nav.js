@@ -139,7 +139,7 @@ const DataTableNav = props => {
               disabled={!userIsAdmin}
               className={"btn btn-md btn-danger mr-1"}
             >
-              <FontAwesomeIcon icon={"remove-format"} /> <FontAwesomeIcon icon={"lock"} />
+              <FontAwesomeIcon icon={"remove-format"} /> <FontAwesomeIcon icon={"unlock"} />
             </button>
             <button
               onClick={userIsAdmin ? searchAndReplaceSwitch : null}
