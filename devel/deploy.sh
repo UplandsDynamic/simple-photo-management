@@ -176,7 +176,7 @@ rm -rf ${BUILD_DIR}
 cd ${FRONTEND_DIR}
 npm run build:docker
 # sync code
-${SCRIPT_DIR}/docker/rsync-to-docker.sh
+${SCRIPT_DIR}/rsync-to-docker.sh
 printf "\nDEPLOYED TO DOCKER!\n\n"
 }
 

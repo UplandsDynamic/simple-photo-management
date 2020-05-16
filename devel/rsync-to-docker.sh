@@ -1,8 +1,8 @@
 #!/bin/bash
 ## script to sync to staging server
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-LOCAL_FRONTEND_DIR="${DIR}/../../spm_frontend/react/"
-LOCAL_DJANGO_API_CODE_PATH="${DIR}/../../spm_api/"
+LOCAL_FRONTEND_DIR="${DIR}/../spm_frontend/react/"
+LOCAL_DJANGO_API_CODE_PATH="${DIR}/../spm_api/"
 DOCKER_DJANGO_API_CODE_PATH="/mnt/aninstancedatacenter/devel/DEVELOPMENT/DOCKER/SimplePhotoManagement/src/"
 DOCKER_DJANGO_CONFIG_PATH="/mnt/aninstancedatacenter/devel/DEVELOPMENT/DOCKER/SimplePhotoManagement/config/"
 DOCKER_FRONTEND="/mnt/aninstancedatacenter/devel/DEVELOPMENT/DOCKER/SimplePhotoManagement/frontend/public"
@@ -13,5 +13,5 @@ ${DOCKER_DJANGO_API_CODE_PATH}
 rsync -av --progress --exclude-from "${DIR}/rsync-ignore.txt" ${LOCAL_FRONTEND_DIR} \
 ${DOCKER_FRONTEND}
 # copy over requirements.txt
-rsync -av --progress --exclude-from "${DIR}/rsync-ignore.txt" ${DIR}/../../requirements.txt \
+rsync -av --progress --exclude-from "${DIR}/rsync-ignore.txt" ${DIR}/../requirements.txt \
 ${DOCKER_DJANGO_CONFIG_PATH}
