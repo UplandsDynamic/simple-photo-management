@@ -1,5 +1,13 @@
 # Simple Photo Management
 
+***Due to lack of sponsorship/funding - and therefore assumed lack of interest - the GPL licensed version of this project offered here may no longer be regularly maintained as of this date.***
+
+***I am continuing to maintain private source code and Docker repositories, serving regularly updated, prebuilt containers.***
+
+***If anyone wants to avail of this project in production or would like to request other bespoke work on this project, please feel free to email me to discuss at productions@aninstance.com. Thank you!***
+
+***Note: The GPL licensed version available here SHOULD NOT BE USED IN PRODUCTION (i.e. a "live" working environment) UNLESS whoever is administering it regularly patches project dependencies with upstream security updates as and when they are released by the vendors. In that case, if running with Docker, the Dockerfiles (both server & frontend) would need to be amended to pull from your forked and updated Github source.*** 
+
 **Important: Before scanning an image directory, please ensure you have backed up your data. This is a beta product and should be used with that in mind. Please do not put your only copy of digital photos at risk!**
 
 This a simple application built on web technologies to IPTC tag, search & image optimise digital photo libraries.
@@ -52,23 +60,23 @@ The `master` branch of this repository is source for the dockerised version of t
 
 If deploying with Docker, it is highly recommended to use Docker Compose. Please find an example docker-compose file (which builds the entire stack, including the web client & server) in the `master` (server) branch.
 
-The associated Docker images for server and client are available on DockerHub:
+~~Prebuilt Docker images for server and client are available on DockerHub:~~
 
 - Server:
 
-  URL: <https://hub.docker.com/r/aninstance/simple-photo-management>
+  ~~URL: <https://hub.docker.com/r/aninstance/simple-photo-management>~~
 
   To pull the image:
 
-  `docker pull aninstance/simple-photo-management`
+  ~~`docker pull aninstance/simple-photo-management`~~
 
 - Frontend client:
 
-  URL: <https://hub.docker.com/r/aninstance/simple-photo-management-client>
+  ~~URL: <https://hub.docker.com/r/aninstance/simple-photo-management-client>~~
 
   To pull the image:
 
-  `docker pull aninstance/simple-photo-management-client`
+  ~~`docker pull aninstance/simple-photo-management-client`~~
 
 To use this source code for non-dockerised builds, please amend the settings.py configuration file accordingly.
 
