@@ -12,5 +12,5 @@ django_q
 django-picklefield
 arrow
 blessed
-psycopg2
+psycopg2-binary
 autopep8
