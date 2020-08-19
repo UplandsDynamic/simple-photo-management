@@ -1,35 +1,16 @@
 # Simple Photo Management
 
-***Due to lack of sponsorship/funding - and therefore assumed lack of interest - the GPL licensed version of this project offered here may no longer be regularly maintained as of this date.***
+**Important: Before scanning an image directory, please ensure you have backed up your data. This is a prototype and should be used with that in mind. Please do not put your only copy of digital photos at risk!**
 
-***I am continuing to maintain private source code and Docker repositories, serving regularly updated, prebuilt containers.***
-
-***If anyone wants to avail of this project in production or would like to request other bespoke work on this project, please feel free to email me to discuss at productions@aninstance.com. Thank you!***
-
-***Note: The GPL licensed version available here SHOULD NOT BE USED IN PRODUCTION (i.e. a "live" working environment) UNLESS whoever is administering it regularly patches project dependencies with upstream security updates as and when they are released by the vendors. In that case, if running with Docker, the Dockerfiles (both server & frontend) would need to be amended to pull from your forked and updated Github source.*** 
-
-**Important: Before scanning an image directory, please ensure you have backed up your data. This is a beta product and should be used with that in mind. Please do not put your only copy of digital photos at risk!**
-
-This a simple application built on web technologies to IPTC tag, search & image optimise digital photo libraries.
+This is a demo/prototype of simple application built on web technologies to IPTC tag, search & image optimise digital photo libraries.
 
 It has web frontend client that connects to a RESTful API backend. Data is stored in either a SQLite, mySQL or PostgreSQL (recommended) database.
 
 The web client is built with React.js and the server backend is written in Python 3.6 using the Django framework.
 
-## Screenshots
+## Key technologies
 
-![Screenshot 1](./meta/img/screenshot_01.png?raw=true)
-
-## Live Demo
-
-There is a live demo available here:
-
-http://staging-spm.aninstance.com
-
-Login credentials are:
-
-- Username: riker
-- Password: z4Xd\*7byV\$xw
+Python 3.7, Django, Django-rest-framework, Javascript (ReactJS), HTML5, CSS3
 
 ## Key features
 
@@ -45,38 +26,32 @@ Login credentials are:
 - Restrict access to specific tags for specific usernames
 - Switch between `light` and `dark` modes (by setting an environment variable)
 
-## Key technologies
+## Live Demo
 
-- Python 3.7
-- Django
-- Django-rest-framework
-- Javascript (ReactJS)
-- HTML5
-- CSS3
+There is a live demo available here:
+
+http://staging-spm.aninstance.com
+
+Login credentials are:
+
+- Username: riker
+- Password: z4Xd\*7byV\$xw
+
+## Screenshots
+
+![Screenshot 1](./meta/img/screenshot_01.png?raw=true)
+
+## Support & project status
+
+The GPL licensed version of this project offered here is *not guaranteed to be regularly maintained*. It is made available here for demo/prototype purposes and *SHOULD NOT* be used in production (i.e. a "live" working environment) unless the administrator regularly patches project dependencies with upstream security updates as and when released by vendors. If running with Docker, Dockerfiles (both server & frontend) would need to be amended to pull from the forked and updated Github source and *not* this demo/prototype repository.
+
+A regularly updated, proprietary licensed version (source available), maintained for subscribers and clients, is available from a private Docker repository serving prebuilt containers. Subscriptions to the regularly updated proprietary licensed version - with optional installation, hosting & support services - are currently considered upon request (limited availability). If you would like to avail of the subscription and/or associated services, or request other bespoke work on this project, please email to discuss: spm@aninstance.com.
 
 ## Docker deployment
 
 The `master` branch of this repository is source for the dockerised version of the server. Please checkout the `frontend` branch for source of the dockerised frontend web client.
 
-If deploying with Docker, it is highly recommended to use Docker Compose. Please find an example docker-compose file (which builds the entire stack, including the web client & server) in the `master` (server) branch.
-
-~~Prebuilt Docker images for server and client are available on DockerHub:~~
-
-- Server:
-
-  ~~URL: <https://hub.docker.com/r/aninstance/simple-photo-management>~~
-
-  To pull the image:
-
-  ~~`docker pull aninstance/simple-photo-management`~~
-
-- Frontend client:
-
-  ~~URL: <https://hub.docker.com/r/aninstance/simple-photo-management-client>~~
-
-  To pull the image:
-
-  ~~`docker pull aninstance/simple-photo-management-client`~~
+Please find an example docker-compose file (which builds the entire stack, including the web client & server) in the `master` (server) branch.
 
 To use this source code for non-dockerised builds, please amend the settings.py configuration file accordingly.
 
@@ -181,10 +156,6 @@ The above guide is not definitive and is intended for users who know their way a
 - ~~Remove tags from the used-tag list if no longer used for any images~~ [Complete]
 - ~~Add ability to delete tags after search (currently limited to replace with an alternative tag)~~ [Complete]
 
-## Support
-
-- Paid support services (including installation, configuration and development of bespoke features) are available. Please email productions@aninstance.com with "Simple Photo Management Support" in the subject field.
-
 ## Authors
 
-- Dan Bright (Aninstance Consultancy), productions@aninstance.com
+- Dan Bright (Aninstance Technological Consultancy), productions@aninstance.com
