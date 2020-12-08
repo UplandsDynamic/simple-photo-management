@@ -11,7 +11,7 @@
 - First, `$ cd /home/dan/dev/SimplePhotoManagement/smp_frontend/react`
 - To view what upgrades are available for the VERY LATEST VERSIONS (ignoring semantic version restrictions) - without actually performing the upgrade right away, run the npm-check-updates package (ncu) 
 (Note: if ncu not installed, run:
-  - `sudo su` & `curl -sL https://deb.nodesource.com/setup_12.x | bash -` (install *latest* NodeJS - not distro version - 12.x in this example)
+  - `sudo su` & `curl -sL https://deb.nodesource.com/setup_14.x | bash -` (install *latest* NodeJS - not distro version - 12.x in this example)
   - `sudo npm install -g npm-check-updates` (install ncu package)
   - `sudo npm install -g npx`) (install npx package, if not already installed)
 - Run ncu with the -u flag to update *EVERYTHING*, *ALL PACKAGES* in package.json to *VERY LATEST*:
@@ -66,7 +66,7 @@ Note: for more docs on pip-tools, see the github page at: https://github.com/jaz
  - Then, change to the DOCKER directory and:
    - Make any changes to README if necessary
    - Run `upgrade-docker-images.sh` to build the new images & push to the local Docker repo
-   - Push DOCKER directory changes to Github
+   - Push DOCKER directory changes to Github, both server (master) & frontend
    - Pull new images for the app running in production & build the new containers & restart the apps.
 
 ## Issues
