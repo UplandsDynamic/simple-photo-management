@@ -24,7 +24,7 @@ idna==2.10                # via requests
 itypes==1.2.0             # via coreapi
 jinja2==2.11.2            # via coreschema
 markupsafe==1.1.1         # via jinja2
-pillow==8.0.1             # via -r requirements.in
+pillow==8.1.1             # via -r requirements.in
 psycopg2-binary==2.8.6    # via -r requirements.in
 py3exiv2==0.8.0           # via -r requirements.in
 pycodestyle==2.6.0        # via autopep8
