@@ -36,7 +36,7 @@ six==1.15.0               # via blessed, python-dateutil
 sqlparse==0.4.1           # via django
 toml==0.10.2              # via autopep8
 uritemplate==3.0.1        # via coreapi
-urllib3==1.26.2           # via requests
+urllib3==1.26.3           # via requests
 wcwidth==0.2.5            # via blessed
 zope.event==4.5.0         # via gevent
 zope.interface==5.2.0     # via gevent
