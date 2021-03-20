@@ -78,7 +78,7 @@ class ProcessImages:
                             # produce [[], [PosixPath('/path/to/file.jpg')], []]
                             url_list = [list(x_file_type)
                                         for x_file_type in url_list_generator]
-                            #produce ['/path/to/file.jpg', '/path2/to/file_2.jpg']
+                            # produce ['/path/to/file.jpg', '/path2/to/file_2.jpg']
                             for urls_inner_list in url_list:
                                 file_urls.extend([str(u)
                                                   for u in urls_inner_list])
