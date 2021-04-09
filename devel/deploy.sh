@@ -36,7 +36,7 @@ COMMIT_MESSAGE="Default automated deploy comment"
 PROJECT_TESTS_FILE="spm_app.tests"
 
 function deploy {
-run_django_tests
+#run_django_tests
 if [[ "$(git branch)" == *"* master"* ]]
 then
 GIT_BRANCH='master'
