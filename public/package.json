@@ -2,7 +2,7 @@
   "author": "Dan Bright, productions@aninstance.com",
   "license": "GPLv3",
   "name": "simple-photo-management-react-frontend",
-  "version": "1.0.6-beta",
+  "version": "1.0.7-beta",
   "private": true,
   "description": "React frontend for Django REST Simple Photo Management application",
   "main": "index.js",
@@ -51,7 +51,7 @@
     "not op_mini all"
   ],
   "devDependencies": {
-    "eslint-plugin-react": "^7.21.5"
+    "eslint-plugin-react": "^7.23.2"
   },
   "resolutions": {
     "minimist": "^1.2.5"

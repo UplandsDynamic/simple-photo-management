@@ -10,9 +10,9 @@ RUN curl -sL https://deb.nodesource.com/setup_15.x | bash -
 RUN git clone --single-branch --branch frontend https://github.com/Aninstance/simple-photo-management.git /npm_build
 WORKDIR  /npm_build/public
 RUN apt install nodejs -y
-RUN npm install
+RUN npm install --legacy-peer-deps
 RUN npx npm-force-resolutions  # have to run this manually as won't work in package.json
-RUN npm audit fix
+#RUN npm audit fix
 RUN npm audit
 WORKDIR /npm_build
 COPY spm.conf /etc/nginx/conf.d/
