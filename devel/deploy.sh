@@ -172,9 +172,9 @@ printf "\nDEPLOYED TO STAGING!\n\n"
 function sync_to_docker {
 REACT_ENV_FILE_DOCKER="${FRONTEND_DIR}/.env.docker"
 # build react frontend
-rm -rf ${BUILD_DIR}
-cd ${FRONTEND_DIR}
-npm run build:docker
+#rm -rf ${BUILD_DIR}
+#cd ${FRONTEND_DIR}
+#npm run build:docker
 # sync code
 ${SCRIPT_DIR}/rsync-to-docker.sh
 printf "\nDEPLOYED TO DOCKER!\n\n"
