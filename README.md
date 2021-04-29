@@ -55,8 +55,9 @@ __Below are basic steps to install and run a demonstration of the app on an Linu
 
 ### Brief installation instructions
 
-- Install the EXIV2 development library and libboost development files, e.g.:
+- Install EXIV2, EXIV2 development library and libboost development files, e.g.:
 
+  - `apt install exiv2`
   - `apt install libexiv2-dev`
   - `apt install libboost-python-dev`
 
@@ -127,7 +128,7 @@ __Below are basic steps to install and run a demonstration of the app on an Linu
 
 ### Brief UI instructions
 
-Please see the repository for the frontend client, at https://github.com/Aninstance/simple-frontend-management-frontend
+Please see the repository for the frontend client, at https://github.com/Aninstance/simple-photo-management-frontend
 
 Note: The above guide is not definitive and is intended for users who know their way around Ubuntu server and Django.
 
