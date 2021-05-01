@@ -75,7 +75,7 @@ __Below are basic steps to install and run a demonstration of the app on an Linu
 
 - Run `pip3 install -r requirements.txt`.
 
-- Copy `smp_api/settings.DEFAULT.py` to `spm_api/settings.py`.
+- Copy `spm_api/settings.DEFAULT.py` to `spm_api/settings.py`.
 
 - Edit `spm_api/settings.py` according to your environment. Be sure to add the URL of your frontend web client to the CORS_ORIGIN_WHITELIST list property.
 
@@ -83,12 +83,18 @@ __Below are basic steps to install and run a demonstration of the app on an Linu
 
 - Create a directory named `secret_key` in the application's root directory and change its ownership to the application user (as created above).
 
-- Create the following directories somewhere on your file system (the paths to these need to be set in your settings.py):
+- Create a systemd unit file to run the gunicorn service at `/etc/systemd/system/gunicorn.service`, then enable and start start the systemd service (details of how to do this is outwith the scope of this document, but if you need further advice feel free to get in touch).
+
+- Create a systemd unit file to run the django_q service (which manages long running operations, such as 'stock taking') at `/etc/systemd/system/djangoq.service`. Enable and start the systemd service (details of how to do this is outwith the scope of this document, but if you need further advice feel free to get in touch).
+
+- Install a web server (recommended Nginx) to operate as a reverse proxy and create an appropriate configuration file to connect to the unix socket created by gunicorn (as defined above). See the official Nginx and Django documentation for configuration examples.
+
+- Create the following directories in the application's root directory (the paths to these need to be set in your settings.py):
 
   - `photo_directory` - this is the directory where copies of your original images will be stored.
   - `media/photos` - this is the directory where the processed images will be stored.
   - `media/photos_tn` - this is the directory where the processed thumbnail images will be stored.
-  - `static` - this is the directory where static content will be stored (including the client code).
+  - `static` - this is the directory where static content will be stored.
 
 - Copy your original images (or directories of images) into the `photo_directory` directory.
 
@@ -97,15 +103,21 @@ __Below are basic steps to install and run a demonstration of the app on an Linu
   - `sudo mkdir -p /var/log/django;`
   - `sudo touch /var/log/django/spm.log`
 
+- Change ownership of the log directory and its log file to the user running the app, e.g.:
+
+  - `sudo chown -R django /var/log/django/`
+
 - Create the database tables, using the commands:
 
   - `python manage.py makemigrations;`
-  - `python manage.py makemigrations spm_api;`
+  - `python manage.py makemigrations spm_app;`
   - `python manage.py migrate`.
 
 - If running for the first time (i.e. your persistent database folder is empty), define a superuser by issuing the following commands from the application's root directory `python manage.py createsuperuser`.
 
-- In the application's root directory, run `python manage.py collectstatic`, to add the static files to the appropriate directory (ensure the path to the `static` directory has been correctly configured in your reverse proxy configuration).
+- In the application's root directory, run `python manage.py collectstatic`, to add the static files to the appropriate directory (ensure the path to the `static` directory has been correctly configured in your web server configuration).
+
+- Restart the gunicorn server, e.g.: `systemctl restart gunicorn.service`
 
 - Now visit the app's administration area in your web browser (e.g. `https://your.domain.tld/admin`).
 
@@ -124,7 +136,7 @@ __Below are basic steps to install and run a demonstration of the app on an Linu
 
 - From the application's root directory, run `git pull`.
 - Then, run `pip3 install -r requirements.txt`.
-- Then, restart the gunicorn server: `systemctl restart gunicorn`.
+- Then, restart the gunicorn server: `systemctl restart gunicorn.service`.
 
 ### Brief UI instructions
 
