@@ -40,10 +40,10 @@ SECURE_BROWSER_XSS_FILTER = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-ALLOWED_HOSTS = ['localhost:3001', 'localhost' if TESTING_MODE else '']
+ALLOWED_HOSTS = ['localhost:3000', 'localhost' if TESTING_MODE else '']
 CORS_ORIGIN_ALLOW_ALL = False  # only set True for testing purposes
 CORS_ALLOW_CREDENTIALS = True
-CORS_ORIGIN_WHITELIST = ['http://localhost:3001' if TESTING_MODE else '']
+CORS_ORIGIN_WHITELIST = ['http://localhost:3000', 'http://localhost:5000' if TESTING_MODE else '']
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -141,7 +141,7 @@ Q_CLUSTER = {
 # # # application settings
 
 SPM = {
-    'ORIGIN_IMAGE_PATHS': os.path.join(BASE_DIR, 'photo_directory') if TESTING_MODE else '',
+    'ORIGIN_IMAGE_PATHS': {os.path.join(BASE_DIR, 'photo_directory') if TESTING_MODE else ''},
     'PROCESSED_IMAGE_PATH': os.path.join(BASE_DIR, 'processed_images/photos' if TESTING_MODE else ''),
     'PROCESSED_THUMBNAIL_PATH': os.path.join(BASE_DIR, 'processed_images/photos_tn' if TESTING_MODE else ''),
     'PUBLIC_URL': os.path.join(BASE_DIR, 'media/photos' if TESTING_MODE else '/media/photos/'),
