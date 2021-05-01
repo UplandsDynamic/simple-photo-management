@@ -201,43 +201,39 @@ class ProcessImages:
         """
         try:
             # Map arg to uppercase, jpg to JPEG, etc
-            new_format = {'jpg': 'JPEG', 'png': 'PNG'}
-            if conversion_format in new_format.keys():
-                url = os.path.join(path, orig_filename)
-                with Image.open(url) as img:
-                    # convert to conversion_format
-                    img.convert('RGB')  # convert to RGBA to ensure consistency
-                    if change_filename:
-                        new_filename = ProcessImages.generate_image_hash(
-                            image_url=url)  # generate unique hash for image if required
+            url = os.path.join(path, orig_filename)
+            with Image.open(url) as img:
+                # convert to conversion_format
+                img.convert('RGB')  # convert to RGBA to ensure consistency
+                if change_filename:
+                    new_filename = ProcessImages.generate_image_hash(
+                        image_url=url)  # generate unique hash for image if required
+                else:
+                    # get filename minus format extension
+                    new_filename = os.path.splitext(orig_filename)[0]
+                # define new filename (inc. extension for new format)
+                outfile = f'{new_filename}.{conversion_format}'
+                if not thumbs_only:  # if converting to a full-sized copy
+                    try:
+                        img.save(os.path.normpath(
+                            os.path.join(save_path, outfile)))
+                    except Exception as e:
+                        img = img.point(lambda i: i*(1./256)).convert('L')
+                        img.save(os.path.normpath(
+                            os.path.join(save_path, outfile)))
+                # create thumbs
+                for tn in thumb_sizes:
+                    if thumb_path:
+                        thumb_save_url = os.path.join(
+                            thumb_path, f'{new_filename}-{"_".join((str(t) for t in tn))}.{conversion_format}')
                     else:
-                        # get filename minus format extension
-                        new_filename = os.path.splitext(orig_filename)[0]
-                    # define new filename (inc. extension for new format)
-                    outfile = f'{new_filename}.{conversion_format}'
-                    if not thumbs_only:  # if converting to a full-sized copy
-                        try:
-                            img.save(os.path.normpath(
-                                os.path.join(save_path, outfile)))
-                        except Exception as e:
-                            img = img.point(lambda i: i*(1./256)).convert('L')
-                            img.save(os.path.normpath(
-                                os.path.join(save_path, outfile)))
-                    # create thumbs
-                    for tn in thumb_sizes:
-                        if thumb_path:
-                            thumb_save_url = os.path.join(
-                                thumb_path, f'{new_filename}-{"_".join((str(t) for t in tn))}.{conversion_format}')
-                        else:
-                            thumb_save_url = os.path.join(
-                                save_path, 'tn', f'{new_filename}-{"_".join((str(t) for t in tn))}.{conversion_format}')
-                        img.thumbnail(tn, resample=Image.BICUBIC)
-                        img.save(thumb_save_url, quality=100)
-                    print('Conversion done!')
-                    return {'orig_path': path, 'processed_path': save_path, 'new_filename': outfile,
-                            'orig_filename': orig_filename, 'thumb_path': thumb_path}
-            else:
-                print(f'Unrecognised file converstion format!')
+                        thumb_save_url = os.path.join(
+                            save_path, 'tn', f'{new_filename}-{"_".join((str(t) for t in tn))}.{conversion_format}')
+                    img.thumbnail(tn, resample=Image.BICUBIC)
+                    img.save(thumb_save_url, quality=100)
+                print('Conversion done!')
+                return {'orig_path': path, 'processed_path': save_path, 'new_filename': outfile,
+                        'orig_filename': orig_filename, 'thumb_path': thumb_path}
         except (IOError, Exception) as e:
             print(f'An error occurred in convert_format: {e}')
         return False

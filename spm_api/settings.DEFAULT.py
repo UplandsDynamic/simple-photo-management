@@ -142,14 +142,15 @@ Q_CLUSTER = {
 
 SPM = {
     'ORIGIN_IMAGE_PATHS': {os.path.join(BASE_DIR, 'photo_directory') if TESTING_MODE else ''},
-    'PROCESSED_IMAGE_PATH': os.path.join(BASE_DIR, 'processed_images/photos' if TESTING_MODE else ''),
-    'PROCESSED_THUMBNAIL_PATH': os.path.join(BASE_DIR, 'processed_images/photos_tn' if TESTING_MODE else ''),
-    'PUBLIC_URL': os.path.join(BASE_DIR, 'media/photos' if TESTING_MODE else '/media/photos/'),
-    'PUBLIC_URL_TN': os.path.join(BASE_DIR, 'media/photos_tn' if TESTING_MODE else '/media/photos_tn'),
+    'PROCESSED_IMAGE_PATH': os.path.join(BASE_DIR, 'media/photos' if TESTING_MODE else '/media/photos'),
+    'PROCESSED_THUMBNAIL_PATH': os.path.join(BASE_DIR, 'media/photos_tn' if TESTING_MODE else '/media/photos'),
+    'PUBLIC_URL': '/media/photos' if TESTING_MODE else '/media/photos/',
+    'PUBLIC_URL_TN': '/media/photos_tn' if TESTING_MODE else '/media/photos_tn',
     'CONVERSION_FORMAT': 'jpg',
     'VALID_UPDATE_MODES': {'add_tags', 'remove_tag', 'rotate_image'},
     'THUMB_SIZES':  [(1080, 1080), (720, 720), (350, 350), (150, 150), (75, 75)]
 }
+
 
 # # # Caches
 
