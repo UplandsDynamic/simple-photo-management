@@ -142,8 +142,8 @@ Q_CLUSTER = {
 
 SPM = {
     'ORIGIN_IMAGE_PATHS': {os.path.join(BASE_DIR, 'photo_directory') if TESTING_MODE else ''},
-    'PROCESSED_IMAGE_PATH': os.path.join(BASE_DIR, 'media/photos' if TESTING_MODE else '/media/photos'),
-    'PROCESSED_THUMBNAIL_PATH': os.path.join(BASE_DIR, 'media/photos_tn' if TESTING_MODE else '/media/photos'),
+    'PROCESSED_IMAGE_PATH': os.path.join(BASE_DIR, 'media/photos' if TESTING_MODE else 'media/photos'),
+    'PROCESSED_THUMBNAIL_PATH': os.path.join(BASE_DIR, 'media/photos_tn' if TESTING_MODE else 'media/photos_tn'),
     'PUBLIC_URL': '/media/photos' if TESTING_MODE else '/media/photos/',
     'PUBLIC_URL_TN': '/media/photos_tn' if TESTING_MODE else '/media/photos_tn',
     'CONVERSION_FORMAT': 'jpg',
