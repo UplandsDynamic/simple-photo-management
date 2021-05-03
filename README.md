@@ -83,6 +83,8 @@ __Below are basic steps to install and run a demonstration of the app on an Linu
 
 - Create a directory named `secret_key` in the application's root directory and change its ownership to the application user (as created above).
 
+- Change permissions on the `secret_key` directory so only the user running the application can read it, e.g.: `chmod 0700 secret_key`.
+
 - Create a systemd unit file to run the gunicorn service at `/etc/systemd/system/gunicorn.service`, then enable and start start the systemd service (details of how to do this is outwith the scope of this document, but if you need further advice feel free to get in touch).
 
 - Create a systemd unit file to run the django_q service (which manages long running operations, such as 'stock taking') at `/etc/systemd/system/djangoq.service`. Enable and start the systemd service (details of how to do this is outwith the scope of this document, but if you need further advice feel free to get in touch).
