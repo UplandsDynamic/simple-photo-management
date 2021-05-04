@@ -7,6 +7,7 @@ import hashlib
 from pathlib import Path
 import glob
 import traceback
+import logging
 
 ORIGIN_IMAGE_PATHS = set(os.path.normpath(os.path.normpath(
     f'{os.path.join(os.getcwd(), "../test_images")}')))
@@ -16,6 +17,9 @@ THUMB_PATH = os.path.normpath(os.path.normpath(
     f'{os.path.join(os.getcwd(), "../test_images/processed/tn")}'))
 THUMB_SIZES = [(1080, 1080), (720, 720), (350, 350), (150, 150), (75, 75)]
 CONVERSION_FORMAT = 'jpg'
+
+# Get an instance of a logger
+logger = logging.getLogger('django')
 
 
 class ProcessImages:
@@ -128,7 +132,8 @@ class ProcessImages:
             #     image_data.append({'iptc_key': '', 'tags': []})
             return image_data
         except (IOError, KeyError, Exception) as e:
-            print(f'An error occurred in read_iptc_tags: {e}')
+            logger.error(f'Error in _read_iptc_tags: {e}')
+            # print(f'An error occurred in read_iptc_tags: {e}')
             return False
 
     @staticmethod
@@ -334,18 +339,21 @@ class ProcessImages:
     def tag_write_error_check(intended_tags: dict = {}, origin_image_path: str = '', origin_image_filename: str = '') -> bool:
         image_data = ProcessImages._read_iptc_tags(
             origin_image_filename, origin_image_path)
-        key_found = False
-        for t in intended_tags['tags']:
-            for d in image_data:
-                if d['iptc_key'] == intended_tags['iptc_key']:
-                    key_found = True
-                    if t not in d['tags']:
-                        print(
-                            'Error: The key WAS found - but the tag was NOT written!')
-                        return False
-        if intended_tags['tags'] and not key_found:
-            print('Error: The key was NOT found and the tag was NOT written!')
+        if not image_data:
             return False
+        else:
+            key_found = False
+            for t in intended_tags['tags']:
+                for d in image_data:
+                    if d['iptc_key'] == intended_tags['iptc_key']:
+                        key_found = True
+                        if t not in d['tags']:
+                            print(
+                                'Error: The key WAS found - but the tag was NOT written!')
+                            return False
+            if intended_tags['tags'] and not key_found:
+                print('Error: The key was NOT found and the tag was NOT written!')
+                return False
         return True
 
     @staticmethod
