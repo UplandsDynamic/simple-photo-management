@@ -147,14 +147,18 @@ class ProcessImages:
         """
         try:
             iptc_key = tag_data['iptc_key']
-            if iptc_key:
+            if iptc_key and tag_data['tags']:
                 tags = tag_data['tags']
                 print(f'Tags to write: {tags}')
                 meta = pyexiv2.ImageMetadata(new_file_url)
                 meta.read()
                 meta[iptc_key] = pyexiv2.IptcTag(iptc_key, tags)
                 meta.write()
-            logger.info('No tag to write!')
+            else:
+                logger.warning(
+                    'NO TAGS WERE SUBMITTED TO WRITE, SO ASSUMING ONLY 1 TAG EXISTED & THE INTENTION WAS TO WRITE AN EMPTY TAG SET, WITH THE EFFECT OF DELETING IT')
+                ProcessImages.delete_iptc_tags(new_file_url)  # delete the tag
+            logger.info('No more tags to write!')
         except (TypeError, Exception) as e:
             logger.error(f'An error occurred in write_iptc_tags: {e}')
         return False
@@ -162,14 +166,16 @@ class ProcessImages:
     @staticmethod
     def delete_iptc_tags(file_url: str) -> bool:
         """
-        method to delete all IPTC tags from image
+        method to delete IPTC tags from image
         :param file_url: filename of target image
         :return: True | False
         """
+        logger.warning(f'DELETING TAGS FROM: {file_url}')
         try:
-            loop_count = 0
             meta = pyexiv2.ImageMetadata(file_url)
             meta.read()  # read the meta
+            # delete all tags
+            loop_count = 0
             while loop_count < 10:
                 for key in meta.iptc_keys:  # delete every iptc key
                     del meta[key]
@@ -305,7 +311,7 @@ class ProcessImages:
         :param retain_original: bool: whether to retain original tags or simply replace with new
         :return: True (if Excpetion not raised)
         """
-        print(
+        logger.info(
             f'ADDING TAGS: [target: {target_file_url}, tags: {tags}, retain_original: {retain_original}]')
         try:
             # get existing tags, if any, Expects: [{'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']}] | False
@@ -333,6 +339,7 @@ class ProcessImages:
             # check successful write
             if not ProcessImages.tag_write_error_check(
                     intended_tags=tags, origin_image_path=path, origin_image_filename=target_filename):
+                logger.error('TAGS NOT WRITTEN CORRECTLY!')
                 return False
         except Exception as e:
             print(f'An exception occurred whilst attempting to add tags : {e}')
@@ -345,8 +352,13 @@ class ProcessImages:
             origin_image_path: str = '', origin_image_filename: str = '') -> bool:
         image_data = ProcessImages._read_iptc_tags(
             origin_image_filename, origin_image_path)
+        logger.info(f'TAGS LOOKING FOR: {intended_tags}')
         if not image_data:
-            return False
+            logger.info('THERE WERE NO TAGS ON THE PROCESSED FILE')
+        elif not intended_tags['tags']:
+            # return True if no tags, as tags were deleted not written
+            logger.info('TAGS WERE BEING DELETED AND WRITE WAS SUCCESSFUL!')
+            return True
         else:
             key_found = False
             for t in intended_tags['tags']:
@@ -354,11 +366,11 @@ class ProcessImages:
                     if d['iptc_key'] == intended_tags['iptc_key']:
                         key_found = True
                         if t not in d['tags']:
-                            print(
+                            logger.error(
                                 'Error: The key WAS found - but the tag was NOT written!')
                             return False
             if intended_tags['tags'] and not key_found:
-                print('Error: The key was NOT found and the tag was NOT written!')
+                logger.error('Error: The key was NOT found and the tag was NOT written!')
                 return False
         return True
 
