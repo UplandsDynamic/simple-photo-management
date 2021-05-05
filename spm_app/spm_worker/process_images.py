@@ -30,8 +30,10 @@ class ProcessImages:
     """
     ALLOWED_IMAGE_FORMATS = ['jpeg', 'jpg', 'tiff', 'tif', 'png']
 
-    def __init__(self, origin_image_paths=None, origin_file_url=None, processed_image_path=None, thumb_path=None, conversion_format=None,
-                 retag=False, process_single=False, reprocess=False, thumb_sizes: [tuple] = [], tags=None):
+    def __init__(
+            self, origin_image_paths=None, origin_file_url=None, processed_image_path=None, thumb_path=None,
+            conversion_format=None, retag=False, process_single=False, reprocess=False, thumb_sizes: [tuple] = [],
+            tags=None):
         """
         initiate the class
         :param origin_image_paths: set of paths of dirs of photos to be converted and/or tagged
@@ -93,11 +95,11 @@ class ProcessImages:
                                 [str(i) for i in item_list if not os.path.isdir(i)])
                     else:
                         if allowed_formats:
-                            file_urls.extend(list(os.path.join(directory, f) for f in os.listdir(directory) if os.path.splitext(f)[
-                                1].strip('.') in allowed_formats))
+                            file_urls.extend(list(os.path.join(directory, f) for f in os.listdir(
+                                directory) if os.path.splitext(f)[1].strip('.') in allowed_formats))
                         else:
-                            file_urls.extend(list(os.path.join(directory, f) for f in os.listdir(directory) if not os.path.isdir(
-                                os.path.join(directory, f))))
+                            file_urls.extend(list(os.path.join(directory, f) for f in os.listdir(
+                                directory) if not os.path.isdir(os.path.join(directory, f))))
                 except (IOError, Exception) as e:
                     print(f'An error occurred in file_url_list_generator: {e}')
              # return file_urls
@@ -133,7 +135,6 @@ class ProcessImages:
             return image_data
         except (IOError, KeyError, Exception) as e:
             logger.error(f'Error in _read_iptc_tags: {e}')
-            # print(f'An error occurred in read_iptc_tags: {e}')
             return False
 
     @staticmethod
@@ -153,9 +154,9 @@ class ProcessImages:
                 meta.read()
                 meta[iptc_key] = pyexiv2.IptcTag(iptc_key, tags)
                 meta.write()
-            print('No tag to write!')
+            logger.info('No tag to write!')
         except (TypeError, Exception) as e:
-            print(f'An error occurred in write_iptc_tags: {e}')
+            logger.error(f'An error occurred in write_iptc_tags: {e}')
         return False
 
     @staticmethod
@@ -283,8 +284,9 @@ class ProcessImages:
         :return: True | False
         """
         try:
-            files_to_delete = ProcessImages.file_url_list_generator(directories=allowed_dirs, allowed_formats=allowed_formats,
-                                                                    recursive=recursive, containing_str=containing_str)
+            files_to_delete = ProcessImages.file_url_list_generator(
+                directories=allowed_dirs, allowed_formats=allowed_formats, recursive=recursive,
+                containing_str=containing_str)
             for f in files_to_delete:
                 os.remove(f)
             return True
@@ -324,11 +326,13 @@ class ProcessImages:
             # if not merging with original or there were no original tags to merge, just use new
             tags_to_write = [tags] if not tags_to_write else tags_to_write
             # write tags to images (tags in form: {'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']})
+            logger.info(f'WRITING THESE TAGS: {tags_to_write}')
             for tag in tags_to_write:
                 ProcessImages._write_iptc_tags(
                     new_file_url=target_file_url, tag_data=tag)
             # check successful write
-            if not ProcessImages.tag_write_error_check(intended_tags=tags, origin_image_path=path, origin_image_filename=target_filename):
+            if not ProcessImages.tag_write_error_check(
+                    intended_tags=tags, origin_image_path=path, origin_image_filename=target_filename):
                 return False
         except Exception as e:
             print(f'An exception occurred whilst attempting to add tags : {e}')
@@ -336,7 +340,9 @@ class ProcessImages:
         return True
 
     @staticmethod
-    def tag_write_error_check(intended_tags: dict = {}, origin_image_path: str = '', origin_image_filename: str = '') -> bool:
+    def tag_write_error_check(
+            intended_tags: dict = {},
+            origin_image_path: str = '', origin_image_filename: str = '') -> bool:
         image_data = ProcessImages._read_iptc_tags(
             origin_image_filename, origin_image_path)
         if not image_data:
@@ -384,8 +390,9 @@ class ProcessImages:
             raise
 
     @staticmethod
-    def rotate_image(origin_file_url: str, rotation_degrees: int = 90, copy_tags: bool = True,
-                     recreate_thumbs: bool = True, save_path: str = '', save_format: str = '', thumb_path: str = '', thumb_sizes: [tuple] = []) -> bool:
+    def rotate_image(
+            origin_file_url: str, rotation_degrees: int = 90, copy_tags: bool = True, recreate_thumbs: bool = True,
+            save_path: str = '', save_format: str = '', thumb_path: str = '', thumb_sizes: [tuple] = []) -> bool:
         """function to rotate an image
         :param origin_file_url: str: url of the image file to rotate
         :param copy_tags: bool: whether to copy IPTC tags from original to rotated image
@@ -410,8 +417,9 @@ class ProcessImages:
                         target_file_url=origin_file_url, tags=tag, retain_original=True)
             # convert to create thumbs
             if recreate_thumbs:
-                ProcessImages.convert_image(orig_filename=filename, path=path, save_path=save_path, thumb_path=thumb_path,
-                                            conversion_format=save_format, change_filename=False, thumbs_only=True, thumb_sizes=thumb_sizes)
+                ProcessImages.convert_image(
+                    orig_filename=filename, path=path, save_path=save_path, thumb_path=thumb_path,
+                    conversion_format=save_format, change_filename=False, thumbs_only=True, thumb_sizes=thumb_sizes)
             return True
         except IOError as e:
             print(f'Image rotation failed: {e}')

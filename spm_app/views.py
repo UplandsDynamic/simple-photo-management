@@ -409,11 +409,13 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
         # create new converted images with the requested tags removed
         updated_tags = set(t.tag for t in record.tags.all()) - set(tags)
         # write new tag list to origin image
-        return self.handle_add_tags(record_id=record_id, tags=list(updated_tags), user=user, write_to_iptc=write_to_iptc,
-                                    iptc_key=iptc_key, retain_original=False)
+        return self.handle_add_tags(
+            record_id=record_id, tags=list(updated_tags),
+            user=user, write_to_iptc=write_to_iptc, iptc_key=iptc_key, retain_original=False)
 
-    def handle_replace_tags(records: queryset, tag_to_replace: str, replacement_tag: str, user: User, write_to_iptc: bool = True,
-                            iptc_key: str = 'Iptc.Application2.Keywords') -> dict:
+    @staticmethod
+    def handle_replace_tags(records: queryset, tag_to_replace: str, replacement_tag: str, user: User,
+                            write_to_iptc: bool = True, iptc_key: str = 'Iptc.Application2.Keywords') -> dict:
         """function to replace tags in origin images.
         - Compiles amended tag list to origin image
         - Calls handle_add_tags to write updated tags to origin image & generate new
@@ -477,8 +479,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                     logger.info(f'TAGS WRITTEN: {tags_were_written}')
                     # write tags to the origin image if not processed_only
                     if not processed_only and tags_were_written:
-                        tags_were_written_to_origin = ProcessImages.add_tags(target_file_url=origin_file_url, tags=tags_to_add,
-                                                                             retain_original=retain_original)
+                        tags_were_written_to_origin = ProcessImages.add_tags(
+                            target_file_url=origin_file_url, tags=tags_to_add, retain_original=retain_original)
                         if not tags_were_written_to_origin:
                             """
                             If write to origin image unsuccessful, exit (record will now remain
@@ -495,8 +497,8 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                             return {'success': False, 'data': error_message}
                     # rename processed file so name matches new hash of origin image
                     if tags_were_written:
-                        renamed_main = ProcessImages.rename_image(url_file_to_hash=origin_file_url,
-                                                                  url_file_to_rename=record.processed_url, with_hash=True)
+                        renamed_main = ProcessImages.rename_image(
+                            url_file_to_hash=origin_file_url, url_file_to_rename=record.processed_url, with_hash=True)
                 except Exception:
                     logger.error(
                         'Renaming the processed file failed!', exc_info=True)
@@ -857,8 +859,8 @@ class ProcessPhotos(APIView):
         orphaned_processed_set = set()
         orphaned_no_origin_set = set()
         if processed_directories:
-            url_list_generator = ProcessImages.file_url_list_generator(directories={settings.SPM['PROCESSED_IMAGE_PATH']},
-                                                                       recursive=False)
+            url_list_generator = ProcessImages.file_url_list_generator(
+                directories={settings.SPM['PROCESSED_IMAGE_PATH']}, recursive=False)
             filenames_set = {os.path.splitext(os.path.split(f)[1])[
                 0] for f in url_list_generator}
             orphaned_processed_set = set(PhotoData.objects.values_list(
