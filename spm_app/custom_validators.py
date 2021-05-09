@@ -102,6 +102,7 @@ class RequestQueryValidator:
                              'record_updated', '-record_updated']
     bool_or_none = 'validation incoming value is a boolean value or None'
     record_id = 'validation query string is a valid record ID (digits)'
+    iptc_tag = 'validation query string is a valid IPTC tag'
 
     @staticmethod
     def validate(query_type, value):
@@ -139,3 +140,11 @@ class RequestQueryValidator:
                     _(f'{value} is not a valid record ID!')
                 )
             return value
+        elif query_type == RequestQueryValidator.iptc_tag:
+            valid_tags = {
+                'Iptc.Envelope.CharacterSet', 'Iptc.Application2.Program',
+                'Iptc.Application2.ProgramVersion', 'Iptc.Application2.Keywords'}
+            if value not in valid_tags:
+                raise ValidationError(
+                    _(f'{value} is not a valid IPTC tag!')
+                )

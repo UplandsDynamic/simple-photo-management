@@ -4,8 +4,7 @@ from django.http import JsonResponse
 from django.utils.datetime_safe import datetime
 from rest_framework.views import APIView
 import os
-from .custom_validators import (RequestQueryValidator, validate_search, validate_tag_list,
-                                validate_update_mode, validate_rotation_degrees)
+from .custom_validators import *
 from django.core.exceptions import ValidationError, PermissionDenied
 from rest_framework import (viewsets, permissions, serializers, status)
 from .serializers import (
@@ -28,6 +27,7 @@ from django.conf import settings
 import time
 import re
 import uuid
+from typing import List
 
 """
 # Note about data object (database record):
@@ -384,7 +384,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
             'success': True if mutated and conversion_generated else False,
             'data': record if mutated and conversion_generated else error_message}
 
-    def handle_remove_tags(self, record_id: int, tags: [str], user: User, write_to_iptc: bool = True,
+    def handle_remove_tags(self, record_id: int, tags: List[str], user: User, write_to_iptc: bool = True,
                            iptc_key: str = 'Iptc.Application2.Keywords') -> dict:
         """function to delete tags from origin images.
         - Compiles amended tag list (original tags minus removed) to origin image
@@ -435,7 +435,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                    hook=PhotoDataViewSet.replacement_task_hook)
 
     @staticmethod
-    def handle_add_tags(record_id: int, tags: [str], user: User, write_to_iptc: bool = True,
+    def handle_add_tags(record_id: int, tags: List[str], user: User, write_to_iptc: bool = True,
                         iptc_key: str = 'Iptc.Application2.Keywords', retain_original: bool = True,
                         processed_only: bool = False) -> PhotoData or bool:
         """function to add tags to the PhotoData model
@@ -843,6 +843,31 @@ class ProcessPhotos(APIView):
                     record.mod_lock = False
                     record.save()
                 else:
+                    logger.info(f'NO TAGS DELETED FROM {record.origin_url}')
+            except Exception as e:
+                logger.error(
+                    f'An error occurred deleting meta data for {record.id}: {e}')
+        return True
+
+    def delete_iptc_type(user: User = None, iptc_type: str = None) -> bool:
+        """function to delete metadata from orginal photos of locked models and
+        then to remove the mod_lock from the database record of those photos
+        : return: bool: True | False
+        """
+        all_records = PhotoData.objects.all()
+        for record in all_records:
+            try:
+                # remove tags from original image
+                tags_deleted = ProcessImages.delete_iptc_tags(
+                    file_url=record.original_url, tag_type_to_delete=iptc_type)
+                # reprocess the image, which generates new opitimzed & thumbs etc with no tags
+                if tags_deleted:
+                    ProcessPhotos.process_images(
+                        user=user, origin_file_url=record.original_url, process_single=True, reprocess=True)
+                    # update datebase to ensure file is unlocked
+                    record.mod_lock = False
+                    record.save()
+                else:
                     logger.error(
                         'An error occurred during the tag deletion process!')
             except Exception as e:
@@ -887,12 +912,12 @@ class ProcessPhotos(APIView):
 
     @staticmethod
     def process_images(retag=False, clean_db=False, scan=False, user=None,
-                       origin_file_url=None, process_single=False, reprocess=False, del_meta=False):
+                       origin_file_url=None, process_single=False, reprocess=False, del_meta=False, del_iptc_type=None):
         """
-        method to process images(make resized copy(i.e. a 'processed' copy) & copy tags from original to resized) 
+        method to process images(make resized copy(i.e. a 'processed' copy) & copy tags from original to resized)
         param retag: whether to re-copy over tags from original to processed image, if filename already exists
-        param user: current user 
-        param add_record_to_db: function, that submits records to DB model: 
+        param user: current user
+        param add_record_to_db: function, that submits records to DB model:
         return: True | False
         """
         origin_image_paths = settings.SPM['ORIGIN_IMAGE_PATHS']
@@ -942,6 +967,9 @@ class ProcessPhotos(APIView):
             # if action is to delete meta & remove modlocks for all image data
             if del_meta:
                 return ProcessPhotos.delete_meta_and_unlock(user=user)
+            # if action to delete iptc tag type from all image data
+            if del_iptc_type:
+                return ProcessPhotos.delete_iptc_type(user=user, iptc_type=del_iptc_type)
         except (ValidationError, Exception) as e:
             if isinstance(e, ValidationError):
                 logger.error(f'Validation error: {e.message}')
@@ -1003,16 +1031,24 @@ class ProcessPhotos(APIView):
         hand off the image processing and tagging task to django_q multiprocessing(async)
         """
         action_queries = {
-            'del_meta': 'Delete all IPTC meta from all original images marked as `mod_lock` True in DB & mark mod_lock False'
+            'del_meta': 'Delete all IPTC meta from all original images marked as `mod_lock` True in DB & mark mod_lock False',
+            'del_iptc_type': 'Delete all IPTC tags of a particular type from all original images'
         }
         try:
-            # check for request queries - & validate - that indicate required action on data
+            # check for request queries - & validate - indicating required action on data
             del_meta = RequestQueryValidator.validate(
                 'bool_or_none', self.request.query_params.get('del_meta', None)
             )
+            try:
+                RequestQueryValidator.validate(query_type=RequestQueryValidator.iptc_tag,
+                                               value=self.request.query_params.get('del_iptc_type'))
+                del_iptc_type = self.request.query_params.get('del_iptc_type')
+            except Exception as e:
+                logger.info(f'No del_iptc_type param passed, or it contained invalid characters: {e}')
+                del_iptc_type = None
             if set(action_queries.keys()).intersection(self.request.query_params.keys()):
                 async_task(ProcessPhotos.process_images,
-                           user=self.request.user, del_meta=del_meta)
+                           user=self.request.user, del_meta=del_meta, del_iptc_type=del_iptc_type)
                 return JsonResponse({'Status': 'Processing .......'}, status=status.HTTP_202_ACCEPTED)
             return JsonResponse({'Status': 'Query invalid .......'}, status=status.HTTP_400_BAD_REQUEST)
         except ValidationError as e:

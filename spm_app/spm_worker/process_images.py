@@ -8,13 +8,14 @@ from pathlib import Path
 import glob
 import traceback
 import logging
+from typing import List
 
 ORIGIN_IMAGE_PATHS = set(os.path.normpath(os.path.normpath(
-    f'{os.path.join(os.getcwd(), "../test_images")}')))
+    f'{os.path.join(os.getcwd(), "../photo_directory")}')))
 PROCESSED_IMAGE_PATH = os.path.normpath(os.path.normpath(
-    f'{os.path.join(os.getcwd(), "../test_images/processed")}'))
+    f'{os.path.join(os.getcwd(), "../media/photos")}'))
 THUMB_PATH = os.path.normpath(os.path.normpath(
-    f'{os.path.join(os.getcwd(), "../test_images/processed/tn")}'))
+    f'{os.path.join(os.getcwd(), "../media/photos/tn")}'))
 THUMB_SIZES = [(1080, 1080), (720, 720), (350, 350), (150, 150), (75, 75)]
 CONVERSION_FORMAT = 'jpg'
 
@@ -32,7 +33,7 @@ class ProcessImages:
 
     def __init__(
             self, origin_image_paths=None, origin_file_url=None, processed_image_path=None, thumb_path=None,
-            conversion_format=None, retag=False, process_single=False, reprocess=False, thumb_sizes: [tuple] = [],
+            conversion_format=None, retag=False, process_single=False, reprocess=False, thumb_sizes: List[tuple] = [],
             tags=None):
         """
         initiate the class
@@ -149,7 +150,7 @@ class ProcessImages:
             iptc_key = tag_data['iptc_key']
             if iptc_key and tag_data['tags']:
                 tags = tag_data['tags']
-                print(f'Tags to write: {tags}')
+                logger.info(f'Tags to write: {tags}')
                 meta = pyexiv2.ImageMetadata(new_file_url)
                 meta.read()
                 meta[iptc_key] = pyexiv2.IptcTag(iptc_key, tags)
@@ -164,36 +165,50 @@ class ProcessImages:
         return False
 
     @staticmethod
-    def delete_iptc_tags(file_url: str) -> bool:
+    def delete_iptc_tags(file_url: str, tag_type_to_delete: str = None) -> bool:
         """
         method to delete IPTC tags from image
         :param file_url: filename of target image
+        :param tag_type_to_delete: IPTC tag type to delete
         :return: True | False
         """
-        logger.warning(f'DELETING TAGS FROM: {file_url}')
+        logger.info(f'DELETING TAGS FROM: {file_url}')
         try:
             meta = pyexiv2.ImageMetadata(file_url)
             meta.read()  # read the meta
-            # delete all tags
-            loop_count = 0
-            while loop_count < 10:
-                for key in meta.iptc_keys:  # delete every iptc key
-                    del meta[key]
-                meta.write()  # save the meta
-                loop_count += 1
-                # check all tags successfully cleared
-                meta = pyexiv2.ImageMetadata(file_url)
-                meta.read()
-                if not meta.iptc_keys:
-                    break
-            return loop_count < 10  # return True if successfully ended loop, else False
+            # delete specific tag type
+            if tag_type_to_delete:
+                try:
+                    #del meta.iptc_keys[tag_type_to_delete]
+                    meta.__delitem__(tag_type_to_delete)
+                    logger.info(f'TAG TYPE {tag_type_to_delete} SUCCESSFULLY DELETED!')
+                    meta.write() # save the meta
+                    return True
+                except (TypeError, Exception) as e:
+                    logger.warning(f'DELETION ERROR: {e}')
+                    logger.info(f'NO TAG OF TYPE {tag_type_to_delete} TO DELETE FROM IMAGE {file_url}!')
+                    return False
+            else:
+                # delete all tags
+                loop_count = 0
+                while loop_count < 10:
+                    for key in meta.iptc_keys:  # delete all keys
+                        del meta[key]
+                    meta.write()  # save the meta
+                    loop_count += 1
+                    # check all tags successfully cleared
+                    meta = pyexiv2.ImageMetadata(file_url)
+                    meta.read()
+                    if not meta.iptc_keys:
+                        break
+                return loop_count < 10  # return True if successfully ended loop, else False
         except (TypeError, Exception) as e:
             print(f'An error occurred in delete_iptc_tags: {e}')
 
     @staticmethod
     def convert_image(orig_filename: str, path: str, save_path: str, conversion_format: str,
                       thumb_path: str = '', change_filename: bool = True, thumbs_only: bool = False,
-                      thumb_sizes: [tuple] = [(75, 75)]) -> dict or bool:
+                      thumb_sizes: List[tuple] = [(75, 75)]) -> dict or bool:
         """
         method to convert the format and resize an image file
         :param orig_filename: original filename of image
@@ -243,11 +258,11 @@ class ProcessImages:
                             save_path, 'tn', f'{new_filename}-{"_".join((str(t) for t in tn))}.{conversion_format}')
                     img.thumbnail(tn, resample=Image.BICUBIC)
                     img.save(thumb_save_url, quality=100)
-                print('Conversion done!')
+                logger.info('Conversion done!')
                 return {'orig_path': path, 'processed_path': save_path, 'new_filename': outfile,
                         'orig_filename': orig_filename, 'thumb_path': thumb_path}
         except (IOError, Exception) as e:
-            print(f'An error occurred in convert_format: {e}')
+            logger.error(f'An error occurred in convert_format: {e}')
         return False
 
     @staticmethod
@@ -321,9 +336,9 @@ class ProcessImages:
             if retain_original:
                 tags_to_write = ProcessImages._read_iptc_tags(
                     filename=target_filename, path=path)
-                print(f'ORIGINAL TAGS TO COPY: {tags_to_write}')
-                print(f'COPIED FROM FILENAME: {target_filename}')
-                print(f'COPIED FROM PATH: {path}')
+                logger.info(f'ORIGINAL TAGS TO COPY: {tags_to_write}')
+                logger.info(f'COPIED FROM FILENAME: {target_filename}')
+                logger.info(f'COPIED FROM PATH: {path}')
                 if tags_to_write:
                     for existing_tag in tags_to_write:
                         if existing_tag['iptc_key'] == tags['iptc_key']:
@@ -404,7 +419,7 @@ class ProcessImages:
     @staticmethod
     def rotate_image(
             origin_file_url: str, rotation_degrees: int = 90, copy_tags: bool = True, recreate_thumbs: bool = True,
-            save_path: str = '', save_format: str = '', thumb_path: str = '', thumb_sizes: [tuple] = []) -> bool:
+            save_path: str = '', save_format: str = '', thumb_path: str = '', thumb_sizes: List[tuple] = []) -> bool:
         """function to rotate an image
         :param origin_file_url: str: url of the image file to rotate
         :param copy_tags: bool: whether to copy IPTC tags from original to rotated image
