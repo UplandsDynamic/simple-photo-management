@@ -22,6 +22,8 @@ CONVERSION_FORMAT = 'jpg'
 # Get an instance of a logger
 logger = logging.getLogger('django')
 
+# remove limit on image size
+Image.MAX_IMAGE_PIXELS = None
 
 class ProcessImages:
     """
