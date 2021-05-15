@@ -143,7 +143,7 @@ class RequestQueryValidator:
         elif query_type == RequestQueryValidator.iptc_tag:
             valid_tags = {
                 'Iptc.Envelope.CharacterSet', 'Iptc.Application2.Program',
-                'Iptc.Application2.ProgramVersion', 'Iptc.Application2.Keywords'}
+                'Iptc.Application2.ProgramVersion', 'Iptc.Application2.Keywords', 'Iptc.Application2.DateCreated', 'Iptc.Application2.TimeCreated'}
             if value not in valid_tags:
                 raise ValidationError(
                     _(f'{value} is not a valid IPTC tag!')

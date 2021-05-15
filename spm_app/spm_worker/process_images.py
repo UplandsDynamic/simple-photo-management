@@ -25,6 +25,7 @@ logger = logging.getLogger('django')
 # remove limit on image size
 Image.MAX_IMAGE_PIXELS = None
 
+
 class ProcessImages:
     """
     Processes images by:
@@ -184,7 +185,7 @@ class ProcessImages:
                     #del meta.iptc_keys[tag_type_to_delete]
                     meta.__delitem__(tag_type_to_delete)
                     logger.info(f'TAG TYPE {tag_type_to_delete} SUCCESSFULLY DELETED!')
-                    meta.write() # save the meta
+                    meta.write()  # save the meta
                     return True
                 except (TypeError, Exception) as e:
                     logger.warning(f'DELETION ERROR: {e}')
