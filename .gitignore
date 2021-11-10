@@ -16,3 +16,6 @@ venv/
 requirements.in
 devel/
 .vscode/
+scratch.md
+.DS_Store
+test.py

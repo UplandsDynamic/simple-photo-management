@@ -1,0 +1,48 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+arrow = "*"
+asgiref = "*"
+blessed = "*"
+certifi = "*"
+charset-normalizer = "*"
+coreapi = "*"
+coreschema = "*"
+django-cors-headers = "*"
+django-picklefield = "*"
+django-q = "*"
+djangorestframework = "*"
+gevent = "*"
+greenlet = "*"
+gunicorn = "*"
+idna = "*"
+itypes = "*"
+psycopg2-binary = "*"
+pycodestyle = "*"
+python-dateutil = "*"
+pytz = "*"
+redis = "*"
+requests = "*"
+six = "*"
+sqlparse = "*"
+toml = "*"
+uritemplate = "*"
+urllib3 = "*"
+wcwidth = "*"
+"zope.event" = "*"
+"zope.interface" = "*"
+Django = "*"
+Jinja2 = "*"
+MarkupSafe = "*"
+Pillow = "*"
+PyYAML = "*"
+autopep8 = "*"
+
+[dev-packages]
+autopep8 = "*"
+
+[requires]
+python_version = "3.9"
