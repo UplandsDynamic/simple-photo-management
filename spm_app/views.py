@@ -839,11 +839,11 @@ class ProcessPhotos(APIView):
                 if tags_deleted:
                     ProcessPhotos.process_images(
                         user=user, origin_file_url=record.original_url, process_single=True, reprocess=True)
-                    # update datebase to unlock the file
-                    record.mod_lock = False
-                    record.save()
                 else:
-                    logger.info(f'NO TAGS DELETED FROM {record.origin_url}')
+                    logger.info(f'NO TAGS DELETED FROM {record.original_url}')
+                # update datebase to unlock the file
+                record.mod_lock = False
+                record.save()
             except Exception as e:
                 logger.error(
                     f'An error occurred deleting meta data for {record.id}: {e}')

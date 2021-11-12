@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-import glob
 import os
-import pyexiv2
+import subprocess
 from PIL import Image
 import hashlib
 from pathlib import Path
-import glob
-import traceback
 import logging
 from typing import List
 
@@ -123,20 +120,24 @@ class ProcessImages:
         :param path: path to image
         :return: [{'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']}] | False
         """
+        iptc_keys = dict()
         try:
             url = os.path.join(path, filename)
-            meta = pyexiv2.ImageMetadata(os.path.join(url))
-            meta.read()
-            iptc_keys = meta.iptc_keys or []
-            image_data = []
-            if iptc_keys:
-                for key in iptc_keys:
-                    tag = meta[key]
-                    image_data.append(
-                        {'iptc_key': key, 'tags': tag.raw_value or []})
-            # else:
-            #     image_data.append({'iptc_key': '', 'tags': []})
-            return image_data
+            meta = subprocess.run(["exiv2", "-pi", os.path.join(url)], stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, universal_newlines=True)
+            if not meta.stderr:                      
+            # create tags list
+                meta_data = meta.stdout.splitlines()
+                key_set = set(k.split()[0] for k in meta_data)  # creates set of IPTC keys
+                for k in key_set: # creates structure for {'itpc_key': ['tag1', 'tag2'],}
+                    iptc_keys.update({k: []})
+                for key in meta_data:
+                    split = key.split()
+                    iptc_keys[split[0]].append(' '.join(split[3:]))
+            else:
+                raise KeyError(meta.stderr)
+            image_data = [{'iptc_key': key, 'tags': value} for key, value in iptc_keys.items()]
+            return image_data if image_data else False
         except (IOError, KeyError, Exception) as e:
             logger.error(f'Error in _read_iptc_tags: {e}')
             return False
@@ -154,12 +155,13 @@ class ProcessImages:
             if iptc_key and tag_data['tags']:
                 tags = tag_data['tags']
                 logger.info(f'Tags to write: {tags}')
-                meta = pyexiv2.ImageMetadata(new_file_url)
-                meta.read()
-                meta[iptc_key] = pyexiv2.IptcTag(iptc_key, tags)
-                meta.write()
+                for tag in tags:
+                    meta = subprocess.run(['exiv2', '-M', f'add {iptc_key} String {tag}', new_file_url], stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, universal_newlines=True)
+                    if meta.stderr:
+                        logger.error(f'Error: {meta.stderr}')
             else:
-                logger.warning(
+                logger.info(
                     'NO TAGS WERE SUBMITTED TO WRITE, SO ASSUMING ONLY 1 TAG EXISTED & THE INTENTION WAS TO WRITE AN EMPTY TAG SET, WITH THE EFFECT OF DELETING IT')
                 ProcessImages.delete_iptc_tags(new_file_url)  # delete the tag
             logger.info('No more tags to write!')
@@ -177,36 +179,39 @@ class ProcessImages:
         """
         logger.info(f'DELETING TAGS FROM: {file_url}')
         try:
-            meta = pyexiv2.ImageMetadata(file_url)
-            meta.read()  # read the meta
             # delete specific tag type
             if tag_type_to_delete:
                 try:
-                    #del meta.iptc_keys[tag_type_to_delete]
-                    meta.__delitem__(tag_type_to_delete)
-                    logger.info(f'TAG TYPE {tag_type_to_delete} SUCCESSFULLY DELETED!')
-                    meta.write()  # save the meta
-                    return True
+                    # del iptc_keys[tag_type_to_delete]
+                    meta = subprocess.run(['exiv2', '-M', f'del {tag_type_to_delete}', file_url], stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, universal_newlines=True)
+                    if not meta.stderr:
+                        logger.info(f'TAG TYPE {tag_type_to_delete} SUCCESSFULLY DELETED!')
+                        return True
+                    else:
+                        raise Exception(meta.stderr)
                 except (TypeError, Exception) as e:
-                    logger.warning(f'DELETION ERROR: {e}')
-                    logger.info(f'NO TAG OF TYPE {tag_type_to_delete} TO DELETE FROM IMAGE {file_url}!')
+                    logger.error(f'DELETION ERROR: {e}')
+                    logger.warning(f'NO TAG OF TYPE {tag_type_to_delete} TO DELETE FROM IMAGE {file_url}!')
                     return False
             else:
                 # delete all tags
-                loop_count = 0
-                while loop_count < 10:
-                    for key in meta.iptc_keys:  # delete all keys
-                        del meta[key]
-                    meta.write()  # save the meta
-                    loop_count += 1
-                    # check all tags successfully cleared
-                    meta = pyexiv2.ImageMetadata(file_url)
-                    meta.read()
-                    if not meta.iptc_keys:
-                        break
-                return loop_count < 10  # return True if successfully ended loop, else False
+                all_keys = subprocess.run(["exiv2", "-pi", file_url], stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE, universal_newlines=True)
+                if not all_keys.stderr:
+                    meta = all_keys.stdout.splitlines()  # reads records from stdout & splits by lines (each record on new line)
+                    key_set = set(k.split()[0] for k in meta)  # creates set of IPTC keys
+                    for key in key_set: # deletes all keys
+                        deleted = subprocess.run(['exiv2', '-M', f'del {key}', file_url], stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, universal_newlines=True)
+                        if not deleted.stderr:
+                            logger.info('Deletion of all tags successful!')
+                        else:
+                            raise Exception(deleted.stderr)
+                else:
+                    raise Exception(all_keys.stderr)
         except (TypeError, Exception) as e:
-            print(f'An error occurred in delete_iptc_tags: {e}')
+            logger.error(f'An error occurred in delete_iptc_tags: {e}')
 
     @staticmethod
     def convert_image(orig_filename: str, path: str, save_path: str, conversion_format: str,
@@ -344,23 +349,27 @@ class ProcessImages:
                 logger.info(f'COPIED FROM PATH: {path}')
                 if tags_to_write:
                     for existing_tag in tags_to_write:
-                        if existing_tag['iptc_key'] == tags['iptc_key']:
-                            existing_tag['tags'] = existing_tag['tags'] + \
-                                tags['tags']
+                        if existing_tag['tags']:
+                            if existing_tag['iptc_key'] == tags['iptc_key']:
+                                existing_tag['tags'] = existing_tag['tags'] + \
+                                    tags['tags']
             # if not merging with original or there were no original tags to merge, just use new
             tags_to_write = [tags] if not tags_to_write else tags_to_write
+            # delete existing tags 
+            ProcessImages.delete_iptc_tags(target_file_url)
             # write tags to images (tags in form: {'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']})
             logger.info(f'WRITING THESE TAGS: {tags_to_write}')
             for tag in tags_to_write:
-                ProcessImages._write_iptc_tags(
-                    new_file_url=target_file_url, tag_data=tag)
+                if tag['tags']:
+                    ProcessImages._write_iptc_tags(
+                        new_file_url=target_file_url, tag_data=tag)
             # check successful write
             if not ProcessImages.tag_write_error_check(
                     intended_tags=tags, origin_image_path=path, origin_image_filename=target_filename):
                 logger.error('TAGS NOT WRITTEN CORRECTLY!')
                 return False
         except Exception as e:
-            print(f'An exception occurred whilst attempting to add tags : {e}')
+            logger.error(f'An exception occurred whilst attempting to add tags : {e}')
             raise
         return True
 
@@ -527,19 +536,19 @@ class ProcessImages:
                             # only handle IPTC keywords (for now)
                             for tag in tag_data:
                                 if tag['iptc_key'] == 'Iptc.Application2.Keywords':
-                                    tag['tags'].append(
-                                        'SPM: TAGS COPIED FROM ORIGINAL')  # add tag to identify as copied
+                                    # tag['tags'].append(
+                                    #     'SPM: TAGS COPIED FROM ORIGINAL')  # add tag to identify as copied
                                     # add to the return dicts
                                     processed_data['tag_data'] = tag
                                     # write the tags to the converted file
                                     self._write_iptc_tags(
                                         new_file_url=new_file_url, tag_data=tag)
                                 else:
-                                    print(
+                                    logger.info(
                                         f'No tag was saved for this file: {new_file_url}')
                         yield processed_data
                 except Exception as e:
-                    print(f'An error occurred whilst processing the file: {e}')
+                    logger.error(f'An error occurred whilst processing the file: {e}')
         except (TypeError, Exception) as e:
             print(f'Error occurred processing images, in main(): {e}')
             yield {}
