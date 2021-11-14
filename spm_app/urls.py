@@ -19,10 +19,10 @@ set up the routers for the viewset class based views
 set up the url patterns for the functional views and simple class based views
 Note: Mapping for actions (used in as_view), are:
     {
-    'get': 'retrieve'  # to retrieve one object, as spec by pk passed in url param, e.g. /stock/1
-    'get': 'list' # to list all objects, e.g. /stock/
+    'get': 'retrieve'  # to retrieve one object, as spec by pk passed in url param
+    'get': 'list' # to list all objects
     'get': 'prune' # to run pune function (PhotoTags)
-    'get': 'latest' # CUSTOM action (defined in views.StockDataViewSet.latest(), routed /api/v1/stock/latest/ (below)).
+    'get': 'latest' # CUSTOM action (defined in views.StockDataViewSet.latest()
     'post': 'create'
     'put': 'update',
     'patch': 'partial_update',
@@ -49,8 +49,6 @@ functional_view_urlpatterns = [
         {'get': 'retrieve', 'patch': 'perform_update', 'delete': 'destroy'}),
         name='photo_data-detail'),
     url('^v2/process_photos', views.ProcessPhotos.as_view()),
-    # url('^v2/stock/latest/$', views.StockDataViewSet.as_view(
-    #     {'get': 'latest'})),
 ]
 
 """

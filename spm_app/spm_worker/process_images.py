@@ -6,6 +6,7 @@ import hashlib
 from pathlib import Path
 import logging
 from typing import List
+from operator import itemgetter
 
 ORIGIN_IMAGE_PATHS = set(os.path.normpath(os.path.normpath(
     f'{os.path.join(os.getcwd(), "../photo_directory")}')))
@@ -156,10 +157,13 @@ class ProcessImages:
                 tags = tag_data['tags']
                 logger.info(f'Tags to write: {tags}')
                 for tag in tags:
-                    meta = subprocess.run(['exiv2', '-M', f'add {iptc_key} String {tag}', new_file_url], stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, universal_newlines=True)
-                    if meta.stderr:
-                        logger.error(f'Error: {meta.stderr}')
+                    if tag: # if tag is not an empty string
+                        meta = subprocess.run(['exiv2', '-M', f'add {iptc_key} String {tag}', new_file_url], stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE, universal_newlines=True)
+                        if meta.stderr:
+                            logger.error(f'Error: {meta.stderr}')
+                    else:
+                        logger.info('NOT GUNA ADD AN EMPTY STRING!')
             else:
                 logger.info(
                     'NO TAGS WERE SUBMITTED TO WRITE, SO ASSUMING ONLY 1 TAG EXISTED & THE INTENTION WAS TO WRITE AN EMPTY TAG SET, WITH THE EFFECT OF DELETING IT')
@@ -347,12 +351,16 @@ class ProcessImages:
                 logger.info(f'ORIGINAL TAGS TO COPY: {tags_to_write}')
                 logger.info(f'COPIED FROM FILENAME: {target_filename}')
                 logger.info(f'COPIED FROM PATH: {path}')
-                if tags_to_write:
-                    for existing_tag in tags_to_write:
-                        if existing_tag['tags']:
-                            if existing_tag['iptc_key'] == tags['iptc_key']:
-                                existing_tag['tags'] = existing_tag['tags'] + \
-                                    tags['tags']
+                if tags_to_write:  # if original tags were copied
+                    # if key of new tags does not exist already, just add
+                    if tags['iptc_key'] not in map(itemgetter('iptc_key'), tags_to_write):
+                        tags_to_write.append(tags)
+                        logger.info(f'NO IDENTICAL KEY, SO NEW KEY ADDED WITH TAGS: {tags}')
+                    else:
+                        for existing_tag in tags_to_write:  # for every original tag
+                            if existing_tag['iptc_key'] == tags['iptc_key']:  # if new & orig keys match
+                                existing_tag['tags'] = existing_tag['tags'] + tags['tags']  # add new keys to existing list
+                                logger.info(f'KEY ALREADY EXISTED, NEW TAGS ADDED WITH SAME KEY {existing_tag}')
             # if not merging with original or there were no original tags to merge, just use new
             tags_to_write = [tags] if not tags_to_write else tags_to_write
             # delete existing tags 
