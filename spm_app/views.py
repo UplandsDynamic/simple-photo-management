@@ -494,6 +494,7 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                             added to the origin image will also need to be removed from the processed image here, before
                             returning this method.
                             """
+                            logger.error('TAGS WERE NOT WRITTEN TO ORIGIN IMAGE!')
                             return {'success': False, 'data': error_message}
                     # rename processed file so name matches new hash of origin image
                     if tags_were_written:
