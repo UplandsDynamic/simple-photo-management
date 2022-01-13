@@ -26,7 +26,7 @@ idna==3.3
 itypes==1.2.0
 jinja2==3.0.2
 markupsafe==2.0.1
-pillow==8.4.0
+pillow>=9.0.0
 psycopg2-binary==2.9.1
 pycodestyle==2.8.0
 python-dateutil==2.8.2
