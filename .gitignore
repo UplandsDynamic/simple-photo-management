@@ -19,3 +19,4 @@ devel/
 scratch.md
 .DS_Store
 test.py
+create_requirements_txt.sh

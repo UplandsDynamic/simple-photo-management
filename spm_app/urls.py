@@ -1,4 +1,4 @@
-from django.conf.urls import url, include
+from django.urls import re_path
 from rest_framework import routers, permissions
 from rest_framework.urlpatterns import format_suffix_patterns
 from . import views
@@ -33,22 +33,22 @@ Note: Mapping for actions (used in as_view), are:
     }
 """
 functional_view_urlpatterns = [
-    url('^v2/change-password/(?P<username>[a-zA-Z0-9.].+)/$',
+    re_path('^v2/change-password/(?P<username>[a-zA-Z0-9.].+)/$',
         views.PasswordUpdateViewSet.as_view(
             {'patch': 'partial_update'})),
-    url(r'^v2/logout/$', views.Logout.as_view()),
-    url('^v2/tags/prune/$', views.PhotoTagViewSet.as_view(
+    re_path(r'^v2/logout/$', views.Logout.as_view()),
+    re_path('^v2/tags/prune/$', views.PhotoTagViewSet.as_view(
         {'delete': 'prune_tags'}), name='photo_tag_prune'),
-    url('^v2/tags/$', views.PhotoTagViewSet.as_view(
+    re_path('^v2/tags/$', views.PhotoTagViewSet.as_view(
         {'get': 'list', 'post': 'create', 'patch': 'partial_update'}), name='photo_tag'),
-    url('^v2/tags/(?P<pk>\d+)/$', views.PhotoTagViewSet.as_view(
+    re_path('^v2/tags/(?P<pk>\d+)/$', views.PhotoTagViewSet.as_view(
         {'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy', 'put': 'update'}), name='photo-tag_detail'),
-    url('^v2/photos/$', views.PhotoDataViewSet.as_view(
+    re_path('^v2/photos/$', views.PhotoDataViewSet.as_view(
         {'get': 'list'}), name='photo_data'),
-    url('^v2/photos/(?P<pk>\d+)/$', views.PhotoDataViewSet.as_view(
+    re_path('^v2/photos/(?P<pk>\d+)/$', views.PhotoDataViewSet.as_view(
         {'get': 'retrieve', 'patch': 'perform_update', 'delete': 'destroy'}),
         name='photo_data-detail'),
-    url('^v2/process_photos', views.ProcessPhotos.as_view()),
+    re_path('^v2/process_photos', views.ProcessPhotos.as_view()),
 ]
 
 """
@@ -68,7 +68,7 @@ schema_view = get_schema_view(
 
 # final url patterns (everything included)
 urlpatterns += [
-    url(r'^(/?)$', schema_view),
-    url(r'^api-token-auth/', authviews.obtain_auth_token),
-    url(r'^schema(/?)$', schema_view),
+    re_path(r'^(/?)$', schema_view),
+    re_path(r'^api-token-auth/', authviews.obtain_auth_token),
+    re_path(r'^schema(/?)$', schema_view),
 ]
