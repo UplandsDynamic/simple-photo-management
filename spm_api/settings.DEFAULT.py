@@ -44,6 +44,7 @@ ALLOWED_HOSTS = ['localhost:3000', 'localhost' if TESTING_MODE else '']
 CORS_ORIGIN_ALLOW_ALL = False  # only set True for testing purposes
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_WHITELIST = ['http://localhost:3000', 'http://localhost:5000' if TESTING_MODE else '']
+CSRF_TRUSTED_ORIGINS = ['http://localhost:3001' if TESTING_MODE else '']
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
