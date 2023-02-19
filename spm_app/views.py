@@ -500,6 +500,10 @@ class PhotoDataViewSet(viewsets.ModelViewSet):
                     if tags_were_written:
                         renamed_main = ProcessImages.rename_image(
                             url_file_to_hash=origin_file_url, url_file_to_rename=record.processed_url, with_hash=True)
+                    else:
+                        # tag writing failed ...
+                        logger.error(f"Writing of {tags_to_add} to {origin_file_url} failed!")
+                        return {'success': False, 'data': "Tagging failed! Please consult the logs."}
                 except Exception:
                     logger.error(
                         'Renaming the processed file failed!', exc_info=True)

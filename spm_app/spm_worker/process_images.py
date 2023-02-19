@@ -161,7 +161,7 @@ class ProcessImages:
                         meta = subprocess.run(['exiv2', '-M', f'add {iptc_key} String {tag}', new_file_url], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE, universal_newlines=True)
                         if meta.stderr:
-                            logger.error(f'Error: {meta.stderr}')
+                            logger.error(f'Error - {tags} NOT written for {new_file_url}: {meta.stderr}')
                     else:
                         logger.info('NOT GUNA ADD AN EMPTY STRING!')
             else:
@@ -454,7 +454,7 @@ class ProcessImages:
                 tags = ProcessImages._read_iptc_tags(
                     filename=filename, path=path)
                 print(f'original TAGS: {tags}')
-            # rotate the image (makes a new copy & overwrites the origial)
+            # rotate the image (makes a new copy & overwrites the original)
             with Image.open(origin_file_url) as img:
                 img.rotate(rotation_degrees, resample=Image.BICUBIC,
                            expand=True).save(origin_file_url)
