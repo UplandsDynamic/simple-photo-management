@@ -30,7 +30,7 @@ class ProcessImages:
         - convert image format (e.g. .tif to .jpg)
         - read & transfer IPTC 'keyword' tags from original to converted image
     """
-    ALLOWED_IMAGE_FORMATS = ['jpeg', 'jpg', 'tiff', 'tif', 'png']
+    ALLOWED_IMAGE_FORMATS = ['jpeg', 'jpg', 'tiff', 'tif', 'png', 'JPEG', 'JPG', 'TIFF', 'TIF', 'PNG', 'Jpeg', 'Jpg', 'Tiff', 'Tif', 'Png']
 
     def __init__(
             self, origin_image_paths=None, origin_file_url=None, processed_image_path=None, thumb_path=None,
@@ -82,7 +82,7 @@ class ProcessImages:
                         if allowed_formats:
                             # produce <generator object>
                             url_list_generator = (Path(directory).glob(
-                                f'{match_pattern}.{f.lower()}') for f in allowed_formats)
+                                f'{match_pattern}.{f}') for f in allowed_formats)
                             # produce [[], [PosixPath('/path/to/file.jpg')], []]
                             url_list = [list(x_file_type)
                                         for x_file_type in url_list_generator]
@@ -125,12 +125,12 @@ class ProcessImages:
         try:
             url = os.path.join(path, filename)
             meta = subprocess.run(["exiv2", "-pi", os.path.join(url)], stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, universal_newlines=True)
-            if not meta.stderr:                      
-            # create tags list
+                                  stderr=subprocess.PIPE, universal_newlines=True)
+            if not meta.stderr:
+                # create tags list
                 meta_data = meta.stdout.splitlines()
                 key_set = set(k.split()[0] for k in meta_data)  # creates set of IPTC keys
-                for k in key_set: # creates structure for {'itpc_key': ['tag1', 'tag2'],}
+                for k in key_set:  # creates structure for {'itpc_key': ['tag1', 'tag2'],}
                     iptc_keys.update({k: []})
                 for key in meta_data:
                     split = key.split()
@@ -157,9 +157,10 @@ class ProcessImages:
                 tags = tag_data['tags']
                 logger.info(f'Tags to write: {tags}')
                 for tag in tags:
-                    if tag: # if tag is not an empty string
-                        meta = subprocess.run(['exiv2', '-M', f'add {iptc_key} String {tag}', new_file_url], stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE, universal_newlines=True)
+                    if tag:  # if tag is not an empty string
+                        meta = subprocess.run(
+                            ['exiv2', '-M', f'add {iptc_key} String {tag}', new_file_url],
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
                         if meta.stderr:
                             logger.error(f'Error - {tags} NOT written for {new_file_url}: {meta.stderr}')
                     else:
@@ -187,8 +188,9 @@ class ProcessImages:
             if tag_type_to_delete:
                 try:
                     # del iptc_keys[tag_type_to_delete]
-                    meta = subprocess.run(['exiv2', '-M', f'del {tag_type_to_delete}', file_url], stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, universal_newlines=True)
+                    meta = subprocess.run(
+                        ['exiv2', '-M', f'del {tag_type_to_delete}', file_url],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
                     if not meta.stderr:
                         logger.info(f'TAG TYPE {tag_type_to_delete} SUCCESSFULLY DELETED!')
                         return True
@@ -201,13 +203,13 @@ class ProcessImages:
             else:
                 # delete all tags
                 all_keys = subprocess.run(["exiv2", "-pi", file_url], stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE, universal_newlines=True)
+                                          stderr=subprocess.PIPE, universal_newlines=True)
                 if not all_keys.stderr:
                     meta = all_keys.stdout.splitlines()  # reads records from stdout & splits by lines (each record on new line)
                     key_set = set(k.split()[0] for k in meta)  # creates set of IPTC keys
-                    for key in key_set: # deletes all keys
+                    for key in key_set:  #  deletes all keys
                         deleted = subprocess.run(['exiv2', '-M', f'del {key}', file_url], stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, universal_newlines=True)
+                                                 stderr=subprocess.PIPE, universal_newlines=True)
                         if not deleted.stderr:
                             logger.info('Deletion of all tags successful!')
                         else:
@@ -357,13 +359,14 @@ class ProcessImages:
                         tags_to_write.append(tags)
                         logger.info(f'NO IDENTICAL KEY, SO NEW KEY ADDED WITH TAGS: {tags}')
                     else:
-                        for existing_tag in tags_to_write:  # for every original tag
+                        for existing_tag in tags_to_write:  #  for every original tag
                             if existing_tag['iptc_key'] == tags['iptc_key']:  # if new & orig keys match
-                                existing_tag['tags'] = existing_tag['tags'] + tags['tags']  # add new keys to existing list
+                                # add new keys to existing list
+                                existing_tag['tags'] = existing_tag['tags'] + tags['tags']
                                 logger.info(f'KEY ALREADY EXISTED, NEW TAGS ADDED WITH SAME KEY {existing_tag}')
             # if not merging with original or there were no original tags to merge, just use new
             tags_to_write = [tags] if not tags_to_write else tags_to_write
-            # delete existing tags 
+            # delete existing tags
             ProcessImages.delete_iptc_tags(target_file_url)
             # write tags to images (tags in form: {'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']})
             logger.info(f'WRITING THESE TAGS: {tags_to_write}')
