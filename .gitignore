@@ -20,3 +20,14 @@ scratch.md
 .DS_Store
 test.py
 create_requirements_txt.sh
+**/tests.ipynb
+**/*.log
+**/dev_notes.md
+**/*.tif
+**/rename_test
+**/.ipynb_checkpoints
+**/.vscode
+
+
+
+
