@@ -30,7 +30,8 @@ class ProcessImages:
         - convert image format (e.g. .tif to .jpg)
         - read & transfer IPTC 'keyword' tags from original to converted image
     """
-    ALLOWED_IMAGE_FORMATS = ['jpeg', 'jpg', 'tiff', 'tif', 'png', 'JPEG', 'JPG', 'TIFF', 'TIF', 'PNG', 'Jpeg', 'Jpg', 'Tiff', 'Tif', 'Png']
+    ALLOWED_IMAGE_FORMATS = ['jpeg', 'jpg', 'tiff', 'tif', 'png', 'JPEG',
+                             'JPG', 'TIFF', 'TIF', 'PNG', 'Jpeg', 'Jpg', 'Tiff', 'Tif', 'Png']
 
     def __init__(
             self, origin_image_paths=None, origin_file_url=None, processed_image_path=None, thumb_path=None,
@@ -61,6 +62,16 @@ class ProcessImages:
         self.origin_file_url = origin_file_url
         self.reprocess = reprocess
         self.tags = tags
+
+    @staticmethod
+    def remove_trailing_whitespace(tag_dict: dict) -> dict:
+        """
+        function to remove leading & trailing whitespace from tags
+        """
+        tags = [t.strip() for t in tag_dict["tags"]]
+        tag_dict.update({"tags": tags})
+        logger.info(f"STRIPPED TAGS: {tag_dict}")
+        return tag_dict
 
     @staticmethod
     def file_url_list_generator(directories: set, allowed_formats: list = ALLOWED_IMAGE_FORMATS, recursive: bool = False,
@@ -151,6 +162,8 @@ class ProcessImages:
         :param tag_data: image data: in form: {'iptc_key': iptc key, 'tags': ['tag 1', 'tag 2']}
         :return: True | False
         """
+        # remove trailing whitespace from tags
+        tag_data = ProcessImages.remove_trailing_whitespace(tag_data)
         try:
             iptc_key = tag_data['iptc_key']
             if iptc_key and tag_data['tags']:
@@ -340,6 +353,8 @@ class ProcessImages:
         :param retain_original: bool: whether to retain original tags or simply replace with new
         :return: True (if Excpetion not raised)
         """
+        # remove trailing whitespace from tags
+        tags = ProcessImages.remove_trailing_whitespace(tags)
         logger.info(
             f'ADDING TAGS: [target: {target_file_url}, tags: {tags}, retain_original: {retain_original}]')
         try:
