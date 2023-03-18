@@ -40,6 +40,8 @@ MarkupSafe = "*"
 Pillow = "*"
 PyYAML = "*"
 autopep8 = "*"
+difpy = "*"
+pandas = "*"
 
 [dev-packages]
 autopep8 = "*"
