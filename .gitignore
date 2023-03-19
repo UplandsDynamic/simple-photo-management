@@ -27,6 +27,7 @@ create_requirements_txt.sh
 **/rename_test
 **/.ipynb_checkpoints
 **/.vscode
+results.txt
 
 
 

@@ -10,13 +10,18 @@ class FotoToolz:
     """
 
     def __init__(
-            self, directory, fix_filenames=False, detect_dupes=False, dupe_search_dirs=[],
+            self, directory, fix_filenames=False, detect_dupes=False, change_permissions=False, dupe_search_dirs=[],
             file_chars_to_replace=(),
             dir_chars_to_replace=(),
-            new_char=""):
+            new_char="",
+            results_file="",
+            log_full_path=True):
         self.file_chars_to_replace = file_chars_to_replace
         self.dir_chars_to_replace = dir_chars_to_replace
         self.new_char = new_char
+        self.change_permissions = change_permissions
+        self.results_file = results_file
+        self.log_full_path = log_full_path
         self.filename_fixer(directory) if fix_filenames else None
         self.dupe_detector(directory, dupe_search_dirs) if detect_dupes else None
 
@@ -59,31 +64,56 @@ class FotoToolz:
             elif isinstance(data, list):
                 for item in data:
                     extract_locations(item)
+
+        def file_writer(file_path):
+            with open(self.results_file, "a+") as file:
+                file.seek(0)
+                data = file.read(100)
+                if len(data) > 0:
+                    file.write("\n")
+                else:
+                    file.write("# These image files were not added to the system\n\n")
+                file.write(os.path.abspath(file_path)) if self.log_full_path else file.write(
+                    os.path.basename(os.path.abspath(file_path)))
+
         print(
             f"\nSearching these directories for duplicates:\n" + "\n".join([os.path.abspath(d) for d in search_dirs]) +
             "\n\n")
         search = dif(search_dirs, similarity='duplicates')
         extract_locations(search.result)
         print(f"\nDuplicated images: \n" + "\n".join([os.path.abspath(l) for l in locations]))
-        # loop through each file in the set
-        for file_path in locations:
-            # only change file permissions if the file path includes the directory named "batch"
-            if os.path.abspath(img_dir) in os.path.abspath(os.path.dirname(file_path)):
-                # use subprocess to run the chmod command and change the file permissions to 000
-                subprocess.run(["chmod", "000", file_path])
-                print(f"Changed permissions of file {file_path} to 000.")
-            else:
-                print(f"Not touching file {os.path.abspath(file_path)} as it is not in {os.path.abspath(img_dir)}\n\n")
+        if self.change_permissions:
+            # loop through each file in the set
+            for file_path in locations:
+                # only change file permissions if the file path includes the directory named "batch"
+                if os.path.abspath(img_dir) in os.path.abspath(os.path.dirname(file_path)):
+                    # use subprocess to run the chmod command and change the file permissions to 000
+                    subprocess.run(["chmod", "000", file_path])
+                    print(f"Changed permissions of file {file_path} to 000.")
+                    # write paths of dupes with modified file permissions to results file
+                    file_writer(file_path)
+                else:
+                    pass
+                    print(
+                        f"Not touching file {os.path.abspath(file_path)} as it is not in {os.path.abspath(img_dir)}\n\n")
 
 
 # driver
 if __name__ == "__main__":
-    directory = ""
-    dupe_search_dirs = []
-    file_chars_to_replace = (" ", "(", ")", "[", "]", "'", "&")
-    dir_chars_to_replace = (" ", "(", ")", "[", "]", ".", "'", "&")
+    directory = "./rename_test"
+    dupe_search_dirs = ["../../photo_directory", "./rename_test"]
+    file_chars_to_replace = (" ", "(", ")", "[", "]", "'", "&", ",")
+    dir_chars_to_replace = (" ", "(", ")", "[", "]", ".", "'", "&", ",")
     new_char = "_"
-    FotoToolz(directory=directory, fix_filenames=True, detect_dupes=False,
-              dupe_search_dirs=dupe_search_dirs, file_chars_to_replace=file_chars_to_replace,
-              dir_chars_to_replace=dir_chars_to_replace, new_char=new_char)
+    results_file = "results.txt"
+    log_full_path = True
+    fix_filenames = True
+    detect_dupes = True
+    change_permissions = True
+
+    FotoToolz(
+        directory=directory, fix_filenames=fix_filenames, detect_dupes=detect_dupes,
+        change_permissions=change_permissions, dupe_search_dirs=dupe_search_dirs,
+        file_chars_to_replace=file_chars_to_replace, dir_chars_to_replace=dir_chars_to_replace, new_char=new_char,
+        results_file=results_file, log_full_path=log_full_path)
     print("Job done!")
