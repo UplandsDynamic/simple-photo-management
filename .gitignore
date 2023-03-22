@@ -28,6 +28,7 @@ create_requirements_txt.sh
 **/.ipynb_checkpoints
 **/.vscode
 results.txt
+**/test/
 
 
 

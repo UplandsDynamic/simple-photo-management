@@ -84,8 +84,12 @@ class FotoToolz:
         print(
             f"\nSearching these directories for duplicates:\n" + "\n".join([os.path.abspath(d) for d in search_dirs]) +
             "\n\n") if self.verbose else None
-        search = dif(search_dirs, similarity='duplicates', fast_search=True)
-        extract_locations(search.result)
+        # first identify any duplicates in the incoming directory & delete one copy if necessary
+        search_incoming = dif(img_dir, similarity="duplicates", delete=True, silent_del=True)
+        print(search_incoming.result) if self.verbose else None
+        # now identify duplications in other directories & change file permissions of incoming to 000 if others are found
+        search_archive = dif(search_dirs, similarity="duplicates", fast_search=True)
+        extract_locations(search_archive.result)
         print(f"\nDuplicated images: \n" + "\n".join([os.path.abspath(l) for l in locations])) if self.verbose else None
         if self.change_permissions:
             # loop through each file in the set
@@ -104,7 +108,7 @@ class FotoToolz:
 
 # driver
 if __name__ == "__main__":
-    directory = "./rename_test"  # directory being scanned - permissions CAN be changed
+    directory = "./test"  # directory being scanned - permissions CAN be changed
     dupe_search_dirs = ["../../photo_directory", "./rename_test"]  # directories to search - permissions NOT changed
     file_chars_to_replace = (" ", "(", ")", "[", "]", "'", "&", ",")
     dir_chars_to_replace = (" ", "(", ")", "[", "]", ".", "'", "&", ",")
