@@ -1,7 +1,9 @@
+import os
 import argparse
 import subprocess
 import json
 import re
+import datetime
 from distutils.util import strtobool
 from pathlib import Path
 import shutil
@@ -9,9 +11,11 @@ import shutil
 global _verbose_output
 
 
-def _v(message: str):
+def _v(message: str) -> None:
     global _verbose_output
+    dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"{message}\n") if _verbose_output else None
+    _write_log(f"\n{dt}:   {message}")
 
 
 def _get_files(root_dir: Path, accepted_filetypes: tuple) -> tuple:
@@ -81,7 +85,7 @@ def _move_images(images: list, root_dir: str) -> list[dict]:
     return successful, errors
 
 
-def _format_json(input: list):
+def _format_json(input: list) -> list[dict]:
     for r in input:
         if "file_path" in r:
             r["file_path"] = str(r["file_path"])
@@ -98,7 +102,19 @@ def _validate_directory(arg: str) -> str:
     return arg
 
 
-def execute(root_dir: str, verbose: True):
+def _write_log(message: str) -> None:
+    log_path = Path(".")
+    with open(log_path / "fotorganizer.log", "a+") as file:
+        file.seek(0)
+        data = file.read(100)
+        if len(data) > 0:
+            file.write("\n")
+        else:
+            file.write("# Output log for the fotorganizer script.\n\n")
+        file.write(message)
+
+
+def execute(root_dir: str, verbose: True) -> None:
     global _verbose_output
     _verbose_output = verbose
     _accepted_filetypes = ("jpg", "jpeg", "tif", "tiff", "png")
@@ -110,13 +126,13 @@ def execute(root_dir: str, verbose: True):
         results = _get_tags(found_paths)
         years = _find_years(files=results)
         moved, move_failed = _move_images(years, root_dir)
-        # print stuff
-        _v(f"{len(found_paths)} files were found in or under {root_dir}.{newline}")
-        _v(f"{len(excluded_paths)} files were excluded in or under {root_dir}.{newline}")
+        # print / log stuff
+        _v(f"\n{len(found_paths)} files were found in or under {root_dir}.{newline}")
+        _v(f"\n{len(excluded_paths)} files were excluded in or under {root_dir}.{newline}")
         _v(
-            f"List of found files: {newline}{f'{newline}'.join([str(f) for f in found_paths]) if found_paths else 'None'}")
+            f"\nList of found files: {newline}{f'{newline}'.join([str(f) for f in found_paths]) if found_paths else 'None'}")
         _v(
-            f"List of excluded files: {newline}{f'{newline}'.join([str(f) for f in excluded_paths]) if excluded_paths else 'None'}")
+            f"\nList of excluded files: {newline}{f'{newline}'.join([str(f) for f in excluded_paths]) if excluded_paths else 'None'}")
         _v(f"\nTags that were read: \n\n{_format_json(results)}")
         _v(f"\nYears that were detected: \n\n{_format_json(years)}")
         _v(f"\nMoved files: \n\n{_format_json(moved)}")
