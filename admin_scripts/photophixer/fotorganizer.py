@@ -4,9 +4,10 @@ import subprocess
 import json
 import re
 import datetime
+import math
+import shutil
 from distutils.util import strtobool
 from pathlib import Path
-import shutil
 
 global _verbose_output
 
@@ -71,7 +72,10 @@ def _find_years(files: list) -> list[dict]:
 def _move_images(images: list, root_dir: str) -> list[dict]:
     successful: list[dict] = []
     errors: list[dict] = []
+    total_img: int = len(images)
+    progress_counter: int = 0
     for img in images:
+        progress_counter += 1
         try:
             target_dir: Path = Path(f"{root_dir}/{img['year']}") if img["year"] else Path(f"{root_dir}/no_year")
             target_dir.mkdir(parents=True, exist_ok=True)
@@ -82,7 +86,12 @@ def _move_images(images: list, root_dir: str) -> list[dict]:
                 _v("File already exists as this path. Not moving.")
         except Exception as e:
             errors.append({"old_filepath": img["file_path"], "error": str(e)})
+        _show_progress(progress_counter, total_img)
     return successful, errors
+
+
+def _show_progress(current: int, total: int) -> None:
+    print(f"Progress: [{current}/{total}][{math.floor(current/total)*100}%]", end="\r")
 
 
 def _format_json(input: list) -> list[dict]:
@@ -136,7 +145,7 @@ def execute(root_dir: str, verbose: True) -> None:
         _v(f"\nTags that were read: \n\n{_format_json(results)}")
         _v(f"\nYears that were detected: \n\n{_format_json(years)}")
         _v(f"\nMoved files: \n\n{_format_json(moved)}")
-        _v(f"\nFailed moves: \n\n{_format_json(move_failed)}")
+        _v(f"\nFailed moves: \n\n{_format_json(move_failed)}\n")
     except FileNotFoundError as e:
         print("Root directory was not found. Aborting attempt.")
     except ValueError as e:
