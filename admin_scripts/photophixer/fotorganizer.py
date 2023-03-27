@@ -1,22 +1,20 @@
-import os
 import argparse
 import subprocess
 import json
 import re
-import datetime
-import math
 import shutil
+from math import floor
 from distutils.util import strtobool
 from pathlib import Path
+from datetime import datetime
 
 global _verbose_output
 
 
 def _v(message: str) -> None:
     global _verbose_output
-    dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"{message}\n") if _verbose_output else None
-    _write_log(f"\n{dt}:   {message}")
+    print(f"{message}", end="\n\n") if _verbose_output else None
+    _write_log(message)
 
 
 def _get_files(root_dir: Path, accepted_filetypes: tuple) -> tuple:
@@ -34,7 +32,8 @@ def _get_files(root_dir: Path, accepted_filetypes: tuple) -> tuple:
 
 def _get_tags(file_paths: list[Path]) -> list[dict]:
     results: list = []
-    for f in file_paths:
+    print("Reading tags...")
+    for idx, f in enumerate(file_paths):
         tags: list = []
         read = subprocess.run(
             ["exiv2", "-PI", f],
@@ -51,6 +50,8 @@ def _get_tags(file_paths: list[Path]) -> list[dict]:
             "tags": tags,
             "errors": read.stderr
         })
+        _show_progress(idx, len(file_paths))
+    print("\nTask complete.", end="\n\n")
     return results
 
 
@@ -71,10 +72,8 @@ def _find_years(files: list) -> list[dict]:
 def _move_images(images: list, root_dir: str) -> list[dict]:
     successful: list[dict] = []
     errors: list[dict] = []
-    total_img: int = len(images)
-    progress_counter: int = 0
-    for img in images:
-        progress_counter += 1
+    print("Moving images...")
+    for idx, img in enumerate(images):
         try:
             target_dir: Path = Path(root_dir / img['year']) if img["year"] else Path(root_dir / "no_year")
             target_dir.mkdir(parents=True, exist_ok=True)
@@ -85,12 +84,13 @@ def _move_images(images: list, root_dir: str) -> list[dict]:
                 _v("File already exists as this path. Not moving.")
         except Exception as e:
             errors.append({"old_filepath": img["file_path"], "error": str(e)})
-        _show_progress(progress_counter, total_img)
+        _show_progress(idx, len(images))
+    print("\nTask complete.", end="\n\n")
     return successful, errors
 
 
 def _show_progress(current: int, total: int) -> None:
-    print(f"Progress: [{current}/{total}][{math.floor(current/total)*100}%]", end="\r", flush=True)
+    print(f"Progress: [{current}/{total}][{floor((current/total)*100)}%]", end="\r", flush=True)
 
 
 def _format_json(input: list) -> list[dict]:
@@ -112,6 +112,7 @@ def _validate_directory(arg: str) -> str:
 
 def _write_log(message: str) -> None:
     log_path = Path(".")
+    dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(log_path / "fotorganizer.log", "a+") as file:
         file.seek(0)
         data = file.read(100)
@@ -119,7 +120,7 @@ def _write_log(message: str) -> None:
             file.write("\n")
         else:
             file.write("# Output log for the fotorganizer script.\n\n")
-        file.write(message)
+        file.write(f"\n{dt}   {message}")
 
 
 def execute(root_dir: str, verbose: True) -> None:
@@ -130,21 +131,22 @@ def execute(root_dir: str, verbose: True) -> None:
     try:
         _validate_directory(root_dir)
         root_dir = Path(root_dir).resolve(strict=True)
+        print("Starting process...", end="\n\n")
         found_paths, excluded_paths = _get_files(root_dir, _accepted_filetypes)
         results = _get_tags(found_paths)
         years = _find_years(files=results)
         moved, move_failed = _move_images(years, root_dir)
         # print / log stuff
-        _v(f"\n{len(found_paths)} files were found in or under {root_dir}.{newline}")
-        _v(f"\n{len(excluded_paths)} files were excluded in or under {root_dir}.{newline}")
+        _v(f"{len(found_paths)} files were found in or under {root_dir}.")
+        _v(f"{len(excluded_paths)} files were excluded in or under {root_dir}.")
         _v(
-            f"\nList of found files: {newline}{f'{newline}'.join([str(f) for f in found_paths]) if found_paths else 'None'}")
+            f"List of found files: {newline}{f'{newline}'.join([str(f) for f in found_paths]) if found_paths else 'None'}")
         _v(
-            f"\nList of excluded files: {newline}{f'{newline}'.join([str(f) for f in excluded_paths]) if excluded_paths else 'None'}")
-        _v(f"\nTags that were read: \n\n{_format_json(results)}")
-        _v(f"\nYears that were detected: \n\n{_format_json(years)}")
-        _v(f"\nMoved files: \n\n{_format_json(moved)}")
-        _v(f"\nFailed moves: \n\n{_format_json(move_failed)}\n")
+            f"List of excluded files: {newline}{f'{newline}'.join([str(f) for f in excluded_paths]) if excluded_paths else 'None'}")
+        _v(f"Tags that were read: \n\n{_format_json(results)}")
+        _v(f"Years that were detected: \n\n{_format_json(years)}")
+        _v(f"Moved files: \n\n{_format_json(moved)}")
+        _v(f"Failed moves: \n\n{_format_json(move_failed)}")
     except FileNotFoundError as e:
         print("Root directory was not found. Aborting attempt.")
     except ValueError as e:
