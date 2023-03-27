@@ -3,6 +3,7 @@ import subprocess
 import json
 import re
 import shutil
+import uuid
 from math import floor
 from distutils.util import strtobool
 from pathlib import Path
@@ -69,16 +70,18 @@ def _find_years(files: list) -> list[dict]:
     return results
 
 
-def _move_images(images: list, root_dir: str) -> list[dict]:
+def _move_images(images: list, root_dir: Path, rename_files: bool) -> tuple(list[dict]):
     successful: list[dict] = []
     errors: list[dict] = []
     print("Moving images...")
     for idx, img in enumerate(images):
         try:
-            target_dir: Path = Path(root_dir / img['year']) if img["year"] else Path(root_dir / "no_year")
+            target_dir: Path = root_dir / Path(img["year"]) if img["year"] else root_dir / Path("no_year")
             target_dir.mkdir(parents=True, exist_ok=True)
             try:
-                new_path: Path = Path(shutil.move(img['file_path'], target_dir)).resolve()
+                new_path: Path = Path(shutil.move(
+                    img["file_path"],
+                    target_dir / _gen_filename(img["file_path"].suffix) if rename_files else target_dir)).resolve()
                 successful.append({"new_filepath": new_path, "old_filepath": img["file_path"]})
             except shutil.Error as e:
                 _v("File already exists as this path. Not moving.")
@@ -87,6 +90,10 @@ def _move_images(images: list, root_dir: str) -> list[dict]:
         _show_progress(idx, len(images))
     print("\nTask complete.", end="\n\n")
     return successful, errors
+
+
+def _gen_filename(suffix: str) -> Path:
+    return Path(str(uuid.uuid4()) + suffix)
 
 
 def _show_progress(current: int, total: int) -> None:
@@ -123,7 +130,7 @@ def _write_log(message: str) -> None:
         file.write(f"\n{dt}   {message}")
 
 
-def execute(root_dir: str, verbose: True) -> None:
+def execute(root_dir: str, verbose: bool = False, rename_files: bool = False) -> None:
     global _verbose_output
     _verbose_output = verbose
     _accepted_filetypes = ("jpg", "jpeg", "tif", "tiff", "png")
@@ -135,7 +142,7 @@ def execute(root_dir: str, verbose: True) -> None:
         found_paths, excluded_paths = _get_files(root_dir, _accepted_filetypes)
         results = _get_tags(found_paths)
         years = _find_years(files=results)
-        moved, move_failed = _move_images(years, root_dir)
+        moved, move_failed = _move_images(years, root_dir, rename_files)
         # print / log stuff
         _v(f"{len(found_paths)} files were found in or under {root_dir}.")
         _v(f"{len(excluded_paths)} files were excluded in or under {root_dir}.")
@@ -159,7 +166,12 @@ if __name__ == "__main__":
         description="Move all image files with dates in their ITPC tag comments into date-titled folders")
     parser.add_argument('-d', '--directory', type=str, help='Root image directory. Full path required', required=True)
     parser.add_argument('-v', '--verbose', type=lambda x: bool(strtobool(x)),
-                        help='Print verbose output', required=False)
+                        help='Print verbose output', required=False, choices=[True, False], default=False)
+    parser.add_argument(
+        '-rf', '--rename_files', type=lambda x: bool(strtobool(x)),
+        help='Rename moved files', required=False, choices=[True, False], default=False)
     args = parser.parse_args()
-    confirm = input(f"Your selected directory was {args.directory}.\nPlease confirm (Y)es, (N)o: ").lower()
-    execute(root_dir=args.directory, verbose=args.verbose) if confirm in ("yes", "y") else print("Aborting.")
+    confirm = input(f"Your selected directory was {args.directory}.\nPlease confirm (Y)es, (N)o: ")
+    execute(
+        root_dir=args.directory, verbose=args.verbose, rename_files=args.rename_files) if confirm.lower() in (
+        "yes", "y") else print("Aborting.")
