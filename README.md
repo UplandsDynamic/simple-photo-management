@@ -1,5 +1,11 @@
 # Simple Photo Management - Server Component
 
+## SECURITY ALERT
+
+This project was archived on 28 March 2023 due to *dependency security issues* that cannot be immediately resolved.
+
+The app's dependencies *DO HAVE UNRESOLVED SECURITY VULNERABILITIES* Use at your own risk.
+
 ## About
 
 This is a demo/prototype of simple application built on web technologies to IPTC tag, search & image optimise digital photo libraries.
