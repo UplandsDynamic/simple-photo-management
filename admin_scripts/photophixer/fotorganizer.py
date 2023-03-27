@@ -2,6 +2,7 @@ import argparse
 import subprocess
 import json
 import re
+from distutils.util import strtobool
 from pathlib import Path
 import shutil
 
@@ -54,11 +55,12 @@ def _find_years(files: list) -> list[dict]:
     for f in files:
         for tag in f["tags"]:
             match = re.search(pattern, tag, re.IGNORECASE)
-            results.append({
-                "file_path": f["file_path"],
-                "year": match.group(1) if match is not None else None,
-                "errors": ""
-            })
+            if match:
+                results.append({
+                    "file_path": f["file_path"],
+                    "year": match.group(1),
+                    "errors": ""
+                })
     return results
 
 
@@ -70,7 +72,7 @@ def _move_images(images: list, root_dir: str) -> list[dict]:
             target_dir: Path = Path(f"{root_dir}/{img['year']}") if img["year"] else Path(f"{root_dir}/no_year")
             target_dir.mkdir(parents=True, exist_ok=True)
             try:
-                new_path: str = shutil.move(img['file_path'], target_dir)
+                new_path: Path = Path(shutil.move(img['file_path'], target_dir)).resolve()
                 successful.append({"new_filepath": new_path, "old_filepath": img["file_path"]})
             except shutil.Error as e:
                 _v("File already exists as this path. Not moving.")
@@ -108,15 +110,17 @@ def execute(root_dir: str, verbose: True):
         results = _get_tags(found_paths)
         years = _find_years(files=results)
         moved, move_failed = _move_images(years, root_dir)
-        print(_format_json(moved))
-        print(_format_json(move_failed))
         # print stuff
         _v(f"{len(found_paths)} files were found in or under {root_dir}.{newline}")
         _v(f"{len(excluded_paths)} files were excluded in or under {root_dir}.{newline}")
-        _v(f"Here is the list of found files: {newline}{f'{newline}'.join([str(f) for f in found_paths])}")
-        _v(f"Here is the list of excluded files: {newline}{f'{newline}'.join([str(f) for f in excluded_paths])}")
-        _v(_format_json(results))
-        _v(_format_json(years))
+        _v(
+            f"List of found files: {newline}{f'{newline}'.join([str(f) for f in found_paths]) if found_paths else 'None'}")
+        _v(
+            f"List of excluded files: {newline}{f'{newline}'.join([str(f) for f in excluded_paths]) if excluded_paths else 'None'}")
+        _v(f"\nTags that were read: \n\n{_format_json(results)}")
+        _v(f"\nYears that were detected: \n\n{_format_json(years)}")
+        _v(f"\nMoved files: \n\n{_format_json(moved)}")
+        _v(f"\nFailed moves: \n\n{_format_json(move_failed)}")
     except FileNotFoundError as e:
         print("Root directory was not found. Aborting attempt.")
     except ValueError as e:
@@ -126,8 +130,10 @@ def execute(root_dir: str, verbose: True):
 # driver
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Move all image files with dates in their IPTC tag comments into date-titled folders")
+        description="Move all image files with dates in their ITPC tag comments into date-titled folders")
     parser.add_argument('-d', '--directory', type=str, help='Root image directory. Full path required', required=True)
+    parser.add_argument('-v', '--verbose', type=lambda x: bool(strtobool(x)),
+                        help='Print verbose output', required=False)
     args = parser.parse_args()
     confirm = input(f"Your selected directory was {args.directory}.\nPlease confirm (Y)es, (N)o: ")
-    execute(root_dir=args.directory, verbose=False) if confirm.lower() in ("yes", "y") else print("Aborting.")
+    execute(root_dir=args.directory, verbose=args.verbose) if confirm in ("Yes", "Y") else print("Aborting.")
