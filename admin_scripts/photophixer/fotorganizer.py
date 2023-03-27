@@ -60,12 +60,11 @@ def _find_years(files: list) -> list[dict]:
     for f in files:
         for tag in f["tags"]:
             match = re.search(pattern, tag, re.IGNORECASE)
-            if match:
-                results.append({
-                    "file_path": f["file_path"],
-                    "year": match.group(1),
-                    "errors": ""
-                })
+        results.append({
+            "file_path": f["file_path"],
+            "year": match.group(1) if match else None,
+            "errors": ""
+        })
     return results
 
 
@@ -77,7 +76,7 @@ def _move_images(images: list, root_dir: str) -> list[dict]:
     for img in images:
         progress_counter += 1
         try:
-            target_dir: Path = Path(f"{root_dir}/{img['year']}") if img["year"] else Path(f"{root_dir}/no_year")
+            target_dir: Path = Path(root_dir / img['year']) if img["year"] else Path(root_dir / "no_year")
             target_dir.mkdir(parents=True, exist_ok=True)
             try:
                 new_path: Path = Path(shutil.move(img['file_path'], target_dir)).resolve()
@@ -91,7 +90,7 @@ def _move_images(images: list, root_dir: str) -> list[dict]:
 
 
 def _show_progress(current: int, total: int) -> None:
-    print(f"Progress: [{current}/{total}][{math.floor(current/total)*100}%]", end="\r")
+    print(f"Progress: [{current}/{total}][{math.floor(current/total)*100}%]", end="\r", flush=True)
 
 
 def _format_json(input: list) -> list[dict]:
@@ -160,5 +159,5 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbose', type=lambda x: bool(strtobool(x)),
                         help='Print verbose output', required=False)
     args = parser.parse_args()
-    confirm = input(f"Your selected directory was {args.directory}.\nPlease confirm (Y)es, (N)o: ")
-    execute(root_dir=args.directory, verbose=args.verbose) if confirm in ("Yes", "Y") else print("Aborting.")
+    confirm = input(f"Your selected directory was {args.directory}.\nPlease confirm (Y)es, (N)o: ").lower()
+    execute(root_dir=args.directory, verbose=args.verbose) if confirm in ("yes", "y") else print("Aborting.")
