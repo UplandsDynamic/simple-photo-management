@@ -62,6 +62,8 @@ def _find_years(files: list) -> list[dict]:
     for f in files:
         for tag in f["tags"]:
             match = re.search(pattern, tag, re.IGNORECASE)
+            if match:
+                break
         results.append({
             "file_path": f["file_path"],
             "year": match.group(1) if match else None,

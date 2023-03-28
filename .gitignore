@@ -29,6 +29,7 @@ create_requirements_txt.sh
 **/.vscode
 results.txt
 **/test/
+**/photos_test/
 **/logfile_archive/
 
 
