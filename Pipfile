@@ -43,6 +43,7 @@ difpy = "*"
 pandas = "*"
 django-q2 = "*"
 psutil = "*"
+django-axes = {extras = ["ipware"], version = "*"}
 
 [dev-packages]
 autopep8 = "*"

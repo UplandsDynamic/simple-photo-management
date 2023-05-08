@@ -11,7 +11,9 @@ coreschema==0.0.4
 cycler==0.11.0
 difpy==3.0.10
 django==4.2.1
+django-axes==5.41.1
 django-cors-headers==3.14.0
+django-ipware==5.0.0
 django-picklefield==3.1
 django-q2==1.5.2
 djangorestframework==3.14.0
