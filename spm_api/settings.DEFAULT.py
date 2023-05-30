@@ -83,7 +83,7 @@ AUTHENTICATION_BACKENDS = [
 
 # # # # # Axes
 
-AXES_ONLY_USER_FAILURES = True
+AXES_LOCKOUT_PARAMETERS = ["username"]
 
 # # # rest framework
 
