@@ -131,12 +131,6 @@ class PhotoDataSerializer(serializers.HyperlinkedModelSerializer):
     def administrators_check(self, obj):
         return self.context['request'].user.groups.filter(name='administrators').exists()
 
-    # receive non-model field in request POST/PATCH that represents the number of units to transfer
-    # example_non_model_field = serializers.CharField(required=False)
-
-    # def superuser_check(self, obj):
-    #     return self.user.is_superuser
-
     # return request datetime
     datetime_of_request = serializers.SerializerMethodField(
         method_name='create_request_time')
@@ -158,12 +152,6 @@ class PhotoDataSerializer(serializers.HyperlinkedModelSerializer):
     Non-model fields may be validated here.
     """
 
-    # def validate(self, data):
-    #     # e.g below: if instance exists (thus updating) & new value for units_total different, raise error
-    #     if self.instance and data.get('units_total', None) != self.instance.units_total:
-    #         raise serializers.ValidationError('You are trying to update with a new value!')
-    #     return data
-
     def validate(self, data):
         logger.info('Running clean on serializer')
         """
@@ -182,14 +170,11 @@ class PhotoDataSerializer(serializers.HyperlinkedModelSerializer):
         """
 
         """
-        Only superusers are allowed to create new objects
+        Only admins are allowed to create new objects
         """
         if not self.administrators_check(self):
             raise serializers.ValidationError(
                 detail=f'Record creation denied for this user level')
-        # remove units_to_transfer write_only (non-model) field for the create() method (only for updates)
-        if 'units_to_transfer' in validated_data:
-            del validated_data['units_to_transfer']
         try:
             super().create(validated_data)  # now call parent method to do the save
             return self.validated_data
@@ -229,12 +214,6 @@ class PhotoTagSerializer(serializers.HyperlinkedModelSerializer):
     def administrators_check(self, obj):
         return self.context['request'].user.groups.filter(name='administrators').exists()
 
-    # receive non-model field in request POST/PATCH that represents the number of units to transfer
-    # example_non_model_field = serializers.CharField(required=False)
-
-    # def superuser_check(self, obj):
-    #     return self.user.is_superuser
-
     # return request datetime
     datetime_of_request = serializers.SerializerMethodField(
         method_name='create_request_time')
@@ -254,12 +233,6 @@ class PhotoTagSerializer(serializers.HyperlinkedModelSerializer):
     most validation here is done on the model.
     Non-model fields may be validated here.
     """
-
-    # def validate(self, data):
-    #     # e.g below: if instance exists (thus updating) & new value for units_total different, raise error
-    #     if self.instance and data.get('units_total', None) != self.instance.units_total:
-    #         raise serializers.ValidationError('You are trying to update with a new value!')
-    #     return data
 
     def validate(self, data):
         logger.info('Running clean on serializer')
