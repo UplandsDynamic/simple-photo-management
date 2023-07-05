@@ -9,7 +9,7 @@ coreapi==2.3.3
 coreschema==0.0.4
 cycler==0.11.0
 difpy==3.0.10
-django==4.2.1
+django==4.2.3
 django-axes==6.0.1
 django-cors-headers==4.0.0
 django-ipware==5.0.0
