@@ -39,7 +39,7 @@ sqlparse==0.4.4
 toml==0.10.2
 tzdata==2023.3
 uritemplate==4.1.1
-urllib3==2.0.5
+urllib3==2.0.6
 wcwidth==0.2.6
 zope.event==5.0
 zope.interface==6.0
