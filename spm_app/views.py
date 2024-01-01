@@ -1,7 +1,7 @@
 import logging
 from django.contrib.auth.models import User, Group
 from django.http import JsonResponse
-from django.utils.datetime_safe import datetime
+from datetime import datetime
 from rest_framework.views import APIView
 import os
 from .custom_validators import *
