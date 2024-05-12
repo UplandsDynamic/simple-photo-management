@@ -1,2 +1,2 @@
 # SERVER VERSION
-1.4.1-beta
+1.4.2-beta
